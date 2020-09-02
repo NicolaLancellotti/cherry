@@ -45,7 +45,7 @@ declarations → declaration declaration<sub>opt</sub>
 top-level-declaration → declarations   
 
 **Function declaration**  
-function-declaration → function-name function-signature  function-body  
+function-declaration → `fun` function-name function-signature  function-body  
 function-name → identifier  
 function-signature → parameter-clause  
 parameter-clause → `(` `)`    
