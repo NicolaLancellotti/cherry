@@ -1,8 +1,8 @@
 # Cherry Grammar
 
-##Lexical Structure
+## Lexical Structure
 
-** Grammar of an identifier**  
+**Identifiers**  
 identifier → identifier-head identifier-characters<sub>opt</sub>  
 
 identifier-head → `Upper or lowercase letter A through Z`  
@@ -10,7 +10,7 @@ identifier-characters → identifier-character identifier-characters<sub>opt</su
 identifier-character → identifier-head  
 identifier-character → `Digit 0 through 9`  
 
-**Literal**  
+**Literals**  
 literal → decimal-literal    
 decimal-literal → decimal-digit decimal-digits<sub>opt</sub>    
 decimal-digit → `Digit 0 or 1`    
