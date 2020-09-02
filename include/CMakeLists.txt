@@ -1,1 +1,1 @@
-add_subdirectory(Cherry)
+add_subdirectory(cherry)

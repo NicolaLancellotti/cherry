@@ -1,4 +1,4 @@
-//===- CherryOps.cpp - Cherry dialect ops ---------------*- C++ -*-===//
+//===- CherryDialect.h - Cherry dialect -----------------*- C++ -*-===//
 //
 // This file is licensed under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -6,13 +6,17 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "Cherry/CherryOps.h"
-#include "Cherry/CherryDialect.h"
-#include "mlir/IR/OpImplementation.h"
+#ifndef STANDALONE_STANDALONEDIALECT_H
+#define STANDALONE_STANDALONEDIALECT_H
+
+#include "mlir/IR/Dialect.h"
 
 namespace mlir {
 namespace cherry {
-#define GET_OP_CLASSES
-#include "Cherry/CherryOps.cpp.inc"
+
+#include "cherry/IRGen/CherryOpsDialect.h.inc"
+
 } // namespace cherry
 } // namespace mlir
+
+#endif // STANDALONE_STANDALONEDIALECT_H

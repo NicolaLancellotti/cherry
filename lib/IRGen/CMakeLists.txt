@@ -3,7 +3,7 @@ add_mlir_dialect_library(MLIRCherry
         CherryOps.cpp
 
         ADDITIONAL_HEADER_DIRS
-        ${PROJECT_SOURCE_DIR}/include/Cherry
+        ${PROJECT_SOURCE_DIR}/include/IRGen
 
         DEPENDS
         MLIRCherryOpsIncGen

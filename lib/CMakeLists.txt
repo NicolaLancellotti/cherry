@@ -1,1 +1,2 @@
-add_subdirectory(Cherry)
+add_subdirectory(Parse)
+add_subdirectory(IRGen)

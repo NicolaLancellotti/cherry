@@ -6,8 +6,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "Cherry/CherryDialect.h"
-#include "Cherry/CherryOps.h"
+#include "cherry/IRGen/CherryDialect.h"
+#include "cherry/IRGen/CherryOps.h"
 
 using namespace mlir;
 using namespace mlir::cherry;
