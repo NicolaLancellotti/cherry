@@ -2,7 +2,7 @@
 
 ##Lexical Structure
 
-**Grammar of an identifier**  
+** Grammar of an identifier**  
 identifier → identifier-head identifier-characters<sub>opt</sub>  
 
 identifier-head → `Upper or lowercase letter A through Z`  
