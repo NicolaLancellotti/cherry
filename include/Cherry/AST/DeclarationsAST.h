@@ -2,6 +2,7 @@
 #define CHERRY_DECLARATIONSAST_H
 
 #include "cherry/AST/NodeAST.h"
+#include "cherry/AST/ExpressionsAST.h"
 #include <string>
 
 namespace cherry {
@@ -35,7 +36,7 @@ class FunctionDeclAST: public DeclarationAST {
 public:
   explicit FunctionDeclAST(llvm::SMLoc location,
                            std::unique_ptr<PrototypeAST> proto,
-                           std::unique_ptr<DeclarationAST> body)
+                           std::vector<ExpressionAST> body)
       : DeclarationAST{location}, _proto(std::move(proto)),
         _body(std::move(body)) {};
 
@@ -43,13 +44,13 @@ public:
     return _proto;
   }
 
-  auto body() const -> const std::unique_ptr<DeclarationAST>& {
+  auto body() const -> const std::vector<ExpressionAST>& {
     return _body;
   }
 
 private:
   std::unique_ptr<PrototypeAST> _proto;
-  std::unique_ptr<DeclarationAST> _body;
+  std::vector<ExpressionAST> _body;
 };
 
 }

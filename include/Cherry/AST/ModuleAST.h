@@ -1,5 +1,5 @@
-#ifndef CHERRY_AST_H
-#define CHERRY_AST_H
+#ifndef CHERRY_MODULEAST_H
+#define CHERRY_MODULEAST_H
 
 #include "cherry/AST/NodeAST.h"
 #include "cherry/AST/DeclarationsAST.h"
@@ -8,17 +8,17 @@ namespace cherry {
 
 class ModuleAST : public NodeAST {
 public:
-  explicit ModuleAST(Location location,
-                     std::unique_ptr<DeclarationAST> declarations)
+  explicit ModuleAST(llvm::SMLoc location,
+                     std::vector<DeclarationAST> declarations)
       : NodeAST{location},
         _declarations{std::move(declarations)} {};
 
-  auto declarations() const -> const std::unique_ptr<DeclarationAST>& {
+  auto declarations() const -> const std::vector<DeclarationAST>& {
     return _declarations;
   }
 
 private:
-  std::unique_ptr<DeclarationAST> _declarations;
+  std::vector<DeclarationAST> _declarations;
 };
 
 }

@@ -20,20 +20,23 @@ public:
 class FunctionCallExprAST : public ExpressionAST {
 public:
   explicit FunctionCallExprAST(llvm::SMLoc location,
-                               std::string name)
-      : ExpressionAST{location}, _name(std::move(name)) {};
+                               std::string name,
+                               std::vector<ExpressionAST> expressions)
+      : ExpressionAST{location},
+        _name(std::move(name)),
+        _expressions(std::move(expressions)) {};
 
   auto name() const -> const std::string& {
     return _name;
   }
 
-  auto expressions() const -> const std::unique_ptr<ExpressionAST>& {
+  auto expressions() const -> const std::vector<ExpressionAST>& {
     return _expressions;
   }
 
 private:
   std::string _name;
-  std::unique_ptr<ExpressionAST> _expressions;
+  std::vector<ExpressionAST> _expressions;
 };
 
 // _____________________________________________________________________________
@@ -41,15 +44,15 @@ private:
 
 class DecimalExprAST : public ExpressionAST {
 public:
-  explicit DecimalExprAST(llvm::SMLoc location, int64_t value)
+  explicit DecimalExprAST(llvm::SMLoc location, uint64_t value)
       : ExpressionAST{location}, _value(value) {};
 
-  auto value() const -> int64_t {
+  auto value() const -> uint64_t {
     return _value;
   }
 
 private:
-  int64_t _value;
+  uint64_t _value;
 };
 
 }
