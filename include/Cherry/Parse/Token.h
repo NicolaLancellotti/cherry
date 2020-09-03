@@ -2,6 +2,7 @@
 #define CHERRY_TOKEN_H
 
 #include "llvm/ADT/StringRef.h"
+#include <llvm/Support/SMLoc.h>
 
 namespace cherry {
 
@@ -24,6 +25,12 @@ public:
   auto is(Kind K) const -> bool { return kind == K; }
 
   auto getUInt64IntegerValue() const -> llvm::Optional<uint64_t>;
+
+  llvm::SMLoc getLoc() const;
+  llvm::SMLoc getEndLoc() const;
+  llvm::SMRange getLocRange() const;
+
+  auto getTokenName() -> const char*;
 
 private:
 

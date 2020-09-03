@@ -18,3 +18,9 @@ cmake --build . --target mlir-doc
 
 ## Grammar
 [Cherry grammar](/docs/Grammar.md)
+
+## Flags
+
+Meaning                        					 |  Flag
+|------------------------------------------------|-------------------|
+Dump tokens to the standard error 			     | -dump=tokens
