@@ -5,7 +5,7 @@ configure_lit_site_cfg(
         ${CMAKE_CURRENT_SOURCE_DIR}/lit.cfg.py
 )
 
-set(STANDALONE_TEST_DEPENDS
+set(CHERRY_TEST_DEPENDS
         FileCheck count not
         cherry-opt
         cherry-translate
@@ -13,8 +13,8 @@ set(STANDALONE_TEST_DEPENDS
 
 add_lit_testsuite(check-cherry "Running the cherry regression tests"
         ${CMAKE_CURRENT_BINARY_DIR}
-        DEPENDS ${STANDALONE_TEST_DEPENDS}
+        DEPENDS ${CHERRY_TEST_DEPENDS}
         )
 set_target_properties(check-cherry PROPERTIES FOLDER "Tests")
 
-add_lit_testsuites(STANDALONE ${CMAKE_CURRENT_SOURCE_DIR} DEPENDS ${STANDALONE_TEST_DEPENDS})
+add_lit_testsuites(cherry ${CMAKE_CURRENT_SOURCE_DIR} DEPENDS ${CHERRY_TEST_DEPENDS})

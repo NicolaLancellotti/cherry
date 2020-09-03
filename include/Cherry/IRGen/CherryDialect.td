@@ -6,8 +6,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef STANDALONE_DIALECT
-#define STANDALONE_DIALECT
+#ifndef CHERRY_DIALECT
+#define CHERRY_DIALECT
 
 include "mlir/IR/OpBase.td"
 
@@ -33,4 +33,4 @@ def Cherry_Dialect : Dialect {
 class Cherry_Op<string mnemonic, list<OpTrait> traits = []> :
         Op<Cherry_Dialect, mnemonic, traits>;
 
-#endif // STANDALONE_DIALECT
+#endif // CHERRY_DIALECT

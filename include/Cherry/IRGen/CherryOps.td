@@ -6,8 +6,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef STANDALONE_OPS
-#define STANDALONE_OPS
+#ifndef CHERRY_OPS
+#define CHERRY_OPS
 
 include "CherryDialect.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
@@ -39,4 +39,4 @@ def Cherry_FooOp : Cherry_Op<"foo", [NoSideEffect,
     }];
 }
 
-#endif // STANDALONE_OPS
+#endif // CHERRY_OPS

@@ -6,8 +6,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef STANDALONE_STANDALONEDIALECT_H
-#define STANDALONE_STANDALONEDIALECT_H
+#ifndef CHERRY_CHERRYDIALECT_H
+#define CHERRY_CHERRYDIALECT_H
 
 #include "mlir/IR/Dialect.h"
 
@@ -19,4 +19,4 @@ namespace cherry {
 } // namespace cherry
 } // namespace mlir
 
-#endif // STANDALONE_STANDALONEDIALECT_H
+#endif // CHERRY_CHERRYDIALECT_H

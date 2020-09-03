@@ -20,6 +20,6 @@ CherryDialect::CherryDialect(mlir::MLIRContext *context)
     : Dialect(getDialectNamespace(), context) {
   addOperations<
 #define GET_OP_LIST
-#include "Cherry/CherryOps.cpp.inc"
+#include "cherry/IRGen/CherryOps.cpp.inc"
       >();
 }

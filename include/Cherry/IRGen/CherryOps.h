@@ -6,8 +6,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef STANDALONE_STANDALONEOPS_H
-#define STANDALONE_STANDALONEOPS_H
+#ifndef CHERRY_CHERRYOPS_H
+#define CHERRY_CHERRYOPS_H
 
 #include "mlir/IR/Dialect.h"
 #include "mlir/IR/OpDefinition.h"
@@ -17,9 +17,9 @@ namespace mlir {
 namespace cherry {
 
 #define GET_OP_CLASSES
-#include "Cherry/CherryOps.h.inc"
+#include "cherry/IRGen/CherryOps.h.inc"
 
 } // namespace cherry
 } // namespace mlir
 
-#endif // STANDALONE_STANDALONEOPS_H
+#endif // CHERRY_CHERRYOPS_H
