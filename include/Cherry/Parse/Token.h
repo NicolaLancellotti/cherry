@@ -18,15 +18,12 @@ public:
 
   Token(Kind kind, llvm::StringRef spelling) : kind(kind), spelling(spelling) {}
 
-  llvm::StringRef getSpelling() const { return spelling; }
+  auto getSpelling() const -> llvm::StringRef { return spelling; }
 
-  Kind getKind() const { return kind; }
-  bool is(Kind K) const { return kind == K; }
+  auto getKind() const -> Kind { return kind; }
+  auto is(Kind K) const -> bool { return kind == K; }
 
-  static llvm::Optional<uint64_t> getUInt64IntegerValue(llvm::StringRef spelling);
-  llvm::Optional<uint64_t> getUInt64IntegerValue() const {
-    return getUInt64IntegerValue(getSpelling());
-  }
+  auto getUInt64IntegerValue() const -> llvm::Optional<uint64_t>;
 
 private:
 

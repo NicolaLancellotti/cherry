@@ -6,7 +6,7 @@
 using namespace cherry;
 
 TEST(LexerTest, firstTest) {
-  llvm::StringRef input =  R"(fun ; , { } ( ) & 01 a0 a0a)";
+  auto input =  R"(fun ; , { } ( ) & 01 a0 a0a)";
   auto inputBuffer = llvm::MemoryBuffer::getMemBuffer(input, "main.cherry");
 
   llvm::SourceMgr sourceManager;
@@ -22,7 +22,7 @@ TEST(LexerTest, firstTest) {
   ASSERT_TRUE(lexer->lexToken().is(Token::r_paren));
   ASSERT_TRUE(lexer->lexToken().is(Token::error));
   {
-    Token token = lexer->lexToken();
+    auto token = lexer->lexToken();
     ASSERT_TRUE(token.is(Token::decimal));
     ASSERT_EQ(token.getSpelling(), "01");
     auto uint64 = token.getUInt64IntegerValue();
@@ -30,12 +30,12 @@ TEST(LexerTest, firstTest) {
     ASSERT_EQ(uint64.getValue(), 1);
   }
   {
-    Token token = lexer->lexToken();
+    auto token = lexer->lexToken();
     ASSERT_TRUE(token.is(Token::identifier));
     ASSERT_EQ(token.getSpelling(), "a0");
   }
   {
-    Token token = lexer->lexToken();
+    auto token = lexer->lexToken();
     ASSERT_TRUE(token.is(Token::identifier));
     ASSERT_EQ(token.getSpelling(), "a0a");
   }

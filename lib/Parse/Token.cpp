@@ -2,7 +2,7 @@
 
 using namespace cherry;
 
-llvm::Optional<uint64_t> Token::getUInt64IntegerValue(llvm::StringRef spelling) {
+auto Token::getUInt64IntegerValue() const -> llvm::Optional<uint64_t> {
   uint64_t result = 0;
   if (spelling.getAsInteger(10, result))
     return llvm::None;

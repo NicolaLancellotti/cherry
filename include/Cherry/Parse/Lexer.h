@@ -11,24 +11,24 @@ public:
 
   explicit Lexer(const llvm::SourceMgr &sourceMgr);
 
-  Token lexToken();
+  auto lexToken() -> Token;
 
 private:
-  Token formToken(Token::Kind kind, const char *tokStart) {
+  auto formToken(Token::Kind kind, const char *tokStart) -> Token {
     return Token(kind, llvm::StringRef(tokStart, curPtr - tokStart));
   }
 
-  Token emitError(const char *loc, const llvm::Twine &message);
+  auto emitError(const char *loc, const llvm::Twine &message) -> Token;
 
-  Token lexKeyword(const char *tokStart);
-  Token lexDecimal(const char *tokStart);
+  auto lexKeyword(const char *tokStart) -> Token;
+  auto lexDecimal(const char *tokStart) -> Token;
 
   const llvm::SourceMgr &sourceMgr;
   llvm::StringRef curBuffer;
   const char *curPtr;
 
   Lexer(const Lexer &) = delete;
-  void operator=(const Lexer &) = delete;
+  auto operator=(const Lexer &) -> void = delete;
 };
 
 }
