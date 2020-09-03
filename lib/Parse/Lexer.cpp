@@ -9,22 +9,15 @@ Lexer::Lexer(const llvm::SourceMgr &sourceMgr): sourceMgr(sourceMgr) {
   curPtr = curBuffer.begin();
 }
 
-auto Lexer::emitError(const char *loc, const llvm::Twine &message) -> Token {
-  // TODO
-//  mlir::emitError(getEncodedSourceLocation(llvm::SMLoc::getFromPointer(loc)),
-//                  message);
-  return formToken(Token::error, loc);
-}
-
 auto Lexer::lexToken() -> Token {
   while (true) {
     const char *tokStart = curPtr;
     switch (*curPtr++) {
     default:
       if (isalpha(curPtr[-1]))
-        return lexKeyword(tokStart);
+        return lexIdentifierOrKeyword(tokStart);
 
-      return emitError(tokStart, "unexpected character");
+      return formToken(Token::error, tokStart);
     case ' ':
     case '\t':
     case '\n':
@@ -62,7 +55,7 @@ auto Lexer::lexToken() -> Token {
   }
 }
 
-auto Lexer::lexKeyword(const char *tokStart) -> Token {
+auto Lexer::lexIdentifierOrKeyword(const char *tokStart) -> Token {
   // Match [0-9a-zA-Z]*
   while (isalpha(*curPtr) || isdigit(*curPtr))
     ++curPtr;

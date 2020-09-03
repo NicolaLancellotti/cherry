@@ -18,9 +18,7 @@ private:
     return Token(kind, llvm::StringRef(tokStart, curPtr - tokStart));
   }
 
-  auto emitError(const char *loc, const llvm::Twine &message) -> Token;
-
-  auto lexKeyword(const char *tokStart) -> Token;
+  auto lexIdentifierOrKeyword(const char *tokStart) -> Token;
   auto lexDecimal(const char *tokStart) -> Token;
 
   const llvm::SourceMgr &sourceMgr;

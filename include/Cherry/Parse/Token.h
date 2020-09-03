@@ -17,12 +17,12 @@ public:
 #include "TokenKinds.def"
   };
 
-  Token(Kind kind, llvm::StringRef spelling) : kind(kind), spelling(spelling) {}
+  Token(Kind kind, llvm::StringRef spelling) : _kind(kind), _spelling(spelling) {}
 
-  auto getSpelling() const -> llvm::StringRef { return spelling; }
+  auto getSpelling() const -> llvm::StringRef { return _spelling; }
 
-  auto getKind() const -> Kind { return kind; }
-  auto is(Kind K) const -> bool { return kind == K; }
+  auto getKind() const -> Kind { return _kind; }
+  auto is(Kind K) const -> bool { return _kind == K; }
 
   auto getUInt64IntegerValue() const -> llvm::Optional<uint64_t>;
 
@@ -33,10 +33,8 @@ public:
   auto getTokenName() -> const char*;
 
 private:
-
-  Kind kind;
-
-  llvm::StringRef spelling;
+  Kind _kind;
+  llvm::StringRef _spelling;
 };
 
 }

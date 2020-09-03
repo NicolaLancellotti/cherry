@@ -7,20 +7,20 @@ using llvm::SMRange;
 
 auto Token::getUInt64IntegerValue() const -> llvm::Optional<uint64_t> {
   uint64_t result = 0;
-  if (spelling.getAsInteger(10, result))
+  if (_spelling.getAsInteger(10, result))
     return llvm::None;
   return result;
 }
-SMLoc Token::getLoc() const { return SMLoc::getFromPointer(spelling.data()); }
+SMLoc Token::getLoc() const { return SMLoc::getFromPointer(_spelling.data()); }
 
 SMLoc Token::getEndLoc() const {
-  return SMLoc::getFromPointer(spelling.data() + spelling.size());
+  return SMLoc::getFromPointer(_spelling.data() + _spelling.size());
 }
 
 SMRange Token::getLocRange() const { return SMRange(getLoc(), getEndLoc()); }
 
 auto Token::getTokenName() -> const char* {
-  switch (kind) {
+  switch (_kind) {
 #define TOK_MARKER(NAME) case NAME:  return #NAME;
 #define TOK_IDENTIFIER(NAME) case NAME:  return #NAME;
 #define TOK_LITERAL(NAME) case NAME:  return #NAME;
