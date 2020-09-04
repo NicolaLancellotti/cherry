@@ -24,3 +24,4 @@ cmake --build . --target mlir-doc
 Meaning                        					 |  Flag
 |------------------------------------------------|-------------------|
 Dump tokens to the standard error 			     | -dump=tokens
+Dump the AST to the standard error               | -dump=ast

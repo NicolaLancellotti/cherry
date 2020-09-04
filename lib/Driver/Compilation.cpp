@@ -1,5 +1,6 @@
 #include "cherry/Driver/Compilation.h"
 #include "cherry/Parse/Lexer.h"
+#include "cherry/Parse/Parser.h"
 #include "llvm/Support/ErrorOr.h"
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/raw_ostream.h"
@@ -31,5 +32,18 @@ auto Compilation::dumpTokens() -> int {
     llvm::errs() << token.getTokenName() << " '" << token.getSpelling()
                  << "' Loc=<"<< line << ":" << col << ">\n";
   }
+  return EXIT_SUCCESS;
+}
+
+
+auto Compilation::dumpAST() -> int {
+  auto lexer = std::make_unique<Lexer>(_sourceManager);
+  auto parser = Parser{std::move(lexer), _sourceManager};
+
+  std::unique_ptr<Module> module;
+  if (parser.parseModule(module))
+    return EXIT_FAILURE;
+
+  cherry::dumpAST(_sourceManager, *module);
   return EXIT_SUCCESS;
 }

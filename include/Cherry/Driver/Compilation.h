@@ -11,6 +11,7 @@ public:
   static auto make(std::string filename) -> std::unique_ptr<Compilation>;
 
   auto dumpTokens() -> int;
+  auto dumpAST() -> int;
 
   auto sourceManager() -> llvm::SourceMgr& { return _sourceManager; };
 

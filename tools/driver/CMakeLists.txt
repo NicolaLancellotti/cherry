@@ -4,4 +4,5 @@ target_link_libraries(cherry-driver
         LLVMSupport
         cherryDriver
         cherryParse
+        cherryAST
 )
