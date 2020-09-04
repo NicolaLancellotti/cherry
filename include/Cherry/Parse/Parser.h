@@ -1,13 +1,19 @@
 #ifndef CHERRY_PARSER_H
 #define CHERRY_PARSER_H
 
-#include "cherry/Parse/Lexer.h"
 #include "cherry/AST/AST.h"
 #include "cherry/Parse//DiagnosticsParse.h"
+#include "cherry/Parse/Lexer.h"
+#include "cherry/Parse/ParseResult.h"
+#include "mlir/IR/Diagnostics.h"
+#include "mlir/IR/Location.h"
 #include "llvm/Support/raw_ostream.h"
 #include <memory>
 
 namespace cherry {
+
+using mlir::failure;
+using mlir::success;
 
 class Parser {
 public:
@@ -17,17 +23,18 @@ public:
         _lexer{std::move(lexer)},
         _sourceManager{sourceManager} {}
 
-  auto parseModule() -> std::unique_ptr<ModuleAST> {
-    auto loc = tokenLocation();
-    std::vector<DeclarationAST> declarations;
+  auto parseModule(std::unique_ptr<Module>& module) -> ParseResult  {
+    auto loc = tokenLoc();
+    VectorUniquePtr<Decl> declarations;
     do {
-      auto decl = parseDeclaration();
-      if (!decl)
-        return nullptr;
-      declarations.push_back(std::move(*decl));
+      std::unique_ptr<Decl> decl;
+      if (parseDeclaration(decl))
+        return failure();
+      declarations.push_back(std::move(decl));
     } while (!tokenIs(Token::eof));
 
-    return std::make_unique<ModuleAST>(loc, std::move(declarations));
+    module = std::make_unique<Module>(loc, std::move(declarations));
+    return success();
   }
 
 private:
@@ -38,162 +45,179 @@ private:
   // ___________________________________________________________________________
   // Lex
 
-  auto tokenIs(Token::Kind kind) -> bool { return _token.is(kind); }
-  auto tokenKind() -> Token::Kind { return _token.getKind(); }
-  auto tokenLocation() -> llvm::SMLoc { return _token.getLoc(); }
-  auto spelling() -> llvm::StringRef { return _token.getSpelling(); }
+  auto token() -> Token& { return _token; }
+  auto tokenIs(Token::Kind kind) -> bool { return token().is(kind); }
+  auto tokenKind() -> Token::Kind { return token().getKind(); }
+  auto tokenLoc() -> llvm::SMLoc { return token().getLoc(); }
+  auto spelling() -> llvm::StringRef { return token().getSpelling(); }
   auto consume(Token::Kind kind) -> void {
-    assert(_token.is(kind) && "consume Token mismatch expectation");
-    _token = _lexer->lexToken();
+    assert(token().is(kind) && "consumed an unexpected token");
+    token() = _lexer->lexToken();
+  }
+
+  auto consumeIf(Token::Kind kind) -> bool {
+    if (!token().is(kind))
+      return false;
+    consume(kind);
+    return true;
   }
 
   // ___________________________________________________________________________
-  // Errors
+  // Error
 
-  template <typename R>
-  std::unique_ptr<R> parseError(llvm::SMLoc location,
-                                const llvm::Twine &msg) {
-    _sourceManager.PrintMessage(location,
+  ParseResult emitError(const llvm::Twine &msg) {
+    _sourceManager.PrintMessage(tokenLoc(),
                                 llvm::SourceMgr::DiagKind::DK_Error,
                                 msg);
-    return nullptr;
+    return failure();
+  }
+
+  // ___________________________________________________________________________
+  // Parse Token
+
+  auto parseToken(Token::Kind expected,
+                  const llvm::Twine &message) -> ParseResult {
+    if (consumeIf(expected))
+      return success();
+    return emitError(message);
   }
 
   // ___________________________________________________________________________
   // Parse Declarations
 
-  auto parseDeclaration() -> std::unique_ptr<DeclarationAST> {
+  auto parseDeclaration(std::unique_ptr<Decl>& decl) -> ParseResult {
     switch (tokenKind()) {
-    case Token::kw_fun:
-      return parseFunctionDecl();
+    case Token::kw_fun: {
+      std::unique_ptr<Decl> func;
+      if (parseFunctionDecl_c(func))
+        return failure();
+      decl = std::move(func);
+      return success();
+    }
     default:
-      return parseError<DeclarationAST>(tokenLocation(), diag::expected_fun);
+      return emitError(diag::expected_fun);
     }
   }
 
-  auto parseFunctionDecl() -> std::unique_ptr<FunctionDeclAST> {
-    auto loc = tokenLocation();
-    auto proto = parsePrototype();
-    if (!proto)
-      return nullptr;
+  auto parseFunctionDecl_c(std::unique_ptr<Decl>& decl) -> ParseResult {
+    auto loc = tokenLoc();
+    std::unique_ptr<Prototype> proto;
+    VectorUniquePtr<Expr> body;
 
-    auto body = parseFunctionBody();
-    if (!body)
-      return nullptr;
+    if (parsePrototype_c(proto) || parseFunctionBody(body))
+      return failure();
 
-    return std::make_unique<FunctionDeclAST>(loc, std::move(proto), std::move(*body));
+    decl = std::make_unique<FunctionDecl>(loc, std::move(proto), std::move(body));
+
+    return success();
   }
 
-  auto parsePrototype() -> std::unique_ptr<PrototypeAST> {
-    auto location = tokenLocation();
+  auto parsePrototype_c(std::unique_ptr<Prototype>& proto) -> ParseResult {
+    auto location = tokenLoc();
     consume(Token::kw_fun);
 
-    if (!tokenIs(Token::identifier))
-      return parseError<PrototypeAST>(tokenLocation(),
-                                      diag::expected_id_in_func_decl);
     std::string name{spelling()};
-    consume(Token::identifier);
+    if (parseToken(Token::identifier,
+                   diag::expected_id_in_func_decl) ||
+        parseToken(Token::l_paren,
+                   diag::expected_l_paren_in_arg_list))
+      return failure();
 
-    if (!tokenIs(Token::l_paren))
-      return parseError<PrototypeAST>(tokenLocation(),
-                                      diag::expected_l_paren_in_arg_list);
-    consume(Token::l_paren);
+    if (parseToken(Token::r_paren,
+                   diag::expected_r_paren_in_arg_list))
+      return failure();
 
-    if (!tokenIs(Token::r_paren))
-      return parseError<PrototypeAST>(tokenLocation(),
-                                      diag::expected_r_paren_in_arg_list);
-    consume(Token::r_paren);
-
-    return std::make_unique<PrototypeAST>(location, std::move(name));
+    proto = std::make_unique<Prototype>(location, std::move(name));
+    return success();
   }
 
   // ___________________________________________________________________________
   // Parse Expressions
 
-  auto parseFunctionBody() -> std::unique_ptr<std::vector<ExpressionAST>> {
-    if (!tokenIs(Token::l_brace))
-      return parseError<std::vector<ExpressionAST>>(tokenLocation(),
-                                                    diag::expected_l_brace_func_body);
-    consume(Token::l_brace);
+  auto parseFunctionBody(VectorUniquePtr<Expr>& expressions) -> ParseResult {
+    if (parseToken(Token::l_brace, diag::expected_l_brace_func_body))
+      return failure();
 
-    auto expressions = std::vector<ExpressionAST>();
-    while (!tokenIs(Token::r_brace)) {
-      auto expr = parseExpression();
-      if (!expr)
-        return nullptr;
-
-      if (!tokenIs(Token::semi))
-        return parseError<std::vector<ExpressionAST>>(tokenLocation(),
-                                                      diag::expected_semi);
-      consume(Token::semi);
+    while (!tokenIs(Token::r_brace) && !tokenIs(Token::eof)) {
+      std::unique_ptr<Expr> expr;
+      if (parseExpression(expr) ||
+          parseToken(Token::semi, diag::expected_semi)) {
+        return failure();
+      }
+      expressions.push_back(std::move(expr));
     }
 
-    if (!tokenIs(Token::r_brace))
-      return parseError<std::vector<ExpressionAST>>(tokenLocation(),
-                                                    diag::expected_r_brace_func_body);
-    consume(Token::r_brace);
+    if (parseToken(Token::r_brace, diag::expected_r_brace_func_body))
+      return failure();
 
-    return std::make_unique<std::vector<ExpressionAST>>(std::move(expressions));
+    return success();
   }
 
-  auto parseExpression() -> std::unique_ptr<ExpressionAST> {
+  auto parseExpression(std::unique_ptr<Expr>& expr) -> ParseResult {
     switch (tokenKind()) {
-    case Token::decimal:
-      return parseDecimal();
-    case Token::identifier:
-      return parseFunctionCall();
+    case Token::decimal: {
+      std::unique_ptr<DecimalExpr> decimal;
+      if (parseDecimal_c(decimal))
+        return failure();
+      expr = std::move(decimal);
+      return success();
+    }
+    case Token::identifier: {
+      std::unique_ptr<CallExpr> fun;
+      if (parseFunctionCall_c(fun))
+        return failure();
+      expr = std::move(fun);
+      return success();
+    }
     default:
-      return parseError<ExpressionAST>(tokenLocation(),diag::expected_expr);
+      return emitError(diag::expected_expr);
     }
   }
 
-  auto parseDecimal() -> std::unique_ptr<DecimalExprAST> {
-    auto loc = tokenLocation();
-    if (auto value = _token.getUInt64IntegerValue()) {
+  auto parseDecimal_c(std::unique_ptr<DecimalExpr>& expr) -> ParseResult {
+    auto loc = tokenLoc();
+    if (auto value = token().getUInt64IntegerValue()) {
       consume(Token::decimal);
-      return std::make_unique<DecimalExprAST>(loc, *value);
+      expr = std::make_unique<DecimalExpr>(loc, std::move(*value));
+      return success();
     }
-    return parseError<DecimalExprAST>(tokenLocation(),diag::integer_literal_overflows);
+    return emitError(diag::integer_literal_overflows);
   }
 
-  auto parseFunctionCall() -> std::unique_ptr<FunctionCallExprAST> {
-    auto location = tokenLocation();
-
+  auto parseFunctionCall_c(std::unique_ptr<CallExpr>& expr) -> ParseResult {
+    auto location = tokenLoc();
     std::string name{spelling()};
     consume(Token::identifier);
 
-    if (!tokenIs(Token::l_paren))
-      return parseError<FunctionCallExprAST>(tokenLocation(),
-                                             diag::expected_l_paren_func_call);
-    consume(Token::l_paren);
+    if (parseToken(Token::l_paren, diag::expected_l_paren_func_call))
+      return failure();
 
-
-    auto expressions = std::vector<ExpressionAST>();
+    auto expressions = VectorUniquePtr<Expr>();
     while (!tokenIs(Token::r_paren)) {
       switch (tokenKind()) {
-      default:
-        return parseError<FunctionCallExprAST>(tokenLocation(),
-                                               diag::expected_decimal);
-      case Token::decimal:
-        auto expr = parseDecimal();
-        if (!expr)
-          return nullptr;
-        expressions.push_back(std::move(*expr));
+      case Token::decimal: {
+        std::unique_ptr<DecimalExpr> decimal;
+        if (parseDecimal_c(decimal))
+          return failure();
+        expressions.push_back(std::move(decimal));
         break;
+      }
+      default:
+        return emitError(diag::expected_decimal);
       }
 
       if (tokenIs(Token::r_paren))
         break;
 
-      if (!tokenIs(Token::comma))
-        return parseError<FunctionCallExprAST>(tokenLocation(),
-                                               diag::expected_comma_or_l_paren_arg_list);
-      consume(Token::comma);
-
+      if (parseToken(Token::comma,
+                     diag::expected_comma_or_l_paren_arg_list))
+        return failure();
     }
 
     consume(Token::r_paren);
-    return std::make_unique<FunctionCallExprAST>(location, std::move(name), std::move(expressions));
+    expr = std::make_unique<CallExpr>(location, std::move(name),
+                                              std::move(expressions));
+    return success();
   }
 
 };
