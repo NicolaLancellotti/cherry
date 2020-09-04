@@ -6,4 +6,9 @@
 #include "cherry/AST/Expressions.h"
 #include "llvm/Support/SourceMgr.h"
 
+namespace cherry {
+auto dumpAST(const llvm::SourceMgr &sourceManager,
+             const Module &module) -> void;
+}
+
 #endif

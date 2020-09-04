@@ -6,6 +6,7 @@ add_library(cherryAST STATIC
         ${LIB_HEADERS}/Module.h
         ${LIB_HEADERS}/Declarations.h
         ${LIB_HEADERS}/Expressions.h
+        ASTDumper.cpp
 )
 
 target_include_directories(cherryAST PUBLIC
