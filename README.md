@@ -1,4 +1,4 @@
-# Cherry Programming Language
+# 🍒 Cherry Programming Language 🍒
 
 ## Building Cherry
 
