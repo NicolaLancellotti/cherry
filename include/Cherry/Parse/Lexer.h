@@ -3,6 +3,7 @@
 
 #include "cherry/Parse/Token.h"
 #include "llvm/Support/SourceMgr.h"
+#include "llvm/Support/raw_ostream.h"
 
 namespace cherry {
 
@@ -12,6 +13,18 @@ public:
   explicit Lexer(const llvm::SourceMgr &sourceMgr);
 
   auto lexToken() -> Token;
+
+  static auto tokenize(const llvm::SourceMgr &sourceManager, Lexer& lexer) -> void {
+    while (true) {
+      auto token = lexer.lexToken();
+      if (token.is(Token::eof)) {
+        break;
+      }
+      auto [line, col] = sourceManager.getLineAndColumn(token.getLoc());
+      llvm::errs() << token.getTokenName() << " '" << token.getSpelling()
+                   << "' loc="<< line << ":" << col << "\n";
+    }
+  }
 
 private:
   auto formToken(Token::Kind kind, const char *tokStart) -> Token {

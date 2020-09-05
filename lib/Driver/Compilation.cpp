@@ -22,19 +22,9 @@ auto Compilation::make(std::string filename) -> std::unique_ptr<Compilation> {
 
 auto Compilation::dumpTokens() -> int {
   auto lexer = std::make_unique<Lexer>(_sourceManager);
-
-  while (true) {
-    auto token = lexer->lexToken();
-    if (token.is(Token::eof)) {
-      break;
-    }
-    auto [line, col] = _sourceManager.getLineAndColumn(token.getLoc());
-    llvm::errs() << token.getTokenName() << " '" << token.getSpelling()
-                 << "' Loc=<"<< line << ":" << col << ">\n";
-  }
+  Lexer::tokenize(_sourceManager, *lexer);
   return EXIT_SUCCESS;
 }
-
 
 auto Compilation::dumpAST() -> int {
   auto lexer = std::make_unique<Lexer>(_sourceManager);
