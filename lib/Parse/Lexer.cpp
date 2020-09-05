@@ -11,6 +11,7 @@ Lexer::Lexer(const llvm::SourceMgr &sourceMgr): sourceMgr(sourceMgr) {
 
 auto Lexer::lexToken() -> Token {
   while (true) {
+    Restart:
     const char *tokStart = curPtr;
     switch (*curPtr++) {
     default:
@@ -51,6 +52,14 @@ auto Lexer::lexToken() -> Token {
     case '8':
     case '9':
       return lexDecimal(tokStart);
+    case '#': {
+      while (true) {
+        if (*curPtr == '\n' || *curPtr == 0) {
+          goto Restart;
+        }
+        curPtr++;
+      }
+    }
     }
   }
 }
