@@ -9,6 +9,7 @@ set(CHERRY_TEST_DEPENDS
         FileCheck count not
         cherry-opt
         cherry-translate
+        cherry-driver
         )
 
 add_lit_testsuite(check-cherry "Running the cherry regression tests"
