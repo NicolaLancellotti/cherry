@@ -6,5 +6,5 @@ fun main () {
 	print(2, 3);
 	# CHECK: cherry.constant
   # CHECK: cherry.constant
-  # CHECK: cherry.generic_call
+  # CHECK: cherry.call
 }

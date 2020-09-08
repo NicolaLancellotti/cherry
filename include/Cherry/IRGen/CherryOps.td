@@ -17,7 +17,7 @@ def ReturnOp : Cherry_Op<"return", [NoSideEffect, Terminator]> {
 
 }
 
-def CallOp : Cherry_Op<"generic_call"> {
+def CallOp : Cherry_Op<"call"> {
 
   let arguments = (ins FlatSymbolRefAttr:$callee,  Variadic<I32>:$inputs);
   let results = (outs NoneType);
