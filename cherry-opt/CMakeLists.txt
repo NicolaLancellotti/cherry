@@ -4,7 +4,7 @@ set(LIBS
         ${dialect_libs}
         ${conversion_libs}
         MLIROptLib
-        MLIRCherry
+        cherryIRGen
         )
 add_llvm_executable(cherry-opt cherry-opt.cpp)
 
