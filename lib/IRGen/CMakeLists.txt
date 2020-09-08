@@ -1,4 +1,9 @@
-add_mlir_dialect_library(MLIRCherry
+set(LIB_HEADERS ${CHERRY_HEADERS}/cherry/IRGen)
+
+add_mlir_dialect_library(cherryIRGen
+		${LIB_HEADERS}/MLIRGen.h
+		MLIRGen.cpp
+
         CherryDialect.cpp
         CherryOps.cpp
 
