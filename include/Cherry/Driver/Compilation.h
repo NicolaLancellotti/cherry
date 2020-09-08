@@ -11,7 +11,8 @@ class CherryResult;
 
 class Compilation {
 public:
-  static auto make(std::string filename) -> std::unique_ptr<Compilation>;
+  static auto make(std::string filename,
+                   bool enableOpt) -> std::unique_ptr<Compilation>;
 
   auto dumpTokens() -> int;
   auto dumpAST() -> int;
@@ -21,6 +22,7 @@ public:
 
 private:
   llvm::SourceMgr _sourceManager;
+  bool _enableOpt;
 
   auto parse(std::unique_ptr<Module>& module) -> CherryResult;
 };

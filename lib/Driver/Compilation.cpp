@@ -1,18 +1,21 @@
 #include "cherry/Driver/Compilation.h"
+#include "cherry/IRGen/CherryDialect.h"
+#include "cherry/IRGen/MLIRGen.h"
 #include "cherry/Parse/Lexer.h"
 #include "cherry/Parse/Parser.h"
-#include "llvm/Support/ErrorOr.h"
+#include "mlir/IR/Dialect.h"
+#include "mlir/IR/Function.h"
+#include "mlir/IR/Module.h"
+#include "mlir/Pass/Pass.h"
+#include "mlir/Pass/PassManager.h"
+#include "mlir/Transforms/Passes.h"
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/raw_ostream.h"
 
-#include "mlir/IR/Dialect.h"
-#include "cherry/IRGen/CherryDialect.h"
-#include "cherry/IRGen/MLIRGen.h"
-#include "mlir/IR/Module.h"
-
 using namespace cherry;
 
-auto Compilation::make(std::string filename) -> std::unique_ptr<Compilation> {
+auto Compilation::make(std::string filename,
+                       bool enableOpt) -> std::unique_ptr<Compilation> {
   auto fileOrErr = llvm::MemoryBuffer::getFileOrSTDIN(filename);
 
   if (auto ec = fileOrErr.getError()) {
@@ -22,6 +25,7 @@ auto Compilation::make(std::string filename) -> std::unique_ptr<Compilation> {
 
   auto compilation = std::make_unique<Compilation>();
   compilation->sourceManager().AddNewSourceBuffer(std::move(fileOrErr.get()), llvm::SMLoc());
+  compilation->_enableOpt = enableOpt;
   return compilation;
 }
 
@@ -56,6 +60,15 @@ auto Compilation::dumpMLIR() -> int {
 
   mlir::OwningModuleRef module = mlirGen(_sourceManager, context, *moduleAST);
   if (!module)
+    return EXIT_FAILURE;
+
+  mlir::PassManager pm(&context);
+  if (_enableOpt) {
+    mlir::OpPassManager &optPM = pm.nest<mlir::FuncOp>();
+    optPM.addPass(mlir::createCanonicalizerPass());
+  }
+
+  if (mlir::failed(pm.run(*module)))
     return EXIT_FAILURE;
 
   module->dump();

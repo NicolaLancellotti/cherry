@@ -12,6 +12,8 @@ namespace {
 enum Action { None, DumpTokens, DumpAST, DumpMLIR };
 }
 
+static cl::opt<bool> enableOpt("opt", cl::desc("Enable optimizations"));
+
 static cl::opt<enum Action>
     emitAction("dump",
                cl::desc("Select the kind of output desired"),
@@ -28,7 +30,8 @@ static cl::opt<enum Action>
 auto main(int argc, const char **argv) -> int {
   cl::ParseCommandLineOptions(argc, argv, "Cherry compiler\n");
 
-  std::unique_ptr<Compilation> compilation = Compilation::make(inputFilename);
+  std::unique_ptr<Compilation> compilation = Compilation::make(inputFilename,
+                                                               enableOpt);
   if (compilation == nullptr ) {
     return EXIT_FAILURE;
   }
