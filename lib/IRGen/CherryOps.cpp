@@ -1,18 +1,31 @@
-//===- CherryOps.cpp - Cherry dialect ops ---------------*- C++ -*-===//
-//
-// This file is licensed under the Apache License v2.0 with LLVM Exceptions.
-// See https://llvm.org/LICENSE.txt for license information.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-//
-//===----------------------------------------------------------------------===//
-
 #include "cherry/IRGen/CherryOps.h"
 #include "cherry/IRGen/CherryDialect.h"
 #include "mlir/IR/OpImplementation.h"
+#include "mlir/IR/Builders.h"
+#include "mlir/IR/StandardTypes.h"
 
 namespace mlir {
 namespace cherry {
 #define GET_OP_CLASSES
 #include "cherry/IRGen/CherryOps.cpp.inc"
+
+auto ConstantOp::build(mlir::OpBuilder &builder,
+                       mlir::OperationState &state,
+                       uint64_t value) -> void {
+  auto dataType = builder.getI32Type();
+  auto dataAttribute = IntegerAttr::get(dataType, value);
+  ConstantOp::build(builder, state, dataType, dataAttribute);
+}
+
+auto CallOp::build(mlir::OpBuilder &builder,
+                   mlir::OperationState &state,
+                   StringRef callee,
+                   ArrayRef<mlir::Value> arguments) -> void {
+  state.addTypes(builder.getNoneType());
+  state.addOperands(arguments);
+  state.addAttribute("callee", builder.getSymbolRefAttr(callee));
+}
+
 } // namespace cherry
 } // namespace mlir
+
