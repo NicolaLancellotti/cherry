@@ -10,7 +10,6 @@ add_library(cherryParse STATIC
         Parser.cpp
         ${LIB_HEADERS}/DiagnosticsParse.h
         ${LIB_HEADERS}/DiagnosticsParse.def
-        ${LIB_HEADERS}/ParseResult.h
 )
 
 target_include_directories(cherryParse PUBLIC

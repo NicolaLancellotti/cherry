@@ -31,7 +31,7 @@ auto Compilation::dumpTokens() -> int {
   return EXIT_SUCCESS;
 }
 
-auto Compilation::parse(std::unique_ptr<Module>& module) -> ParseResult {
+auto Compilation::parse(std::unique_ptr<Module>& module) -> CherryResult {
   auto lexer = std::make_unique<Lexer>(_sourceManager);
   auto parser = Parser{std::move(lexer), _sourceManager};
   return parser.parseModule(module);

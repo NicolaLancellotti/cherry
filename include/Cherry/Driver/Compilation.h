@@ -7,7 +7,7 @@
 namespace cherry {
 
 class Module;
-class ParseResult;
+class CherryResult;
 
 class Compilation {
 public:
@@ -22,7 +22,7 @@ public:
 private:
   llvm::SourceMgr _sourceManager;
 
-  auto parse(std::unique_ptr<Module>& module) -> ParseResult;
+  auto parse(std::unique_ptr<Module>& module) -> CherryResult;
 };
 
 }

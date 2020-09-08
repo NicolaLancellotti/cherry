@@ -4,7 +4,7 @@
 #include "cherry/AST/AST.h"
 #include "cherry/Parse//DiagnosticsParse.h"
 #include "cherry/Parse/Lexer.h"
-#include "cherry/Parse/ParseResult.h"
+#include "cherry/Basic/CherryResult.h"
 #include "mlir/IR/Diagnostics.h"
 #include "mlir/IR/Location.h"
 #include "llvm/Support/raw_ostream.h"
@@ -23,7 +23,7 @@ public:
         _lexer{std::move(lexer)},
         _sourceManager{sourceManager} {}
 
-  auto parseModule(std::unique_ptr<Module>& module) -> ParseResult  {
+  auto parseModule(std::unique_ptr<Module>& module) -> CherryResult {
     auto loc = tokenLoc();
     VectorUniquePtr<Decl> declarations;
     do {
@@ -65,7 +65,7 @@ private:
   // ___________________________________________________________________________
   // Error
 
-  ParseResult emitError(const llvm::Twine &msg) {
+  CherryResult emitError(const llvm::Twine &msg) {
     _sourceManager.PrintMessage(tokenLoc(),
                                 llvm::SourceMgr::DiagKind::DK_Error,
                                 msg);
@@ -76,7 +76,7 @@ private:
   // Parse Token
 
   auto parseToken(Token::Kind expected,
-                  const llvm::Twine &message) -> ParseResult {
+                  const llvm::Twine &message) -> CherryResult {
     if (consumeIf(expected))
       return success();
     return emitError(message);
@@ -85,7 +85,7 @@ private:
   // ___________________________________________________________________________
   // Parse Declarations
 
-  auto parseDeclaration(std::unique_ptr<Decl>& decl) -> ParseResult {
+  auto parseDeclaration(std::unique_ptr<Decl>& decl) -> CherryResult {
     switch (tokenKind()) {
     case Token::kw_fun: {
       std::unique_ptr<Decl> func;
@@ -99,7 +99,7 @@ private:
     }
   }
 
-  auto parseFunctionDecl_c(std::unique_ptr<Decl>& decl) -> ParseResult {
+  auto parseFunctionDecl_c(std::unique_ptr<Decl>& decl) -> CherryResult {
     auto loc = tokenLoc();
     std::unique_ptr<Prototype> proto;
     VectorUniquePtr<Expr> body;
@@ -112,7 +112,7 @@ private:
     return success();
   }
 
-  auto parsePrototype_c(std::unique_ptr<Prototype>& proto) -> ParseResult {
+  auto parsePrototype_c(std::unique_ptr<Prototype>& proto) -> CherryResult {
     auto location = tokenLoc();
     consume(Token::kw_fun);
 
@@ -134,7 +134,7 @@ private:
   // ___________________________________________________________________________
   // Parse Expressions
 
-  auto parseFunctionBody(VectorUniquePtr<Expr>& expressions) -> ParseResult {
+  auto parseFunctionBody(VectorUniquePtr<Expr>& expressions) -> CherryResult {
     if (parseToken(Token::l_brace, diag::expected_l_brace_func_body))
       return failure();
 
@@ -153,7 +153,7 @@ private:
     return success();
   }
 
-  auto parseExpression(std::unique_ptr<Expr>& expr) -> ParseResult {
+  auto parseExpression(std::unique_ptr<Expr>& expr) -> CherryResult {
     switch (tokenKind()) {
     case Token::decimal: {
       std::unique_ptr<DecimalExpr> decimal;
@@ -174,7 +174,7 @@ private:
     }
   }
 
-  auto parseDecimal_c(std::unique_ptr<DecimalExpr>& expr) -> ParseResult {
+  auto parseDecimal_c(std::unique_ptr<DecimalExpr>& expr) -> CherryResult {
     auto loc = tokenLoc();
     if (auto value = token().getUInt64IntegerValue()) {
       consume(Token::decimal);
@@ -184,7 +184,7 @@ private:
     return emitError(diag::integer_literal_overflows);
   }
 
-  auto parseFunctionCall_c(std::unique_ptr<CallExpr>& expr) -> ParseResult {
+  auto parseFunctionCall_c(std::unique_ptr<CallExpr>& expr) -> CherryResult {
     auto location = tokenLoc();
     std::string name{spelling()};
     consume(Token::identifier);

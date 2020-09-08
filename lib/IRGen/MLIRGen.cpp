@@ -1,7 +1,7 @@
 #include "cherry/IRGen/MLIRGen.h"
 #include "cherry/AST/AST.h"
 #include "cherry/IRGen/CherryOps.h"
-#include "cherry/Parse/ParseResult.h"
+#include "cherry/Basic/CherryResult.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/Function.h"
 #include "mlir/IR/Module.h"
@@ -21,7 +21,7 @@ public:
   MLIRGenImpl(const llvm::SourceMgr &sourceManager, mlir::MLIRContext &context)
       : _sourceManager{sourceManager}, _builder(&context) {}
 
-  auto gen(const Module &node) -> ParseResult {
+  auto gen(const Module &node) -> CherryResult {
     module = mlir::ModuleOp::create(_builder.getUnknownLoc());
 
     for (auto &decl : node) {
@@ -50,7 +50,7 @@ private:
     return _builder.getFileLineColLoc(identifier, line, col);
   }
 
-  auto gen(const Decl *node, mlir::Operation *&op) -> ParseResult {
+  auto gen(const Decl *node, mlir::Operation *&op) -> CherryResult {
     switch (node->getKind()) {
     case Decl::Decl_Function: {
       mlir::FuncOp func;
@@ -65,7 +65,7 @@ private:
   }
 
   auto gen(const FunctionDecl *node,
-           mlir::FuncOp& func) -> ParseResult {
+           mlir::FuncOp& func) -> CherryResult {
     if (gen(node->proto().get(), func))
       return failure();
 
@@ -83,7 +83,7 @@ private:
     return success();
   }
 
-  auto gen(const Prototype *node, mlir::FuncOp& func) -> ParseResult {
+  auto gen(const Prototype *node, mlir::FuncOp& func) -> CherryResult {
     mlir::Type argType = mlir::NoneType();
     llvm::SmallVector<mlir::Type, 4> arg_types(0, argType);
     auto funcType = _builder.getFunctionType(arg_types, llvm::None);
@@ -91,7 +91,7 @@ private:
     return success();
   }
 
-  auto gen(const Expr *node, mlir::Value& value) -> ParseResult {
+  auto gen(const Expr *node, mlir::Value& value) -> CherryResult {
     switch (node->getKind()) {
     case Expr::Expr_Decimal:
       return gen(cast<DecimalExpr>(node), value);
@@ -102,7 +102,7 @@ private:
     }
   }
 
-  auto gen(const CallExpr *node, mlir::Value& value) -> ParseResult {
+  auto gen(const CallExpr *node, mlir::Value& value) -> CherryResult {
     llvm::SmallVector<mlir::Value, 4> operands;
     for (auto &expr : *node) {
       mlir::Value value;
@@ -114,7 +114,7 @@ private:
     return success();
   }
 
-  auto gen(const DecimalExpr *node, mlir::Value& value) -> ParseResult {
+  auto gen(const DecimalExpr *node, mlir::Value& value) -> CherryResult {
     value = _builder.create<ConstantOp>(loc(node), node->value());
     return success();
   }
