@@ -5,6 +5,11 @@
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/raw_ostream.h"
 
+#include "mlir/IR/Dialect.h"
+#include "cherry/IRGen/CherryDialect.h"
+#include "cherry/IRGen/MLIRGen.h"
+#include "mlir/IR/Module.h"
+
 using namespace cherry;
 
 auto Compilation::make(std::string filename) -> std::unique_ptr<Compilation> {
@@ -26,14 +31,33 @@ auto Compilation::dumpTokens() -> int {
   return EXIT_SUCCESS;
 }
 
-auto Compilation::dumpAST() -> int {
+auto Compilation::parse(std::unique_ptr<Module>& module) -> ParseResult {
   auto lexer = std::make_unique<Lexer>(_sourceManager);
   auto parser = Parser{std::move(lexer), _sourceManager};
+  return parser.parseModule(module);
+}
 
+auto Compilation::dumpAST() -> int {
   std::unique_ptr<Module> module;
-  if (parser.parseModule(module))
+  if (parse(module))
     return EXIT_FAILURE;
 
   cherry::dumpAST(_sourceManager, *module);
+  return EXIT_SUCCESS;
+}
+
+auto Compilation::dumpMLIR() -> int {
+  mlir::registerDialect<mlir::cherry::CherryDialect>();
+  mlir::MLIRContext context;
+
+  std::unique_ptr<Module> moduleAST;
+  if (parse(moduleAST))
+    return EXIT_FAILURE;
+
+  mlir::OwningModuleRef module = mlirGen(_sourceManager, context, *moduleAST);
+  if (!module)
+    return EXIT_FAILURE;
+
+  module->dump();
   return EXIT_SUCCESS;
 }

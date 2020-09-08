@@ -9,7 +9,7 @@ static cl::opt<std::string> inputFilename(cl::Positional,
                                           cl::init("-"),
                                           cl::value_desc("filename"));
 namespace {
-enum Action { None, DumpTokens, DumpAST };
+enum Action { None, DumpTokens, DumpAST, DumpMLIR };
 }
 
 static cl::opt<enum Action>
@@ -20,7 +20,10 @@ static cl::opt<enum Action>
                                      "dump internal rep of tokens")),
                cl::values(clEnumValN(DumpAST,
                                      "ast",
-                                     "dump the AST")));
+                                     "output the AST dump")),
+               cl::values(clEnumValN(DumpMLIR,
+                                     "mlir",
+                                     "output the MLIR dump")));
 
 auto main(int argc, const char **argv) -> int {
   cl::ParseCommandLineOptions(argc, argv, "Cherry compiler\n");
@@ -35,6 +38,8 @@ auto main(int argc, const char **argv) -> int {
       return compilation->dumpTokens();
   case Action::DumpAST:
     return compilation->dumpAST();
+  case Action::DumpMLIR:
+    return compilation->dumpMLIR();
   default:
     return -1;
   }

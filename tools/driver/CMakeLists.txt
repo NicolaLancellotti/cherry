@@ -5,4 +5,5 @@ target_link_libraries(cherry-driver
         cherryDriver
         cherryParse
         cherryAST
+        cherryIRGen
 )
