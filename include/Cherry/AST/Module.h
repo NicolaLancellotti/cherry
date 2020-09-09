@@ -1,10 +1,17 @@
+//===--- Module.h - Cherry Language Module AST ------------------*- C++ -*-===//
+//
+// This source file is part of the Cherry open source project
+// See TODO for license information
+//
+//===----------------------------------------------------------------------===//
+
 #ifndef CHERRY_MODULE_H
 #define CHERRY_MODULE_H
 
-#include "cherry/AST/Node.h"
-#include "cherry/AST/Declarations.h"
+#include "Node.h"
 
 namespace cherry {
+class Decl;
 
 class Module : public Node {
 public:
@@ -25,6 +32,6 @@ public:
   auto end() const -> decltype(_declarations.end()) { return _declarations.end(); }
 };
 
-}
+} // end namespace cherry
 
-#endif
+#endif // CHERRY_MODULE_H

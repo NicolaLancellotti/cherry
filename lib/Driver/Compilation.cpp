@@ -1,3 +1,10 @@
+//===--- Compilation.cpp - Compilation Task Data Structure ----------------===//
+//
+// This source file is part of the Cherry open source project
+// See TODO for license information
+//
+//===----------------------------------------------------------------------===//
+
 #include "cherry/Driver/Compilation.h"
 #include "cherry/IRGen/CherryDialect.h"
 #include "cherry/IRGen/MLIRGen.h"

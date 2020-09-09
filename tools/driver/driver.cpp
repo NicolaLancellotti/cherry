@@ -1,3 +1,5 @@
+//===--- driver.cpp - Cherry Compiler Driver ------------------------------===//
+
 #include "cherry/Driver/Compilation.h"
 #include "llvm/Support/CommandLine.h"
 

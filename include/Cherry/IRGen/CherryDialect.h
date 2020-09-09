@@ -1,8 +1,7 @@
-//===- CherryDialect.h - Cherry dialect -----------------*- C++ -*-===//
+//===--- CherryDialect.h - Cherry dialect -----------------------*- C++ -*-===//
 //
-// This file is licensed under the Apache License v2.0 with LLVM Exceptions.
-// See https://llvm.org/LICENSE.txt for license information.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// This source file is part of the Cherry open source project
+// See TODO for license information
 //
 //===----------------------------------------------------------------------===//
 
@@ -16,7 +15,7 @@ namespace cherry {
 
 #include "cherry/IRGen/CherryOpsDialect.h.inc"
 
-} // namespace cherry
-} // namespace mlir
+} // end namespace cherry
+} // end namespace mlir
 
 #endif // CHERRY_CHERRYDIALECT_H

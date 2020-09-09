@@ -7,7 +7,6 @@ add_library(cherryParse STATIC
         ${LIB_HEADERS}/Lexer.h
         Lexer.cpp
         ${LIB_HEADERS}/Parser.h
-        Parser.cpp
         ${LIB_HEADERS}/DiagnosticsParse.h
         ${LIB_HEADERS}/DiagnosticsParse.def
 )

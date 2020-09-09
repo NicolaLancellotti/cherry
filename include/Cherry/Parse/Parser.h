@@ -1,10 +1,17 @@
+//===--- Parser.cpp - Cherry Language Parser --------------------*- C++ -*-===//
+//
+// This source file is part of the Cherry open source project
+// See TODO for license information
+//
+//===----------------------------------------------------------------------===//
+
 #ifndef CHERRY_PARSER_H
 #define CHERRY_PARSER_H
 
 #include "cherry/AST/AST.h"
-#include "cherry/Parse//DiagnosticsParse.h"
-#include "cherry/Parse/Lexer.h"
 #include "cherry/Basic/CherryResult.h"
+#include "cherry/Parse/DiagnosticsParse.h"
+#include "cherry/Parse/Lexer.h"
 #include "mlir/IR/Diagnostics.h"
 #include "mlir/IR/Location.h"
 #include "llvm/Support/raw_ostream.h"
@@ -222,6 +229,6 @@ private:
 
 };
 
-}
+} // end namespace cherry
 
-#endif
+#endif // CHERRY_PARSER_H

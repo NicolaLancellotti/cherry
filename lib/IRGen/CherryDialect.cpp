@@ -1,8 +1,7 @@
-//===- CherryDialect.cpp - Cherry dialect ---------------*- C++ -*-===//
+//===- CherryDialect.cpp - Cherry dialect ---------------------------------===//
 //
-// This file is licensed under the Apache License v2.0 with LLVM Exceptions.
-// See https://llvm.org/LICENSE.txt for license information.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// This source file is part of the Cherry open source project
+// See TODO for license information
 //
 //===----------------------------------------------------------------------===//
 
@@ -11,10 +10,6 @@
 
 using namespace mlir;
 using namespace mlir::cherry;
-
-//===----------------------------------------------------------------------===//
-// Cherry dialect.
-//===----------------------------------------------------------------------===//
 
 CherryDialect::CherryDialect(mlir::MLIRContext *context)
     : Dialect(getDialectNamespace(), context) {

@@ -1,3 +1,10 @@
+//===--- Compilation.h - Compilation Task Data Structure --------*- C++ -*-===//
+//
+// This source file is part of the Cherry open source project
+// See TODO for license information
+//
+//===----------------------------------------------------------------------===//
+
 #ifndef CHERRY_COMPILATION_H
 #define CHERRY_COMPILATION_H
 
@@ -27,6 +34,6 @@ private:
   auto parse(std::unique_ptr<Module>& module) -> CherryResult;
 };
 
-}
+} // end namespace cherry
 
-#endif
+#endif // CHERRY_COMPILATION_H

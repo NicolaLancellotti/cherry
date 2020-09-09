@@ -1,4 +1,11 @@
-#include "cherry/AST/AST.h"
+//===--- ASTDumper.cpp - Cherry Language AST Dumper ------------------------===//
+//
+// This source file is part of the Cherry open source project
+// See TODO for license information
+//
+//===----------------------------------------------------------------------===//
+
+#include "AST.h"
 #include "llvm/ADT/TypeSwitch.h"
 #include "llvm/Support/raw_ostream.h"
 
@@ -49,7 +56,7 @@ private:
   auto dump(const DecimalExpr *node) -> void;
 };
 
-}
+}// end namespace
 
 auto Dumper::dump(const Module *node) -> void {
   for (auto &decl : *node) {
@@ -113,4 +120,4 @@ auto dumpAST(const llvm::SourceMgr &sourceManager,
   Dumper(sourceManager).dump(&module);
 }
 
-}
+} // end namespace cherry

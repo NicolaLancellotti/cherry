@@ -1,3 +1,10 @@
+//===--- CherryOps.h - Cherry dialect ops -----------------------*- C++ -*-===//
+//
+// This source file is part of the Cherry open source project
+// See TODO for license information
+//
+//===----------------------------------------------------------------------===//
+
 #ifndef CHERRY_OPS
 #define CHERRY_OPS
 
@@ -58,4 +65,4 @@ def CallOp : Cherry_Op<"call"> {
   ];
 }
 
-#endif
+#endif // CHERRY_OPS

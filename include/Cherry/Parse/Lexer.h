@@ -1,7 +1,14 @@
+//===--- Lexer.h - Cherry Language Lexer ------------------------*- C++ -*-===//
+//
+// This source file is part of the Cherry open source project
+// See TODO for license information
+//
+//===----------------------------------------------------------------------===//
+
 #ifndef CHERRY_LEXER_H
 #define CHERRY_LEXER_H
 
-#include "cherry/Parse/Token.h"
+#include "Token.h"
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/raw_ostream.h"
 
@@ -42,6 +49,6 @@ private:
   auto operator=(const Lexer &) -> void = delete;
 };
 
-}
+} // end namespace cherry
 
-#endif
+#endif // CHERRY_LEXER_H

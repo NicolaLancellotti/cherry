@@ -1,6 +1,13 @@
+//===--- MLIRGen.cpp - MLIR Generator -------------------------------------===//
+//
+// This source file is part of the Cherry open source project
+// See TODO for license information
+//
+//===----------------------------------------------------------------------===//
+
 #include "cherry/IRGen/MLIRGen.h"
-#include "cherry/AST/AST.h"
 #include "cherry/IRGen/CherryOps.h"
+#include "cherry/AST/AST.h"
 #include "cherry/Basic/CherryResult.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/Function.h"
@@ -121,7 +128,7 @@ private:
 
 };
 
-}
+} // end namespace
 
 namespace cherry {
 
@@ -132,4 +139,4 @@ auto mlirGen(const llvm::SourceMgr &sourceManager,
   return generator.gen(moduleAST) ? nullptr : generator.module;
 }
 
-}
+} // end namespace cherry

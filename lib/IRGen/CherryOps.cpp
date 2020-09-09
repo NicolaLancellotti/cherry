@@ -1,7 +1,14 @@
+//===--- CherryOps.cpp - Cherry dialect ops -------------------------------===//
+//
+// This source file is part of the Cherry open source project
+// See TODO for license information
+//
+//===----------------------------------------------------------------------===//
+
 #include "cherry/IRGen/CherryOps.h"
 #include "cherry/IRGen/CherryDialect.h"
-#include "mlir/IR/OpImplementation.h"
 #include "mlir/IR/Builders.h"
+#include "mlir/IR/OpImplementation.h"
 #include "mlir/IR/StandardTypes.h"
 
 namespace mlir {
@@ -28,4 +35,3 @@ auto CallOp::build(mlir::OpBuilder &builder,
 
 } // namespace cherry
 } // namespace mlir
-

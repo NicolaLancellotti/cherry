@@ -1,17 +1,16 @@
-//===- CherryOps.h - Cherry dialect ops -----------------*- C++ -*-===//
+//===--- CherryOps.h - Cherry dialect ops -----------------------*- C++ -*-===//
 //
-// This file is licensed under the Apache License v2.0 with LLVM Exceptions.
-// See https://llvm.org/LICENSE.txt for license information.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// This source file is part of the Cherry open source project
+// See TODO for license information
 //
 //===----------------------------------------------------------------------===//
 
 #ifndef CHERRY_CHERRYOPS_H
 #define CHERRY_CHERRYOPS_H
 
+#include "mlir/Interfaces/SideEffectInterfaces.h"
 #include "mlir/IR/Dialect.h"
 #include "mlir/IR/OpDefinition.h"
-#include "mlir/Interfaces/SideEffectInterfaces.h"
 
 namespace mlir {
 namespace cherry {

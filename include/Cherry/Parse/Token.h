@@ -1,8 +1,15 @@
+//===--- Token.h - Cherry Language Token ------------------------*- C++ -*-===//
+//
+// This source file is part of the Cherry open source project
+// See TODO for license information
+//
+//===----------------------------------------------------------------------===//
+
 #ifndef CHERRY_TOKEN_H
 #define CHERRY_TOKEN_H
 
 #include "llvm/ADT/StringRef.h"
-#include <llvm/Support/SMLoc.h>
+#include "llvm/Support/SMLoc.h"
 
 namespace cherry {
 
@@ -37,6 +44,6 @@ private:
   llvm::StringRef _spelling;
 };
 
-}
+} // end namespace cherry
 
-#endif
+#endif // CHERRY_TOKEN_H

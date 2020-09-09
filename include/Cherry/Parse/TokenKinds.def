@@ -1,3 +1,10 @@
+//===--- TokenKinds.def - Cherry Language Token Kinds -----------*- C++ -*-===//
+//
+// This source file is part of the Cherry open source project
+// See TODO for license information
+//
+//===----------------------------------------------------------------------===//
+
 #if !defined(TOK_MARKER) && !defined(TOK_IDENTIFIER) &&                        \
     !defined(TOK_LITERAL) && !defined(TOK_PUNCTUATION) &&                      \
     !defined(TOK_KEYWORD)

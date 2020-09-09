@@ -1,12 +1,20 @@
-#ifndef CHERRY_DECLARATIONS_H
-#define CHERRY_DECLARATIONS_H
+//===--- Decl.h - Cherry Language Declaration ASTs --------------*- C++ -*-===//
+//
+// This source file is part of the Cherry open source project
+// See TODO for license information
+//
+//===----------------------------------------------------------------------===//
 
-#include "cherry/AST/Node.h"
-#include "cherry/AST/Expressions.h"
+#ifndef CHERRY_DECL_H
+#define CHERRY_DECL_H
+
+#include "Node.h"
 #include <string>
 #include <vector>
 
 namespace cherry {
+
+class Expr;
 
 // _____________________________________________________________________________
 // Declaration
@@ -28,7 +36,7 @@ private:
 };
 
 // _____________________________________________________________________________
-// FunctionDecl
+// Function declaration
 
 class Prototype : public Node {
 public:
@@ -73,6 +81,6 @@ public:
   auto end() const -> decltype(_body.end()) { return _body.end(); }
 };
 
-}
+} // end namespace cherry
 
-#endif
+#endif // CHERRY_DECL_H

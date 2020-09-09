@@ -1,4 +1,11 @@
-#include "cherry/Parse/Lexer.h"
+//===--- Lexer.cpp - Cherry Language Lexer --------------------------------===//
+//
+// This source file is part of the Cherry open source project
+// See TODO for license information
+//
+//===----------------------------------------------------------------------===//
+
+#include "Lexer.h"
 #include "mlir/IR/Diagnostics.h"
 
 using namespace cherry;

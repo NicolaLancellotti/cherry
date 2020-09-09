@@ -1,3 +1,10 @@
+//===--- DiagnosticsParse.def - Diagnostics Text ----------------*- C++ -*-===//
+//
+// This source file is part of the Cherry open source project
+// See TODO for license information
+//
+//===----------------------------------------------------------------------===//
+
 // ___________________________________________________________________________
 // Parse Declarations
 

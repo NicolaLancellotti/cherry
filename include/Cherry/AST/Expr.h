@@ -1,14 +1,21 @@
-#ifndef CHERRY_EXPRESSIONS_H
-#define CHERRY_EXPRESSIONS_H
+//===--- Expr.h - Cherry Language Expression ASTs ---------------*- C++ -*-===//
+//
+// This source file is part of the Cherry open source project
+// See TODO for license information
+//
+//===----------------------------------------------------------------------===//
 
-#include "cherry/AST/Node.h"
+#ifndef CHERRY_EXPR_H
+#define CHERRY_EXPR_H
+
+#include "Node.h"
 #include <string>
 #include <vector>
 
 namespace cherry {
 
 // _____________________________________________________________________________
-// Expressions
+// Expression
 
 class Expr : public Node {
 public:
@@ -28,7 +35,7 @@ private:
 };
 
 // _____________________________________________________________________________
-// CallExpr
+// Call expression
 
 class CallExpr : public Expr {
 public:
@@ -61,7 +68,7 @@ public:
 };
 
 // _____________________________________________________________________________
-// DecimalExpr
+// Decimal expression
 
 class DecimalExpr : public Expr {
 public:
@@ -80,6 +87,6 @@ private:
   uint64_t _value;
 };
 
-}
+} // end namespace cherry
 
-#endif
+#endif // CHERRY_EXPR_H

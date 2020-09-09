@@ -1,4 +1,11 @@
-#include "cherry/Parse/Token.h"
+//===--- Token.cpp - Cherry Language Token --------------------------------===//
+//
+// This source file is part of the Cherry open source project
+// See TODO for license information
+//
+//===----------------------------------------------------------------------===//
+
+#include "Token.h"
 #include "llvm/ADT/StringSwitch.h"
 
 using namespace cherry;

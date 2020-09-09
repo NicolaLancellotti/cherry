@@ -1,3 +1,10 @@
+//===--- Node.h - Cherry Language Node AST ----------------------*- C++ -*-===//
+//
+// This source file is part of the Cherry open source project
+// See TODO for license information
+//
+//===----------------------------------------------------------------------===//
+
 #ifndef CHERRY_NODE_H
 #define CHERRY_NODE_H
 
@@ -24,4 +31,4 @@ private:
 
 }
 
-#endif
+#endif // CHERRY_NODE_H

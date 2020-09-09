@@ -1,3 +1,10 @@
+//===--- CherryResult.h - Cherry subclass of LogicalResult ------*- C++ -*-===//
+//
+// This source file is part of the Cherry open source project
+// See TODO for license information
+//
+//===----------------------------------------------------------------------===//
+
 #ifndef CHERRY_CHERRYRESULT_H
 #define CHERRY_CHERRYRESULT_H
 
@@ -12,5 +19,6 @@ public:
   explicit operator bool() const { return failed(*this); }
 };
 
-}
-#endif
+} // end namespace cherry
+
+#endif // CHERRY_CHERRYRESULT_H
