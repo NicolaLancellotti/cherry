@@ -8,15 +8,11 @@
 #ifndef CHERRY_LOWERTOSTANDARDPASS_H
 #define CHERRY_LOWERTOSTANDARDPASS_H
 
-#include "cherry/IRGen/CherryDialect.h"
 #include "cherry/IRGen/CherryOps.h"
 #include "cherry/IRGen/Passes.h"
-
-#include "mlir/Dialect/Affine/IR/AffineOps.h"
 #include "mlir/Dialect/StandardOps/IR/Ops.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Transforms/DialectConversion.h"
-#include "llvm/ADT/Sequence.h"
 
 using namespace mlir;
 
