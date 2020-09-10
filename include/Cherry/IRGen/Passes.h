@@ -8,12 +8,15 @@
 #ifndef CHERRY_PASSES_H
 #define CHERRY_PASSES_H
 
+#include <memory>
+
 namespace mlir {
 class Pass;
 
 namespace cherry {
 
 auto createLowerToStandardPass() -> std::unique_ptr<mlir::Pass>;
+auto createLowerToLLVMPass() -> std::unique_ptr<mlir::Pass>;
 
 } // end namespace toy
 } // end namespace mlir
