@@ -23,7 +23,7 @@ public:
 
   auto dumpTokens() -> int;
   auto dumpAST() -> int;
-  auto dumpMLIR() -> int;
+  auto dumpMLIR(bool loweringToStandard) -> int;
 
   auto sourceManager() -> llvm::SourceMgr& { return _sourceManager; };
 

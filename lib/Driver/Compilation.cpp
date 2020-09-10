@@ -8,8 +8,10 @@
 #include "cherry/Driver/Compilation.h"
 #include "cherry/IRGen/CherryDialect.h"
 #include "cherry/IRGen/MLIRGen.h"
+#include "cherry/IRGen/Passes.h"
 #include "cherry/Parse/Lexer.h"
 #include "cherry/Parse/Parser.h"
+#include "mlir/Dialect/StandardOps/IR/Ops.h"
 #include "mlir/IR/Dialect.h"
 #include "mlir/IR/Function.h"
 #include "mlir/IR/Module.h"
@@ -57,8 +59,10 @@ auto Compilation::dumpAST() -> int {
   return EXIT_SUCCESS;
 }
 
-auto Compilation::dumpMLIR() -> int {
+auto Compilation::dumpMLIR(bool loweringToStandard) -> int {
+  mlir::registerDialect<mlir::StandardOpsDialect>();
   mlir::registerDialect<mlir::cherry::CherryDialect>();
+
   mlir::MLIRContext context;
 
   std::unique_ptr<Module> moduleAST;
@@ -73,6 +77,10 @@ auto Compilation::dumpMLIR() -> int {
   if (_enableOpt) {
     mlir::OpPassManager &optPM = pm.nest<mlir::FuncOp>();
     optPM.addPass(mlir::createCanonicalizerPass());
+  }
+
+  if (loweringToStandard) {
+    pm.addPass(mlir::cherry::createLowerToStandardPass());
   }
 
   if (mlir::failed(pm.run(*module)))

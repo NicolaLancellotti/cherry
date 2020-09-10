@@ -19,11 +19,17 @@ cmake --build . --target mlir-doc
 ## Grammar
 [Cherry grammar](/docs/Grammar.md)
 
-## Flags
+## Driver Flags
 
-Meaning                        					 |  Flag
-|------------------------------------------------|-------------------|
-Enable optimisation                              | -opt
-Dump tokens to the standard error 			     | -dump=tokens
-Dump the AST to the standard error               | -dump=ast
-Dump the MLIR to the standard error              | -dump=mlir
+Meaning                    |  Flag
+|--------------------------|-------------------|
+Enable optimisation        | -opt
+Dump tokens 			   | -dump=tokens
+Dump the AST               | -dump=ast
+Dump the MLIR (cherry)     | -dump=mlir
+Dump the MLIR (standard)   | -dump=mlir-std
+
+Example
+```
+cherry-driver -dump=mlir main.cherry
+```
