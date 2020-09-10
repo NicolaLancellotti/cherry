@@ -5,8 +5,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "cherry/IRGen/MLIRGen.h"
-#include "cherry/IRGen/CherryOps.h"
+#include "cherry/MLIRGen/MLIRGen.h"
+#include "cherry/MLIRGen/CherryOps.h"
 #include "cherry/AST/AST.h"
 #include "cherry/Basic/CherryResult.h"
 #include "mlir/IR/Builders.h"

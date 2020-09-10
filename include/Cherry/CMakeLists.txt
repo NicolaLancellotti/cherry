@@ -1,1 +1,1 @@
-add_subdirectory(IRGen)
+add_subdirectory(MLIRGen)

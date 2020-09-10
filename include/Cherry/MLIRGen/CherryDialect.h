@@ -13,7 +13,7 @@
 namespace mlir {
 namespace cherry {
 
-#include "cherry/IRGen/CherryOpsDialect.h.inc"
+#include "cherry/MLIRGen/CherryOpsDialect.h.inc"
 
 } // end namespace cherry
 } // end namespace mlir

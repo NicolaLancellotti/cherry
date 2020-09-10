@@ -5,7 +5,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "cherry/IRGen/Passes.h"
+#include "cherry/MLIRGen/Passes.h"
 #include "mlir/Conversion/StandardToLLVM/ConvertStandardToLLVM.h"
 #include "mlir/Pass/Pass.h"
 

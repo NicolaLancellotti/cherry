@@ -16,7 +16,7 @@ namespace mlir {
 namespace cherry {
 
 #define GET_OP_CLASSES
-#include "cherry/IRGen/CherryOps.h.inc"
+#include "cherry/MLIRGen/CherryOps.h.inc"
 
 } // namespace cherry
 } // namespace mlir

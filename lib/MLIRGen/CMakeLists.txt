@@ -1,6 +1,6 @@
-set(LIB_HEADERS ${CHERRY_HEADERS}/cherry/IRGen)
+set(LIB_HEADERS ${CHERRY_HEADERS}/cherry/MLIRGen)
 
-add_mlir_dialect_library(cherryIRGen
+add_mlir_dialect_library(cherryMLIRGen
 		${LIB_HEADERS}/MLIRGen.h
 		MLIRGen.cpp
 
@@ -12,7 +12,7 @@ add_mlir_dialect_library(cherryIRGen
 		LowerToLLVMPass.cpp
 
         ADDITIONAL_HEADER_DIRS
-        ${PROJECT_SOURCE_DIR}/include/cherry/IRGen
+        ${PROJECT_SOURCE_DIR}/include/cherry/MLIRGen
 
         DEPENDS
         MLIRCherryOpsIncGen

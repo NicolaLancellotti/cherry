@@ -5,8 +5,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "cherry/IRGen/CherryDialect.h"
-#include "cherry/IRGen/CherryOps.h"
+#include "cherry/MLIRGen/CherryDialect.h"
+#include "cherry/MLIRGen/CherryOps.h"
 
 using namespace mlir;
 using namespace mlir::cherry;
@@ -15,6 +15,6 @@ CherryDialect::CherryDialect(mlir::MLIRContext *context)
     : Dialect(getDialectNamespace(), context) {
   addOperations<
 #define GET_OP_LIST
-#include "cherry/IRGen/CherryOps.cpp.inc"
+#include "cherry/MLIRGen/CherryOps.cpp.inc"
       >();
 }

@@ -6,9 +6,9 @@
 //===----------------------------------------------------------------------===//
 
 #include "cherry/Driver/Compilation.h"
-#include "cherry/IRGen/CherryDialect.h"
-#include "cherry/IRGen/MLIRGen.h"
-#include "cherry/IRGen/Passes.h"
+#include "cherry/MLIRGen/CherryDialect.h"
+#include "cherry/MLIRGen/MLIRGen.h"
+#include "cherry/MLIRGen/Passes.h"
 #include "cherry/Parse/Lexer.h"
 #include "cherry/Parse/Parser.h"
 #include "mlir/Dialect/StandardOps/IR/Ops.h"

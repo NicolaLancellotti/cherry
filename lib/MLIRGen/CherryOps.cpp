@@ -5,8 +5,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "cherry/IRGen/CherryOps.h"
-#include "cherry/IRGen/CherryDialect.h"
+#include "cherry/MLIRGen/CherryOps.h"
+#include "cherry/MLIRGen/CherryDialect.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/OpImplementation.h"
 #include "mlir/IR/StandardTypes.h"
@@ -14,7 +14,7 @@
 namespace mlir {
 namespace cherry {
 #define GET_OP_CLASSES
-#include "cherry/IRGen/CherryOps.cpp.inc"
+#include "cherry/MLIRGen/CherryOps.cpp.inc"
 
 auto ConstantOp::build(mlir::OpBuilder &builder,
                        mlir::OperationState &state,
