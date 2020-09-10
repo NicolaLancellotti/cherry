@@ -19,7 +19,7 @@ namespace cherry {
 auto ConstantOp::build(mlir::OpBuilder &builder,
                        mlir::OperationState &state,
                        uint64_t value) -> void {
-  auto dataType = builder.getI32Type();
+  auto dataType = builder.getI64Type();
   auto dataAttribute = IntegerAttr::get(dataType, value);
   ConstantOp::build(builder, state, dataType, dataAttribute);
 }
@@ -28,7 +28,8 @@ auto CallOp::build(mlir::OpBuilder &builder,
                    mlir::OperationState &state,
                    StringRef callee,
                    ArrayRef<mlir::Value> arguments) -> void {
-  state.addTypes(builder.getNoneType());
+  auto dataType = builder.getI64Type();
+  state.addTypes(dataType);
   state.addOperands(arguments);
   state.addAttribute("callee", builder.getSymbolRefAttr(callee));
 }

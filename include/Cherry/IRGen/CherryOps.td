@@ -17,12 +17,12 @@ def ConstantOp : Cherry_Op<"constant", [NoSideEffect]> {
     Constant operation turns a literal into an SSA value. The data is attached
     to the operation as an attribute. For example:
     ```mlir
-    %0 = "cherry.constant"() {value = 1 : i32} : () -> i32
+    %0 = "cherry.constant"() {value = 1 : i64} : () -> iI64
     ```
   }];
 
-  let arguments = (ins I32Attr:$value);
-  let results = (outs I32);
+  let arguments = (ins I64Attr:$value);
+  let results = (outs I64);
 
   let builders = [
    OpBuilder<"OpBuilder &builder, OperationState &state, uint64_t value">
@@ -37,10 +37,13 @@ def ReturnOp : Cherry_Op<"return", [NoSideEffect, Terminator]> {
     For example:
     ```mlir
     func @bar() {
-      "cherry.return"() : () -> ()
+      ...
+      "cherry.return"(%1) : (i64) -> ()
     }
     ```
   }];
+
+  let arguments = (ins I64:$input);
 }
 
 def CallOp : Cherry_Op<"call"> {
@@ -50,14 +53,14 @@ def CallOp : Cherry_Op<"call"> {
     attached as a symbol reference via an attribute. The arguments list must
     match the arguments expected by the callee. For example:
     ```mlir
-    %3 = "cherry.call"(%1, %2) {callee = @bar} : (i32, i32) -> none
+    %1 = "cherry.call"() {callee = @bar} : () -> i64
     ```
     This is only valid if a function named "bar" exists and takes two
     arguments.
   }];
 
-  let arguments = (ins FlatSymbolRefAttr:$callee,  Variadic<I32>:$inputs);
-  let results = (outs NoneType);
+  let arguments = (ins FlatSymbolRefAttr:$callee,  Variadic<I64>:$inputs);
+  let results = (outs I64);
 
   let builders = [
     OpBuilder<"OpBuilder &builder, OperationState &state, "

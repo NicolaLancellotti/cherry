@@ -86,14 +86,20 @@ private:
         return failure();
       }
     }
-    _builder.create<ReturnOp>(loc(node->proto().get()));
+    auto location = loc(node->proto().get());
+    ConstantOp constant0 = _builder.create<ConstantOp>(location, 0);
+    _builder.create<ReturnOp>(location, constant0);
     return success();
   }
 
   auto gen(const Prototype *node, mlir::FuncOp& func) -> CherryResult {
-    mlir::Type argType = mlir::NoneType();
-    llvm::SmallVector<mlir::Type, 4> arg_types(0, argType);
-    auto funcType = _builder.getFunctionType(arg_types, llvm::None);
+    mlir::Type noneType = mlir::NoneType();
+    llvm::SmallVector<mlir::Type, 0> arg_types(0, noneType);
+
+    mlir::Type resultType = _builder.getI64Type();
+    llvm::SmallVector<mlir::Type, 1> result_types(1, resultType);
+
+    auto funcType = _builder.getFunctionType(arg_types, result_types);
     func = mlir::FuncOp::create(loc(node), node->name(), funcType);
     return success();
   }
