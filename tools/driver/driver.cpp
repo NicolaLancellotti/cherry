@@ -11,8 +11,15 @@ static cl::opt<std::string> inputFilename(cl::Positional,
                                           cl::init("-"),
                                           cl::value_desc("filename"));
 namespace {
-enum Action { None, DumpTokens, DumpAST, DumpMLIR, DumpMLIRStandard };
-}
+enum Action {
+  None,
+  DumpTokens,
+  DumpAST,
+  DumpMLIR,
+  DumpMLIRStandard,
+  DumpMLIRLLVM
+};
+} // end namespace
 
 static cl::opt<bool> enableOpt("opt", cl::desc("Enable optimizations"));
 
@@ -30,7 +37,10 @@ static cl::opt<enum Action>
                                      "output the MLIR dump")),
                cl::values(clEnumValN(DumpMLIRStandard,
                                      "mlir-std",
-                                     "output the MLIR dump after std lowering")));
+                                     "output the MLIR dump after std lowering")),
+               cl::values(clEnumValN(DumpMLIRLLVM,
+                                     "mlir-llvm",
+                                     "output the MLIR dump after std and llvm lowering")));
 
 auto main(int argc, const char **argv) -> int {
   cl::ParseCommandLineOptions(argc, argv, "Cherry compiler\n");
@@ -47,9 +57,11 @@ auto main(int argc, const char **argv) -> int {
   case Action::DumpAST:
     return compilation->dumpAST();
   case Action::DumpMLIR:
-    return compilation->dumpMLIR(false);
+    return compilation->dumpMLIR(Compilation::Lowering::None);
   case Action::DumpMLIRStandard:
-    return compilation->dumpMLIR(true);
+    return compilation->dumpMLIR(Compilation::Lowering::Standard);
+  case Action::DumpMLIRLLVM:
+    return compilation->dumpMLIR(Compilation::Lowering::LLVM);
   default:
     return -1;
   }

@@ -6,6 +6,7 @@ target_link_libraries(cherry-driver
         MLIRPass
         MLIRSPIRV
         MLIRTranslation
+        MLIRStandardToLLVM
         MLIRSupport
         LLVMSupport
         cherryBasic

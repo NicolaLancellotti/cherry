@@ -12,6 +12,7 @@
 #include "cherry/Parse/Lexer.h"
 #include "cherry/Parse/Parser.h"
 #include "mlir/Dialect/StandardOps/IR/Ops.h"
+#include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/IR/Dialect.h"
 #include "mlir/IR/Function.h"
 #include "mlir/IR/Module.h"
@@ -25,6 +26,10 @@ using namespace cherry;
 
 auto Compilation::make(std::string filename,
                        bool enableOpt) -> std::unique_ptr<Compilation> {
+  mlir::registerDialect<mlir::StandardOpsDialect>();
+  mlir::registerDialect<mlir::cherry::CherryDialect>();
+  mlir::registerDialect<mlir::LLVM::LLVMDialect>();
+
   auto fileOrErr = llvm::MemoryBuffer::getFileOrSTDIN(filename);
 
   if (auto ec = fileOrErr.getError()) {
@@ -38,16 +43,41 @@ auto Compilation::make(std::string filename,
   return compilation;
 }
 
-auto Compilation::dumpTokens() -> int {
-  auto lexer = std::make_unique<Lexer>(_sourceManager);
-  Lexer::tokenize(_sourceManager, *lexer);
-  return EXIT_SUCCESS;
-}
-
 auto Compilation::parse(std::unique_ptr<Module>& module) -> CherryResult {
   auto lexer = std::make_unique<Lexer>(_sourceManager);
   auto parser = Parser{std::move(lexer), _sourceManager};
   return parser.parseModule(module);
+}
+
+auto Compilation::genMLIR(mlir::OwningModuleRef& module,
+                          Lowering lowering) -> CherryResult {
+  std::unique_ptr<Module> moduleAST;
+  if (parse(moduleAST))
+    return failure();
+
+  module = mlirGen(_sourceManager, _context, *moduleAST);
+  if (!module)
+    return failure();
+
+  mlir::PassManager pm(&_context);
+  if (_enableOpt) {
+    mlir::OpPassManager &optPM = pm.nest<mlir::FuncOp>();
+    optPM.addPass(mlir::createCanonicalizerPass());
+  }
+
+  if (lowering >= Lowering::Standard)
+    pm.addPass(mlir::cherry::createLowerToStandardPass());
+
+  if (lowering >= Lowering::LLVM)
+    pm.addPass(mlir::cherry::createLowerToLLVMPass());
+
+  return pm.run(*module);
+}
+
+auto Compilation::dumpTokens() -> int {
+  auto lexer = std::make_unique<Lexer>(_sourceManager);
+  Lexer::tokenize(_sourceManager, *lexer);
+  return EXIT_SUCCESS;
 }
 
 auto Compilation::dumpAST() -> int {
@@ -59,31 +89,9 @@ auto Compilation::dumpAST() -> int {
   return EXIT_SUCCESS;
 }
 
-auto Compilation::dumpMLIR(bool loweringToStandard) -> int {
-  mlir::registerDialect<mlir::StandardOpsDialect>();
-  mlir::registerDialect<mlir::cherry::CherryDialect>();
-
-  mlir::MLIRContext context;
-
-  std::unique_ptr<Module> moduleAST;
-  if (parse(moduleAST))
-    return EXIT_FAILURE;
-
-  mlir::OwningModuleRef module = mlirGen(_sourceManager, context, *moduleAST);
-  if (!module)
-    return EXIT_FAILURE;
-
-  mlir::PassManager pm(&context);
-  if (_enableOpt) {
-    mlir::OpPassManager &optPM = pm.nest<mlir::FuncOp>();
-    optPM.addPass(mlir::createCanonicalizerPass());
-  }
-
-  if (loweringToStandard) {
-    pm.addPass(mlir::cherry::createLowerToStandardPass());
-  }
-
-  if (mlir::failed(pm.run(*module)))
+auto Compilation::dumpMLIR(Lowering lowering) -> int {
+  mlir::OwningModuleRef module;
+  if (genMLIR(module, lowering))
     return EXIT_FAILURE;
 
   module->dump();
