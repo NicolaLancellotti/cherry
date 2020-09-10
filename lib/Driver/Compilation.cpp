@@ -13,14 +13,19 @@
 #include "cherry/Parse/Parser.h"
 #include "mlir/Dialect/StandardOps/IR/Ops.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
+#include "mlir/ExecutionEngine/ExecutionEngine.h"
+#include "mlir/ExecutionEngine/OptUtils.h"
 #include "mlir/IR/Dialect.h"
 #include "mlir/IR/Function.h"
 #include "mlir/IR/Module.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Pass/PassManager.h"
+#include "mlir/Target/LLVMIR.h"
 #include "mlir/Transforms/Passes.h"
+#include "llvm/IR/Module.h"
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Support/TargetSelect.h"
 
 using namespace cherry;
 
@@ -74,6 +79,31 @@ auto Compilation::genMLIR(mlir::OwningModuleRef& module,
   return pm.run(*module);
 }
 
+auto Compilation::genLLVM(std::unique_ptr<llvm::Module>& llvmModule) -> CherryResult {
+  mlir::OwningModuleRef module;
+  if (genMLIR(module, Lowering::LLVM))
+    return failure();
+
+  llvmModule = mlir::translateModuleToLLVMIR(*module);
+  if (!llvmModule) {
+    return failure();
+  }
+
+  llvm::InitializeNativeTarget();
+  llvm::InitializeNativeTargetAsmPrinter();
+  mlir::ExecutionEngine::setupTargetTriple(llvmModule.get());
+
+  auto optPipeline = mlir::makeOptimizingTransformer(
+      /*optLevel=*/_enableOpt ? 3 : 0, /*sizeLevel=*/0,
+      /*targetMachine=*/nullptr);
+  if (auto err = optPipeline(llvmModule.get())) {
+    llvm::errs() << "Failed to optimize LLVM IR " << err << "\n";
+    return failure();
+  }
+
+  return success();
+}
+
 auto Compilation::dumpTokens() -> int {
   auto lexer = std::make_unique<Lexer>(_sourceManager);
   Lexer::tokenize(_sourceManager, *lexer);
@@ -95,5 +125,14 @@ auto Compilation::dumpMLIR(Lowering lowering) -> int {
     return EXIT_FAILURE;
 
   module->dump();
+  return EXIT_SUCCESS;
+}
+
+auto Compilation::dumpLLVM() -> int {
+  std::unique_ptr<llvm::Module> llvmModule;
+  if (genLLVM(llvmModule))
+    return EXIT_FAILURE;
+
+  llvm::errs() << *llvmModule << "\n";
   return EXIT_SUCCESS;
 }

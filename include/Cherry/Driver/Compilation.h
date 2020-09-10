@@ -16,8 +16,11 @@ namespace mlir {
 class OwningModuleRef;
 } // end namespace mlir
 
-namespace cherry {
+namespace llvm {
+class Module;
+} // end namespace llvm
 
+namespace cherry {
 class Module;
 class CherryResult;
 
@@ -35,6 +38,7 @@ public:
   auto dumpTokens() -> int;
   auto dumpAST() -> int;
   auto dumpMLIR(Lowering lowering) -> int;
+  auto dumpLLVM() -> int;
 
   auto sourceManager() -> llvm::SourceMgr& { return _sourceManager; };
 
@@ -46,6 +50,7 @@ private:
   auto parse(std::unique_ptr<Module>& module) -> CherryResult;
   auto genMLIR(mlir::OwningModuleRef& module,
                Lowering lowering) -> CherryResult;
+  auto genLLVM(std::unique_ptr<llvm::Module>& llvmModule) -> CherryResult;
 };
 
 } // end namespace cherry

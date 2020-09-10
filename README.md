@@ -29,6 +29,7 @@ Dump the AST               | -dump=ast
 Dump the MLIR (cherry)     | -dump=mlir
 Dump the MLIR (standard)   | -dump=mlir-std
 Dump the MLIR (LLVM)       | -dump=mlir-llvm
+Dump the LLVM IR           | -dump=llvm
 
 Example
 ```

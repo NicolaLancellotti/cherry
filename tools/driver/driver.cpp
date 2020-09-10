@@ -17,7 +17,8 @@ enum Action {
   DumpAST,
   DumpMLIR,
   DumpMLIRStandard,
-  DumpMLIRLLVM
+  DumpMLIRLLVM,
+  DumpLLVM
 };
 } // end namespace
 
@@ -40,7 +41,10 @@ static cl::opt<enum Action>
                                      "output the MLIR dump after std lowering")),
                cl::values(clEnumValN(DumpMLIRLLVM,
                                      "mlir-llvm",
-                                     "output the MLIR dump after std and llvm lowering")));
+                                     "output the MLIR dump after std and llvm lowering")),
+               cl::values(clEnumValN(DumpLLVM,
+                                     "llvm",
+                                     "output the LLVM dump")));
 
 auto main(int argc, const char **argv) -> int {
   cl::ParseCommandLineOptions(argc, argv, "Cherry compiler\n");
@@ -62,6 +66,8 @@ auto main(int argc, const char **argv) -> int {
     return compilation->dumpMLIR(Compilation::Lowering::Standard);
   case Action::DumpMLIRLLVM:
     return compilation->dumpMLIR(Compilation::Lowering::LLVM);
+  case Action::DumpLLVM:
+    return compilation->dumpLLVM();
   default:
     return -1;
   }
