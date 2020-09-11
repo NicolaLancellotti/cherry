@@ -5,14 +5,15 @@ target_link_libraries(cherry-driver
         MLIRIR
         MLIRParser
         MLIRPass
-        MLIRSPIRV
         MLIRTranslation
+        MLIRSPIRV
         MLIRStandardToLLVM
         MLIRSupport
         LLVMSupport
+        cherryAST
         cherryBasic
         cherryDriver
         cherryParse
-        cherryAST
         cherryMLIRGen
+        cherrySema
 )

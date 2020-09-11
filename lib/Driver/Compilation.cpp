@@ -11,6 +11,7 @@
 #include "cherry/MLIRGen/Passes.h"
 #include "cherry/Parse/Lexer.h"
 #include "cherry/Parse/Parser.h"
+#include "cherry/Sema/Sema.h"
 #include "mlir/Dialect/StandardOps/IR/Ops.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/ExecutionEngine/ExecutionEngine.h"
@@ -58,6 +59,9 @@ auto Compilation::genMLIR(mlir::OwningModuleRef& module,
                           Lowering lowering) -> CherryResult {
   std::unique_ptr<Module> moduleAST;
   if (parse(moduleAST))
+    return failure();
+
+  if (cherry::sema(_sourceManager, *moduleAST.get()))
     return failure();
 
   module = mlirGen(_sourceManager, _context, *moduleAST);
