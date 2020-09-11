@@ -3,8 +3,7 @@
 # CHECK-LABEL: func @main()
 fun main () {
 	1;
-	print(2, 3);
-	# CHECK: cherry.constant
+	print(2);
   # CHECK: cherry.constant
-  # CHECK: cherry.call
+  # CHECK: cherry.print
 }

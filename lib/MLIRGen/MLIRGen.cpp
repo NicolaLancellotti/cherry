@@ -115,7 +115,26 @@ private:
     }
   }
 
+  auto genPrint(const CallExpr *node, mlir::Value& value) -> CherryResult {
+    auto &expressions = node->expressions();
+    if (expressions.size() != 1) {
+      emitError(loc(node)) << "print call takes one argument ";
+      return failure();
+    }
+
+    mlir::Value operand;
+    if (gen(expressions.front().get(), operand))
+      return failure();
+
+    value = _builder.create<PrintOp>(loc(node), operand);
+    return success();
+  }
+
   auto gen(const CallExpr *node, mlir::Value& value) -> CherryResult {
+    if (node->name() == "print") {
+      return genPrint(node, value);
+    }
+
     llvm::SmallVector<mlir::Value, 4> operands;
     for (auto &expr : *node) {
       mlir::Value value;

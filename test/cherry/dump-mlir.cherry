@@ -4,8 +4,7 @@
 fun main () {
 	1;
 	# CHECK: cherry.constant
-	print(2, 3);
+	print(2);
 	# CHECK: cherry.constant
-  # CHECK: cherry.constant
-  # CHECK: cherry.call
+  # CHECK: cherry.print
 }
