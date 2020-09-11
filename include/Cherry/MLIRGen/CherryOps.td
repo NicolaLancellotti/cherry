@@ -68,4 +68,19 @@ def CallOp : Cherry_Op<"call"> {
   ];
 }
 
+def PrintOp : Cherry_Op<"print"> {
+  let summary = "print operation";
+  let description = [{
+      The "print" builtin operation prints a given input
+  }];
+
+  let arguments = (ins AnyTypeOf<[I64, I64MemRef]>:$input);
+  let results = (outs I64);
+
+  let builders = [
+      OpBuilder<"OpBuilder &builder, OperationState &state, "
+                "Value arguments">
+  ];
+}
+
 #endif // CHERRY_OPS

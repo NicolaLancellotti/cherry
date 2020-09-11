@@ -34,5 +34,13 @@ auto CallOp::build(mlir::OpBuilder &builder,
   state.addAttribute("callee", builder.getSymbolRefAttr(callee));
 }
 
+auto PrintOp::build(mlir::OpBuilder &builder,
+                   mlir::OperationState &state,
+                   mlir::Value argument) -> void {
+  auto dataType = builder.getI64Type();
+  state.addTypes(dataType);
+  state.addOperands({argument});
+}
+
 } // namespace cherry
 } // namespace mlir
