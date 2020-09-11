@@ -1,6 +1,6 @@
 # 🍒 Cherry Programming Language 🍒
 
-## Building Cherry
+## Build Cherry
 
 - Built LLVM and MLIR in `$BUILD_DIR` and instal them to `$PREFIX`.
   - Make sure to pass `-DLLVM_INSTALL_UTILS=ON` when building LLVM with CMake in order to install `FileCheck` to the chosen installation prefix.
@@ -15,12 +15,18 @@ cmake --build . --target check-cherry
 ```sh
 cmake --build . --target mlir-doc
 ```
-
 ## Grammar
 [Cherry grammar](/docs/Grammar.md)
 
-## Driver Flags
+## Run the Driver
 
+### Run JIT
+Example
+```
+cherry-driver main.cherry
+```
+
+### Driver Flags
 Meaning                    |  Flag
 |--------------------------|-------------------|
 Enable optimisation        | -opt

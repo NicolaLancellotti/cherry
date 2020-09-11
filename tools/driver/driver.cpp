@@ -69,7 +69,7 @@ auto main(int argc, const char **argv) -> int {
   case Action::DumpLLVM:
     return compilation->dumpLLVM();
   default:
-    return -1;
+    return compilation->jit();
   }
 
 }

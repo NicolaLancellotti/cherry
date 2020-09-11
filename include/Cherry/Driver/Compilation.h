@@ -40,6 +40,8 @@ public:
   auto dumpMLIR(Lowering lowering) -> int;
   auto dumpLLVM() -> int;
 
+  auto jit() -> int;
+
   auto sourceManager() -> llvm::SourceMgr& { return _sourceManager; };
 
 private:

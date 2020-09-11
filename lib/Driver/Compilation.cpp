@@ -31,8 +31,8 @@ using namespace cherry;
 
 auto Compilation::make(std::string filename,
                        bool enableOpt) -> std::unique_ptr<Compilation> {
-  mlir::registerDialect<mlir::StandardOpsDialect>();
   mlir::registerDialect<mlir::cherry::CherryDialect>();
+  mlir::registerDialect<mlir::StandardOpsDialect>();
   mlir::registerDialect<mlir::LLVM::LLVMDialect>();
 
   auto fileOrErr = llvm::MemoryBuffer::getFileOrSTDIN(filename);
@@ -94,14 +94,43 @@ auto Compilation::genLLVM(std::unique_ptr<llvm::Module>& llvmModule) -> CherryRe
   mlir::ExecutionEngine::setupTargetTriple(llvmModule.get());
 
   auto optPipeline = mlir::makeOptimizingTransformer(
-      /*optLevel=*/_enableOpt ? 3 : 0, /*sizeLevel=*/0,
+      _enableOpt ? 3 : 0,
+      /*sizeLevel=*/0,
       /*targetMachine=*/nullptr);
+
   if (auto err = optPipeline(llvmModule.get())) {
     llvm::errs() << "Failed to optimize LLVM IR " << err << "\n";
     return failure();
   }
 
   return success();
+}
+
+auto Compilation:: jit() -> int {
+  mlir::OwningModuleRef module;
+  if (genMLIR(module, Lowering::LLVM))
+    return EXIT_FAILURE;
+
+  llvm::InitializeNativeTarget();
+  llvm::InitializeNativeTargetAsmPrinter();
+
+  auto optPipeline = mlir::makeOptimizingTransformer(
+      _enableOpt ? 3 : 0,
+      /*sizeLevel=*/0,
+      /*targetMachine=*/nullptr);
+
+  auto maybeEngine = mlir::ExecutionEngine::create(*module, optPipeline);
+  assert(maybeEngine && "failed to construct an execution engine");
+  auto &engine = maybeEngine.get();
+
+  if (auto fun = engine->lookup("main")) {
+    int result;
+    void *pResult = (void*)&result;
+    fun.get()(&pResult);
+    return EXIT_SUCCESS;
+  }
+
+  return EXIT_SUCCESS;
 }
 
 auto Compilation::dumpTokens() -> int {

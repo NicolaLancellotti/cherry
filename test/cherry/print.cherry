@@ -1,0 +1,16 @@
+# RUN: cherry-driver %s 2>&1| FileCheck %s
+
+fun baz () {
+	print(3);
+}
+
+fun bar () {
+	print(2);
+}
+
+fun main () {
+	bar();
+	# CHECK: 2
+	baz();
+	# CHECK: 3
+}
