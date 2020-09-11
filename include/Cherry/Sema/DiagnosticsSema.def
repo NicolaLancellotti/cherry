@@ -1,0 +1,15 @@
+//===--- DiagnosticsSema.def - Diagnostics Text -----------------*- C++ -*-===//
+//
+// This source file is part of the Cherry open source project
+// See TODO for license information
+//
+//===----------------------------------------------------------------------===//
+
+ERROR(func_redefinition, "redefinition of `%s`")
+ERROR(func_undefined, "cannot find function `%s`")
+
+ERROR(func_param, "function `%s` takes %d parameters")
+
+
+// ___________________________________________________________________________
+#undef ERROR
