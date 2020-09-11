@@ -21,6 +21,7 @@ namespace cherry {
 
 using mlir::failure;
 using mlir::success;
+using std::make_pair;
 
 class Parser {
 public:
@@ -119,22 +120,49 @@ private:
     return success();
   }
 
+  auto parseIdentifier(std::unique_ptr<Identifier>& identifier, const llvm::Twine &message) -> CherryResult {
+    auto location = tokenLoc();
+    auto name = spelling();
+    if (parseToken(Token::identifier, message))
+      return failure();
+
+    identifier = std::make_unique<Identifier>(location,
+                                              std::string(name));
+    return success();
+  }
+
   auto parsePrototype_c(std::unique_ptr<Prototype>& proto) -> CherryResult {
     auto location = tokenLoc();
     consume(Token::kw_fun);
 
     std::string name{spelling()};
     if (parseToken(Token::identifier,
-                   diag::expected_id_in_func_decl) ||
+                   diag::expected_id) ||
         parseToken(Token::l_paren,
                    diag::expected_l_paren_in_arg_list))
       return failure();
 
-    if (parseToken(Token::r_paren,
-                   diag::expected_r_paren_in_arg_list))
-      return failure();
+    // Parse parameters
+    std::vector<Parameter> parameters;
+    while (!tokenIs(Token::r_paren) && !tokenIs(Token::eof)) {
+      std::unique_ptr<Identifier> param;
+      std::unique_ptr<Identifier> type;
+      if (parseIdentifier(param, diag::expected_id) ||
+          parseToken(Token::colon, diag::expected_colon) ||
+          parseIdentifier(type, diag::expected_type))
+        return failure();
+      parameters.push_back(make_pair(std::move(param), std::move(type)));
 
-    proto = std::make_unique<Prototype>(location, std::move(name));
+      if (tokenIs(Token::r_paren))
+        break;
+
+      if (parseToken(Token::comma,
+                     diag::expected_comma_or_r_paren_arg_list))
+        return failure();
+    }
+
+    consume(Token::r_paren);
+    proto = std::make_unique<Prototype>(location, std::move(name), std::move(parameters));
     return success();
   }
 
@@ -217,13 +245,13 @@ private:
         break;
 
       if (parseToken(Token::comma,
-                     diag::expected_comma_or_l_paren_arg_list))
+                     diag::expected_comma_or_r_paren_arg_list))
         return failure();
     }
 
     consume(Token::r_paren);
     expr = std::make_unique<CallExpr>(location, std::move(name),
-                                              std::move(expressions));
+                                      std::move(expressions));
     return success();
   }
 

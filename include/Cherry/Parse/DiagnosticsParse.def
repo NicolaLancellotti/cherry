@@ -11,12 +11,14 @@
 ERROR(expected_fun, "expected `fun`")
 
 // prototype
-ERROR(expected_id_in_func_decl,
-    "expected identifier in function declaration")
+ERROR(expected_id,
+    "expected identifier")
+ERROR(expected_colon,
+     "expected `:`")
+ERROR(expected_type,
+     "expected type")
 ERROR(expected_l_paren_in_arg_list,
     "expected `(` in argument list of function declaration")
-ERROR(expected_r_paren_in_arg_list,
-    "expected `)` in argument list of function declaration")
 
 // ___________________________________________________________________________
 // Parse Expressions
@@ -40,7 +42,7 @@ ERROR(expected_semi,
 // function call
 ERROR(expected_l_paren_func_call,
     "expected `(` to begin a function call")
-ERROR(expected_comma_or_l_paren_arg_list,
+ERROR(expected_comma_or_r_paren_arg_list,
     "expected `,` or `)` in argument list")
 
 // ___________________________________________________________________________
