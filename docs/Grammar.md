@@ -49,4 +49,13 @@ function-declaration → `fun` function-name function-signature  function-body
 function-name → identifier  
 function-signature → parameter-clause  
 parameter-clause → `(` `)`    
+parameter-clause → `(` parameter-list `)`
+parameter-list → parameter  
+parameter-list → parameter , parameter-list  
+parameter → parameter-name type-annotation  
+parameter-name → identifier
+type-annotation → `:` type   
 function-body → `{` statements<sub>opt</sub> `}`  
+
+## Types
+type → identifier    
