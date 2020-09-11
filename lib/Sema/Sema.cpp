@@ -10,6 +10,7 @@
 #include "cherry/AST/AST.h"
 #include "cherry/Basic/CherryResult.h"
 #include <map>
+#include <set>
 
 namespace {
 using namespace cherry;
@@ -35,10 +36,12 @@ public:
 
 private:
   const llvm::SourceMgr &_sourceManager;
-  std::map<std::string, int> _symbols;
+  std::map<std::string, int> _functionSymbols;
+  std::set<std::string> _typeSymbols;
 
   auto addBuiltin() -> void {
-    _symbols.insert(make_pair("print", 1));
+    _functionSymbols.insert(make_pair("print", 1));
+    _typeSymbols.insert("UInt64");
   }
 
   auto emitError(const Node *node, const llvm::Twine &msg) -> CherryResult {
@@ -46,6 +49,12 @@ private:
                                 llvm::SourceMgr::DiagKind::DK_Error,
                                 msg);
     return failure();
+  }
+
+  auto checkTypeExist(const Identifier *node) -> CherryResult {
+    if (_typeSymbols.find(node->name()) == _typeSymbols.end())
+      return failure();
+    return success();
   }
 
   auto sema(const Decl *node) -> CherryResult {
@@ -70,16 +79,20 @@ private:
   }
 
   auto sema(const Prototype *node) -> CherryResult {
-    auto id = node->id().get();
-    auto name = id->name();
-    auto result = _symbols.insert(make_pair(name, 0));
-    if (result.second)
-      return success();
+    for (auto &par : node->parameters())
+      if (checkTypeExist(par.second.get()))
+        return emitError(par.second.get(), diag::type_undefined);
 
-    const char * diagnostic = diag::func_redefinition;
-    char buffer [50];
-    sprintf(buffer, diagnostic, name.c_str());
-    return emitError(id, buffer);
+    auto name = node->id()->name();
+    auto result = _functionSymbols.insert(make_pair(name,
+                                                    node->parameters().size()));
+    if (!result.second) {
+      const char *diagnostic = diag::func_redefinition;
+      char buffer[50];
+      sprintf(buffer, diagnostic, name.c_str());
+      return emitError(node->id().get(), buffer);
+    }
+    return success();
   }
 
   auto sema(const Expr *node) -> CherryResult {
@@ -95,8 +108,8 @@ private:
 
   auto sema(const CallExpr *node) -> CherryResult {
     auto name = node->name();
-    auto symbol = _symbols.find(name);
-    if (symbol == _symbols.end()) {
+    auto symbol = _functionSymbols.find(name);
+    if (symbol == _functionSymbols.end()) {
       const char * diagnostic = diag::func_undefined;
       char buffer [50];
       sprintf(buffer, diagnostic, name.c_str());

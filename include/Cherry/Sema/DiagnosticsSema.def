@@ -9,6 +9,7 @@ ERROR(func_redefinition, "redefinition of `%s`")
 ERROR(func_undefined, "cannot find function `%s`")
 
 ERROR(func_param, "function `%s` takes %d parameters")
+ERROR(type_undefined, "undefined type")
 
 
 // ___________________________________________________________________________
