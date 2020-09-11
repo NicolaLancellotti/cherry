@@ -101,8 +101,17 @@ struct CherryToStandardLoweringPass
 
 } // end namespace
 
+namespace mlir {
+
 auto mlir::cherry::createLowerToStandardPass() -> std::unique_ptr<mlir::Pass> {
   return std::make_unique<CherryToStandardLoweringPass>();
+}
+
+auto registerLowerToStandardPass() -> void {
+  PassRegistration<CherryToStandardLoweringPass>("lower-cherry-to-std",
+                                                 " Lower Cherry operations to a combination of Standard and Cherry operations");
+}
+
 }
 
 #endif // CHERRY_LOWERTOSTANDARDPASS_H

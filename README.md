@@ -41,3 +41,9 @@ Example
 ```
 cherry-driver -dump=mlir main.cherry
 ```
+
+## Run the Optimiser
+Example
+```
+cherry-opt -lower-cherry-to-std -lower-cherry-std-to-llvm -print-ir-after-all main.mlir
+```

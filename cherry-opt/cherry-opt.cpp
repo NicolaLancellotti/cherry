@@ -1,8 +1,7 @@
-//===- cherry-opt.cpp ---------------------------------------*- C++ -*-===//
+//===--- cherry-opt.cpp - Cherry optimiser ----------------------*- C++ -*-===//
 //
-// This file is licensed under the Apache License v2.0 with LLVM Exceptions.
-// See https://llvm.org/LICENSE.txt for license information.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// This source file is part of the Cherry open source project
+// See TODO for license information
 //
 //===----------------------------------------------------------------------===//
 
@@ -20,6 +19,11 @@
 #include "llvm/Support/ToolOutputFile.h"
 
 #include "cherry/MLIRGen/CherryDialect.h"
+
+namespace mlir {
+auto registerLowerToStandardPass() -> void;
+auto registerLowerToLLVMPass() -> void;
+} // namespace mlir
 
 static llvm::cl::opt<std::string> inputFilename(llvm::cl::Positional,
                                                 llvm::cl::desc("<input file>"),
@@ -61,7 +65,9 @@ int main(int argc, char **argv) {
   mlir::registerAllPasses();
 
   mlir::registerDialect<mlir::cherry::CherryDialect>();
-  // TODO: Register cherry passes here.
+  // Register cherry passes here.
+  mlir::registerLowerToStandardPass();
+  mlir::registerLowerToLLVMPass();
 
   llvm::InitLLVM y(argc, argv);
 

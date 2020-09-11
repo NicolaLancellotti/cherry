@@ -116,6 +116,16 @@ struct CherryToLLVMLoweringPass
 
 } // end namespace
 
+
+
+namespace mlir {
+
 auto mlir::cherry::createLowerToLLVMPass() -> std::unique_ptr<mlir::Pass> {
   return std::make_unique<CherryToLLVMLoweringPass>();
+}
+auto registerLowerToLLVMPass() -> void {
+  PassRegistration<CherryToLLVMLoweringPass>("lower-cherry-std-to-llvm",
+                                             "Lower Cherry and Standard operations into the LLVM dialect");
+}
+
 }
