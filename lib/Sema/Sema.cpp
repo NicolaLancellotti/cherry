@@ -70,7 +70,8 @@ private:
   }
 
   auto sema(const Prototype *node) -> CherryResult {
-    auto name = node->name();
+    auto id = node->id().get();
+    auto name = id->name();
     auto result = _symbols.insert(make_pair(name, 0));
     if (result.second)
       return success();
@@ -78,7 +79,7 @@ private:
     const char * diagnostic = diag::func_redefinition;
     char buffer [50];
     sprintf(buffer, diagnostic, name.c_str());
-    return emitError(node, buffer);
+    return emitError(id, buffer);
   }
 
   auto sema(const Expr *node) -> CherryResult {

@@ -26,7 +26,7 @@ public:
   };
 
   explicit Decl(DeclarationKind kind,
-                       llvm::SMLoc location)
+                llvm::SMLoc location)
       : Node{location}, _kind{kind} {};
 
   auto getKind() const -> DeclarationKind { return _kind; }
@@ -41,7 +41,7 @@ private:
 class Identifier final : public Node {
 public:
   explicit Identifier(llvm::SMLoc location,
-                     std::string name)
+                      std::string name)
       : Node{location}, _name(std::move(name)) {};
 
   auto name() const -> const std::string& {
@@ -58,13 +58,14 @@ using Parameter = std::pair<std::unique_ptr<Identifier>, std::unique_ptr<Identif
 class Prototype final : public Node {
 public:
   explicit Prototype(llvm::SMLoc location,
-                     std::string name,
+                     std::unique_ptr<Identifier> id,
                      std::vector<Parameter> parameters)
-      : Node{location}, _name(std::move(name)),
+      : Node{location},
+        _id(std::move(id)),
         _parameters{std::move(parameters)} {};
 
-  auto name() const -> const std::string& {
-    return _name;
+  auto id() const -> const std::unique_ptr<Identifier>& {
+    return _id;
   }
 
   auto parameters() const -> const std::vector<Parameter>& {
@@ -72,7 +73,7 @@ public:
   }
 
 private:
-  std::string _name;
+  std::unique_ptr<Identifier> _id;
   std::vector<Parameter> _parameters;
 };
 

@@ -78,13 +78,15 @@ auto Dumper::dump(const Parameter *node) -> void {
   auto id = node->first.get();
   auto type = node->second.get();
   INDENT();
-  llvm::errs() << "Parameter id=" << id->name() << " " << loc(id)
-               << " type=" << type->name() << " " << loc(type) << "\n";
+  llvm::errs() << "Parameter (id=" << id->name() << " " << loc(id)
+               << ") (type=" << type->name() << " " << loc(type) << ")\n";
 }
 
 auto Dumper::dump(const Prototype *node) -> void {
+  auto id = node->id().get();
   INDENT();
-  llvm::errs() << "Prototype " << loc(node) << " name="<< node->name() << "\n";
+  llvm::errs() << "Prototype " << loc(node)
+               << " (name="<< id->name() << " " << loc(id) << ")\n";
   for (auto& parameter : node->parameters())
     dump(&parameter);
 }

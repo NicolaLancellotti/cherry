@@ -100,7 +100,7 @@ private:
     llvm::SmallVector<mlir::Type, 1> result_types(1, resultType);
 
     auto funcType = _builder.getFunctionType(arg_types, result_types);
-    func = mlir::FuncOp::create(loc(node), node->name(), funcType);
+    func = mlir::FuncOp::create(loc(node), node->id()->name(), funcType);
     return success();
   }
 

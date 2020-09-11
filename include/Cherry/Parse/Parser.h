@@ -135,11 +135,9 @@ private:
     auto location = tokenLoc();
     consume(Token::kw_fun);
 
-    std::string name{spelling()};
-    if (parseToken(Token::identifier,
-                   diag::expected_id) ||
-        parseToken(Token::l_paren,
-                   diag::expected_l_paren_in_arg_list))
+    std::unique_ptr<Identifier> name;
+    if (parseIdentifier(name, diag::expected_id) ||
+        parseToken(Token::l_paren, diag::expected_l_paren_in_arg_list))
       return failure();
 
     // Parse parameters
