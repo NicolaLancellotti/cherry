@@ -44,6 +44,7 @@ TOK_PUNCTUATION(l_brace, "{")
 TOK_PUNCTUATION(r_brace, "}")
 TOK_PUNCTUATION(l_paren, "(")
 TOK_PUNCTUATION(r_paren, ")")
+TOK_PUNCTUATION(colon, ":")
 
 // Keywords
 
