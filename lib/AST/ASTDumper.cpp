@@ -49,6 +49,7 @@ private:
   auto dump(const Decl *node) -> void;
   auto dump(const Prototype *node) -> void;
   auto dump(const FunctionDecl *node) -> void;
+  auto dump(const Parameter *node) -> void;
 
   // Expressions
   auto dump(const Expr *node) -> void;
@@ -73,9 +74,19 @@ auto Dumper::dump(const Decl *node) -> void {
       });
 }
 
+auto Dumper::dump(const Parameter *node) -> void {
+  auto id = node->first.get();
+  auto type = node->second.get();
+  INDENT();
+  llvm::errs() << "Parameter id=" << id->name() << " " << loc(id)
+               << " type=" << type->name() << " " << loc(type) << "\n";
+}
+
 auto Dumper::dump(const Prototype *node) -> void {
   INDENT();
   llvm::errs() << "Prototype " << loc(node) << " name="<< node->name() << "\n";
+  for (auto& parameter : node->parameters())
+    dump(&parameter);
 }
 
 auto Dumper::dump(const FunctionDecl *node) -> void {
