@@ -8,6 +8,7 @@
 #ifndef CHERRY_LOWERTOSTANDARDPASS_H
 #define CHERRY_LOWERTOSTANDARDPASS_H
 
+#include "cherry/MLIRGen/CherryDialect.h"
 #include "cherry/MLIRGen/CherryOps.h"
 #include "cherry/MLIRGen/Passes.h"
 #include "mlir/Dialect/StandardOps/IR/Ops.h"
@@ -83,6 +84,8 @@ struct CherryToStandardLoweringPass
   auto runOnFunction() -> void final {
     ConversionTarget target(getContext());
     target.addLegalDialect<StandardOpsDialect>();
+    target.addIllegalDialect<cherry::CherryDialect>();
+    target.addLegalOp<cherry::PrintOp>();
 
     OwningRewritePatternList patterns;
     patterns.insert<ReturnOpLowering>(&getContext());
