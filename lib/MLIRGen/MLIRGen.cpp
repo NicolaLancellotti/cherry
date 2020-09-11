@@ -93,11 +93,10 @@ private:
   }
 
   auto gen(const Prototype *node, mlir::FuncOp& func) -> CherryResult {
-    mlir::Type noneType = mlir::NoneType();
-    llvm::SmallVector<mlir::Type, 0> arg_types(0, noneType);
+    mlir::Type i64Type = _builder.getI64Type();
 
-    mlir::Type resultType = _builder.getI64Type();
-    llvm::SmallVector<mlir::Type, 1> result_types(1, resultType);
+    llvm::SmallVector<mlir::Type, 0> arg_types(node->parameters().size(), i64Type);
+    llvm::SmallVector<mlir::Type, 1> result_types(1, i64Type);
 
     auto funcType = _builder.getFunctionType(arg_types, result_types);
     func = mlir::FuncOp::create(loc(node), node->id()->name(), funcType);

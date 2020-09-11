@@ -66,14 +66,23 @@ struct ReturnOpLowering : public ConversionPattern {
   }
 };
 
-struct CallOpLowering : public OpRewritePattern<cherry::CallOp> {
-  using OpRewritePattern<cherry::CallOp>::OpRewritePattern;
+struct CallOpLowering : public ConversionPattern {
 
-  auto matchAndRewrite(cherry::CallOp op,
-                       PatternRewriter &rewriter) const -> LogicalResult final {
-    rewriter.replaceOpWithNewOp<CallOp>(op, op.callee(),
-                                        op.getResult().getType(),
-                                        op.getOperands());
+  CallOpLowering(MLIRContext *ctx)
+      : ConversionPattern(cherry::CallOp::getOperationName(), 1, ctx) {}
+
+  auto matchAndRewrite(Operation *op,
+                       ArrayRef<Value> operands,
+                       ConversionPatternRewriter &rewriter) const -> LogicalResult final {
+    auto callOp = dyn_cast<cherry::CallOp>(op);
+
+    SmallVector<Value, 3> loads;
+    for (auto operand : operands)
+      loads.push_back(rewriter.create<LoadOp>(op->getLoc(), operand));
+
+    rewriter.replaceOpWithNewOp<CallOp>(op, callOp.callee(),
+                                        callOp.getResult().getType(),
+                                        loads);
     return success();
   }
 };
