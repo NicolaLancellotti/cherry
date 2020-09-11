@@ -13,7 +13,7 @@ identifier-character → `Digit 0 through 9`
 **Literals**  
 literal → decimal-literal    
 decimal-literal → decimal-digit decimal-digits<sub>opt</sub>    
-decimal-digit → `Digit 0 or 1`    
+decimal-digit → `Digit 0 through 9`    
 decimal-digits → decimal-digit decimal-digits<sub>opt</sub>     
 
 ## Expressions  
