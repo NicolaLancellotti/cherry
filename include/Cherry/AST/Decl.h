@@ -38,7 +38,7 @@ private:
 // _____________________________________________________________________________
 // Function declaration
 
-class Identifier : public Node {
+class Identifier final : public Node {
 public:
   explicit Identifier(llvm::SMLoc location,
                      std::string name)
@@ -55,7 +55,7 @@ private:
 
 using Parameter = std::pair<std::unique_ptr<Identifier>, std::unique_ptr<Identifier>>;
 
-class Prototype : public Node {
+class Prototype final : public Node {
 public:
   explicit Prototype(llvm::SMLoc location,
                      std::string name,
@@ -76,7 +76,7 @@ private:
   std::vector<Parameter> _parameters;
 };
 
-class FunctionDecl: public Decl {
+class FunctionDecl final : public Decl {
 public:
   explicit FunctionDecl(llvm::SMLoc location,
                         std::unique_ptr<Prototype> proto,

@@ -37,7 +37,7 @@ private:
 // _____________________________________________________________________________
 // Call expression
 
-class CallExpr : public Expr {
+class CallExpr final : public Expr {
 public:
   explicit CallExpr(llvm::SMLoc location,
                     std::string name,
@@ -70,7 +70,7 @@ public:
 // _____________________________________________________________________________
 // Decimal expression
 
-class DecimalExpr : public Expr {
+class DecimalExpr final : public Expr {
 public:
   explicit DecimalExpr(llvm::SMLoc location, uint64_t value)
       : Expr{Expr_Decimal, location}, _value(value) {};
