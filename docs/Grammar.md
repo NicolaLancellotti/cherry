@@ -30,8 +30,10 @@ literal-expression → literal
 function-call-expression → identifier function-call-argument-clause    
 function-call-argument-clause → `(` `)`  
 function-call-argument-clause → `(` function-call-argument-list `)`       
-function-call-argument-list → literal  
-function-call-argument-list → literal `,` function-call-argument-list      
+function-call-argument-list → function-call-argument    
+function-call-argument-list → function-call-argument `,` function-call-argument-list
+function-call-argument → literal  
+function-call-argument → identifier      
 
 ## Statements  
 statement → expression `;`  
