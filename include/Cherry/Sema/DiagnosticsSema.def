@@ -11,6 +11,8 @@ ERROR(func_undefined, "cannot find function `%s`")
 ERROR(func_param, "function `%s` takes %d parameters")
 ERROR(type_undefined, "undefined type")
 
+ERROR(var_undefined, "undefined variable")
+ERROR(var_redefinition, "redefinition of variable")
 
 // ___________________________________________________________________________
 #undef ERROR

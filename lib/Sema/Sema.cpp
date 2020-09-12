@@ -38,10 +38,18 @@ private:
   const llvm::SourceMgr &_sourceManager;
   std::map<std::string, int> _functionSymbols;
   std::set<std::string> _typeSymbols;
+  std::set<llvm::StringRef> _variableSymbols;
 
   auto addBuiltin() -> void {
     _functionSymbols.insert(make_pair("print", 1));
     _typeSymbols.insert("UInt64");
+  }
+
+  auto declareVariable(llvm::StringRef name) -> CherryResult {
+    if (_variableSymbols.find(name) != _variableSymbols.end())
+      return failure();
+    _variableSymbols.insert(name);
+    return success();
   }
 
   auto emitError(const Node *node, const llvm::Twine &msg) -> CherryResult {
@@ -51,7 +59,7 @@ private:
     return failure();
   }
 
-  auto checkTypeExist(const Identifier *node) -> CherryResult {
+  auto checkTypeExist(const Variable *node) -> CherryResult {
     if (_typeSymbols.find(node->name()) == _typeSymbols.end())
       return failure();
     return success();
@@ -68,6 +76,7 @@ private:
   }
 
   auto sema(const FunctionDecl *node) -> CherryResult {
+    _variableSymbols = {};
     if (sema(node->proto().get()))
       return failure();
 
@@ -79,9 +88,12 @@ private:
   }
 
   auto sema(const Prototype *node) -> CherryResult {
-    for (auto &par : node->parameters())
+    for (auto &par : node->parameters()) {
+      if (declareVariable(par.first->name()))
+        return emitError(par.first.get(), diag::var_redefinition);
       if (checkTypeExist(par.second.get()))
         return emitError(par.second.get(), diag::type_undefined);
+    }
 
     auto name = node->id()->name();
     auto result = _functionSymbols.insert(make_pair(name,
@@ -101,9 +113,17 @@ private:
       return sema(cast<DecimalExpr>(node));
     case Expr::Expr_Call:
       return sema(cast<CallExpr>(node));
+    case Expr::Expr_Variable:
+      return sema(cast<Variable>(node));
     default:
       return failure();
     }
+  }
+
+  auto sema(const Variable *node) -> CherryResult {
+    if (_variableSymbols.find(node->name()) == _variableSymbols.end())
+      return emitError(node, diag::var_undefined);
+    return success();
   }
 
   auto sema(const CallExpr *node) -> CherryResult {
