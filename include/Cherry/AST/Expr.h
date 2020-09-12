@@ -22,6 +22,7 @@ public:
   enum ExpressionKind {
     Expr_Call,
     Expr_Decimal,
+    Expr_Variable,
   };
 
   explicit Expr(ExpressionKind kind,
@@ -32,6 +33,27 @@ public:
 
 private:
   const ExpressionKind _kind;
+};
+
+// _____________________________________________________________________________
+// Call expression
+
+class Variable final : public Expr {
+public:
+  explicit Variable(llvm::SMLoc location,
+                      std::string name)
+      : Expr{Expr_Variable, location}, _name(std::move(name)) {};
+
+  static auto classof(const Expr * node) -> bool {
+    return node->getKind() == Expr_Variable;
+  }
+
+  auto name() const -> const std::string& {
+    return _name;
+  }
+
+private:
+  std::string _name;
 };
 
 // _____________________________________________________________________________

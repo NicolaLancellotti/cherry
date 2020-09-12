@@ -120,14 +120,14 @@ private:
     return success();
   }
 
-  auto parseIdentifier(std::unique_ptr<Identifier>& identifier, const llvm::Twine &message) -> CherryResult {
+  template <typename T>
+  auto parseIdentifier(std::unique_ptr<T>& identifier, const llvm::Twine &message) -> CherryResult {
     auto location = tokenLoc();
     auto name = spelling();
     if (parseToken(Token::identifier, message))
       return failure();
 
-    identifier = std::make_unique<Identifier>(location,
-                                              std::string(name));
+    identifier = std::make_unique<T>(location, std::string(name));
     return success();
   }
 
@@ -143,8 +143,8 @@ private:
     // Parse parameters
     std::vector<Parameter> parameters;
     while (!tokenIs(Token::r_paren) && !tokenIs(Token::eof)) {
-      std::unique_ptr<Identifier> param;
-      std::unique_ptr<Identifier> type;
+      std::unique_ptr<Variable> param;
+      std::unique_ptr<Variable> type;
       if (parseIdentifier(param, diag::expected_id) ||
           parseToken(Token::colon, diag::expected_colon) ||
           parseIdentifier(type, diag::expected_type))
@@ -235,8 +235,15 @@ private:
         expressions.push_back(std::move(decimal));
         break;
       }
+      case Token::identifier: {
+        std::unique_ptr<Variable> identifier;
+        if (parseIdentifier(identifier, diag::expected_id))
+          return failure();
+        expressions.push_back(std::move(identifier));
+        break;
+      }
       default:
-        return emitError(diag::expected_decimal);
+        return emitError(diag::expected_decimal_or_id);
       }
 
       if (tokenIs(Token::r_paren))

@@ -15,6 +15,7 @@
 namespace cherry {
 
 class Expr;
+class Variable;
 
 // _____________________________________________________________________________
 // Declaration
@@ -52,8 +53,7 @@ private:
   std::string _name;
 };
 
-
-using Parameter = std::pair<std::unique_ptr<Identifier>, std::unique_ptr<Identifier>>;
+using Parameter = std::pair<std::unique_ptr<Variable>, std::unique_ptr<Variable>>;
 
 class Prototype final : public Node {
 public:
