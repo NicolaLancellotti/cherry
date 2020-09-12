@@ -14,7 +14,9 @@
 #include "mlir/IR/Module.h"
 #include "mlir/IR/StandardTypes.h"
 #include "mlir/IR/Verifier.h"
+#include "llvm/ADT/ScopedHashTable.h"
 #include "llvm/Support/SMLoc.h"
+#include <map>
 
 namespace {
 using namespace mlir::cherry;
@@ -50,11 +52,19 @@ public:
 private:
   const llvm::SourceMgr &_sourceManager;
   mlir::OpBuilder _builder;
+  std::map<llvm::StringRef, mlir::Value> _symbolTable;
 
   auto loc(const Node *node) -> mlir::Location {
     auto [line, col] = _sourceManager.getLineAndColumn(node->location());
     auto identifier = _builder.getIdentifier("main.cherry");
     return _builder.getFileLineColLoc(identifier, line, col);
+  }
+
+  auto declareVariable(llvm::StringRef name, mlir::Value value) -> CherryResult {
+    if (_symbolTable.count(name))
+      return failure();
+    _symbolTable[name] = value;
+    return success();
   }
 
   auto gen(const Decl *node, mlir::Operation *&op) -> CherryResult {
@@ -73,11 +83,9 @@ private:
 
   auto gen(const FunctionDecl *node,
            mlir::FuncOp& func) -> CherryResult {
+    _symbolTable = {};
     if (gen(node->proto().get(), func))
       return failure();
-
-    auto &entryBlock = *func.addEntryBlock();
-    _builder.setInsertionPointToStart(&entryBlock);
 
     for (auto &expr : *node) {
       mlir::Value value;
@@ -86,6 +94,7 @@ private:
         return failure();
       }
     }
+
     auto location = loc(node->proto().get());
     ConstantOp constant0 = _builder.create<ConstantOp>(location, 0);
     _builder.create<ReturnOp>(location, constant0);
@@ -100,6 +109,15 @@ private:
 
     auto funcType = _builder.getFunctionType(arg_types, result_types);
     func = mlir::FuncOp::create(loc(node), node->id()->name(), funcType);
+
+    auto &entryBlock = *func.addEntryBlock();
+    for (const auto &var_value : llvm::zip(node->parameters(),
+                                           entryBlock.getArguments()))
+      if (declareVariable(std::get<0>(var_value).first->name(),
+                          std::get<1>(var_value)))
+        return failure();
+
+    _builder.setInsertionPointToStart(&entryBlock);
     return success();
   }
 
@@ -109,6 +127,8 @@ private:
       return gen(cast<DecimalExpr>(node), value);
     case Expr::Expr_Call:
       return gen(cast<CallExpr>(node), value);
+    case Expr::Expr_Variable:
+      return gen(cast<Variable>(node), value);
     default:
       return failure();
     }
@@ -142,6 +162,11 @@ private:
       operands.push_back(value);
     }
     value = _builder.create<CallOp>(loc(node), node->name(), operands);
+    return success();
+  }
+
+  auto gen(const Variable *node, mlir::Value& value) -> CherryResult {
+    value = _symbolTable[node->name()];
     return success();
   }
 
