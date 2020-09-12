@@ -36,10 +36,12 @@ public:
         llvmDialect);
 
     auto printOp = cast<cherry::PrintOp>(op);
-    auto elementLoad = rewriter.create<LoadOp>(loc, printOp.input());
-    rewriter.create<CallOp>(loc, printfRef, rewriter.getIntegerType(32),
-                            ArrayRef<Value>({formatSpecifierCst, elementLoad}));
+    auto input = printOp.input();
+    Value newInput = input.getType() == rewriter.getI64Type()
+                               ? input : rewriter.create<LoadOp>(loc, input);
 
+    rewriter.create<CallOp>(loc, printfRef, rewriter.getIntegerType(32),
+                            ArrayRef<Value>({formatSpecifierCst, newInput}));
     rewriter.eraseOp(op);
     return success();
   }
