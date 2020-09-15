@@ -31,6 +31,12 @@ public:
       if (sema(decl.get()))
         return failure();
     }
+
+    auto symbol = _functionSymbols.find("main");
+    if (symbol == _functionSymbols.end() || symbol->second != 0) {
+      return emitError(llvm::SMLoc{}, diag::main_undefined);
+    }
+    
     return success();
   }
 
@@ -54,6 +60,13 @@ private:
 
   auto emitError(const Node *node, const llvm::Twine &msg) -> CherryResult {
     _sourceManager.PrintMessage(node->location(),
+                                llvm::SourceMgr::DiagKind::DK_Error,
+                                msg);
+    return failure();
+  }
+
+  auto emitError(llvm::SMLoc loc, const llvm::Twine &msg) -> CherryResult {
+    _sourceManager.PrintMessage(loc,
                                 llvm::SourceMgr::DiagKind::DK_Error,
                                 msg);
     return failure();
