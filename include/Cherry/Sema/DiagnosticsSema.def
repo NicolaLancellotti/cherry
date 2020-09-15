@@ -11,10 +11,13 @@ ERROR(func_redefinition, "redefinition of `%s`")
 ERROR(func_undefined, "cannot find function `%s`")
 
 ERROR(func_param, "function `%s` takes %d parameters")
+ERROR(func_param_type_mismatch, "type mismatch")
 ERROR(type_undefined, "undefined type")
 
 ERROR(var_undefined, "undefined variable")
 ERROR(var_redefinition, "redefinition of variable")
+
+ERROR(type_redefinition, "redefinition of type")
 
 // ___________________________________________________________________________
 #undef ERROR

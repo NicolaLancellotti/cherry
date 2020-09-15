@@ -15,7 +15,7 @@
 namespace cherry {
 
 class Expr;
-class Variable;
+class VariableExpr;
 
 // _____________________________________________________________________________
 // Declaration
@@ -24,6 +24,8 @@ class Decl : public Node {
 public:
   enum DeclarationKind {
     Decl_Function,
+    Decl_Struct,
+    Decl_Var,
   };
 
   explicit Decl(DeclarationKind kind,
@@ -37,7 +39,7 @@ private:
 };
 
 // _____________________________________________________________________________
-// Function declaration
+// Identifier
 
 class Identifier final : public Node {
 public:
@@ -53,13 +55,42 @@ private:
   std::string _name;
 };
 
-using Parameter = std::pair<std::unique_ptr<Variable>, std::unique_ptr<Variable>>;
+// _____________________________________________________________________________
+// VariableDecl
+
+class VariableDecl final : public Decl {
+public:
+  explicit VariableDecl(llvm::SMLoc location,
+                        std::unique_ptr<VariableExpr> variable,
+                        std::unique_ptr<Identifier> type)
+      : Decl{Decl_Var, location}, _variable(std::move(variable)),
+        _type(std::move(type)) {};
+
+  static auto classof(const Decl *node) -> bool {
+    return node->getKind() == Decl_Var;
+  }
+
+  auto variable() const -> const std::unique_ptr<VariableExpr>& {
+    return _variable;
+  }
+
+  auto type() const -> const std::unique_ptr<Identifier>& {
+    return _type;
+  }
+
+private:
+  std::unique_ptr<VariableExpr> _variable;
+  std::unique_ptr<Identifier> _type;
+};
+
+// _____________________________________________________________________________
+// Function declaration
 
 class Prototype final : public Node {
 public:
   explicit Prototype(llvm::SMLoc location,
                      std::unique_ptr<Identifier> id,
-                     std::vector<Parameter> parameters)
+                     VectorUniquePtr<VariableDecl> parameters)
       : Node{location},
         _id(std::move(id)),
         _parameters{std::move(parameters)} {};
@@ -68,13 +99,13 @@ public:
     return _id;
   }
 
-  auto parameters() const -> const std::vector<Parameter>& {
+  auto parameters() const -> const VectorUniquePtr<VariableDecl>& {
     return _parameters;
   }
 
 private:
   std::unique_ptr<Identifier> _id;
-  std::vector<Parameter> _parameters;
+  VectorUniquePtr<VariableDecl> _parameters;
 };
 
 class FunctionDecl final : public Decl {
@@ -104,6 +135,38 @@ private:
 public:
   auto begin() const -> decltype(_body.begin()) { return _body.begin(); }
   auto end() const -> decltype(_body.end()) { return _body.end(); }
+};
+
+// _____________________________________________________________________________
+// Struct declaration
+
+class StructDecl final : public Decl {
+public:
+  explicit StructDecl(llvm::SMLoc location,
+                      std::unique_ptr<Identifier> id,
+                      VectorUniquePtr<VariableDecl> variables)
+      : Decl{Decl_Struct, location}, _id(std::move(id)),
+        _variables(std::move(variables)) {};
+
+  static auto classof(const Decl *node) -> bool {
+    return node->getKind() == Decl_Struct;
+  }
+
+  auto id() const -> const std::unique_ptr<Identifier>& {
+    return _id;
+  }
+
+  auto variables() const -> const VectorUniquePtr<VariableDecl>& {
+    return _variables;
+  }
+
+private:
+  std::unique_ptr<Identifier> _id;
+  VectorUniquePtr<VariableDecl> _variables;
+
+public:
+  auto begin() const -> decltype(_variables.begin()) { return _variables.begin(); }
+  auto end() const -> decltype(_variables.end()) { return _variables.end(); }
 };
 
 } // end namespace cherry

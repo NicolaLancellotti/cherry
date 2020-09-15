@@ -8,7 +8,7 @@
 // ___________________________________________________________________________
 // Parse Declarations
 
-ERROR(expected_fun, "expected `fun`")
+ERROR(expected_fun_struct, "expected `fun` or `struct`")
 
 // prototype
 ERROR(expected_id,
@@ -19,6 +19,14 @@ ERROR(expected_type,
      "expected type")
 ERROR(expected_l_paren_in_arg_list,
     "expected `(` in argument list of function declaration")
+
+
+// Parse Types
+ERROR(expected_l_brace,
+    "expected `{`")
+
+ERROR(expected_comma_or_r_brace,
+    "expected `,` or `}`")
 
 // ___________________________________________________________________________
 // Parse Expressions

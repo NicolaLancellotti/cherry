@@ -102,10 +102,30 @@ private:
       decl = std::move(func);
       return success();
     }
+    case Token::kw_struct: {
+      std::unique_ptr<Decl> structType;
+      if (parseStructDecl_c(structType))
+        return failure();
+      decl = std::move(structType);
+      return success();
+    }
     default:
-      return emitError(diag::expected_fun);
+      return emitError(diag::expected_fun_struct);
     }
   }
+
+  template <typename T>
+  auto parseIdentifier(std::unique_ptr<T>& identifier, const llvm::Twine &message) -> CherryResult {
+    auto location = tokenLoc();
+    auto name = spelling();
+    if (parseToken(Token::identifier, message))
+      return failure();
+
+    identifier = std::make_unique<T>(location, std::string(name));
+    return success();
+  }
+
+  // Parse Functions
 
   auto parseFunctionDecl_c(std::unique_ptr<Decl>& decl) -> CherryResult {
     auto loc = tokenLoc();
@@ -120,17 +140,6 @@ private:
     return success();
   }
 
-  template <typename T>
-  auto parseIdentifier(std::unique_ptr<T>& identifier, const llvm::Twine &message) -> CherryResult {
-    auto location = tokenLoc();
-    auto name = spelling();
-    if (parseToken(Token::identifier, message))
-      return failure();
-
-    identifier = std::make_unique<T>(location, std::string(name));
-    return success();
-  }
-
   auto parsePrototype_c(std::unique_ptr<Prototype>& proto) -> CherryResult {
     auto location = tokenLoc();
     consume(Token::kw_fun);
@@ -141,16 +150,17 @@ private:
       return failure();
 
     // Parse parameters
-    std::vector<Parameter> parameters;
+    VectorUniquePtr<VariableDecl> parameters;
     while (!tokenIs(Token::r_paren) && !tokenIs(Token::eof)) {
-      std::unique_ptr<Variable> param;
-      std::unique_ptr<Variable> type;
+      std::unique_ptr<VariableExpr> param;
+      std::unique_ptr<Identifier> type;
       if (parseIdentifier(param, diag::expected_id) ||
           parseToken(Token::colon, diag::expected_colon) ||
           parseIdentifier(type, diag::expected_type))
         return failure();
-      parameters.push_back(make_pair(std::move(param), std::move(type)));
-
+      parameters.push_back(std::make_unique<VariableDecl>(param->location(),
+                                                          std::move(param),
+                                                          std::move(type)));
       if (tokenIs(Token::r_paren))
         break;
 
@@ -161,6 +171,42 @@ private:
 
     consume(Token::r_paren);
     proto = std::make_unique<Prototype>(location, std::move(name), std::move(parameters));
+    return success();
+  }
+
+  // Parse Types
+
+  auto parseStructDecl_c(std::unique_ptr<Decl>& decl) -> CherryResult {
+    auto loc = tokenLoc();
+    consume(Token::kw_struct);
+
+    std::unique_ptr<Identifier> name;
+    if (parseIdentifier(name, diag::expected_id) ||
+        parseToken(Token::l_brace, diag::expected_l_brace))
+      return failure();
+
+    VectorUniquePtr<VariableDecl> variableAndTypes;
+    while (!tokenIs(Token::r_brace) && !tokenIs(Token::eof)) {
+      std::unique_ptr<VariableExpr> var;
+      std::unique_ptr<Identifier> type;
+      if (parseIdentifier(var, diag::expected_id) ||
+          parseToken(Token::colon, diag::expected_colon) ||
+          parseIdentifier(type, diag::expected_type))
+        return failure();
+      variableAndTypes.push_back(std::make_unique<VariableDecl>(var->location(),
+                                                                std::move(var),
+                                                                std::move(type)));
+      if (tokenIs(Token::r_brace))
+        break;
+
+      if (parseToken(Token::comma,
+                     diag::expected_comma_or_r_brace))
+        return failure();
+    }
+
+    consume(Token::r_brace);
+    decl = std::make_unique<StructDecl>(loc, std::move(name), std::move(variableAndTypes));
+
     return success();
   }
 
@@ -236,7 +282,7 @@ private:
         break;
       }
       case Token::identifier: {
-        std::unique_ptr<Variable> identifier;
+        std::unique_ptr<VariableExpr> identifier;
         if (parseIdentifier(identifier, diag::expected_id))
           return failure();
         expressions.push_back(std::move(identifier));

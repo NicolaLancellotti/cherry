@@ -26,7 +26,7 @@ public:
   };
 
   explicit Expr(ExpressionKind kind,
-                      llvm::SMLoc location)
+                llvm::SMLoc location)
       : Node{location}, _kind{kind} {};
 
   auto getKind() const -> ExpressionKind { return _kind; }
@@ -38,10 +38,10 @@ private:
 // _____________________________________________________________________________
 // Call expression
 
-class Variable final : public Expr {
+class VariableExpr final : public Expr {
 public:
-  explicit Variable(llvm::SMLoc location,
-                      std::string name)
+  explicit VariableExpr(llvm::SMLoc location,
+                        std::string name)
       : Expr{Expr_Variable, location}, _name(std::move(name)) {};
 
   static auto classof(const Expr * node) -> bool {

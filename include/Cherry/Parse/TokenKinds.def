@@ -49,6 +49,7 @@ TOK_PUNCTUATION(colon, ":")
 // Keywords
 
 TOK_KEYWORD(fun)
+TOK_KEYWORD(struct)
 
 #undef TOK_MARKER
 #undef TOK_IDENTIFIER

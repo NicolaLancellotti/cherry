@@ -47,9 +47,12 @@ private:
 
   // Declarations
   auto dump(const Decl *node) -> void;
+  auto dump(const VariableDecl *node) -> void;
+
   auto dump(const Prototype *node) -> void;
   auto dump(const FunctionDecl *node) -> void;
-  auto dump(const Parameter *node) -> void;
+
+  auto dump(const StructDecl *node) -> void;
 
   // Expressions
   auto dump(const Expr *node) -> void;
@@ -69,18 +72,19 @@ auto Dumper::dump(const Module *node) -> void {
 
 auto Dumper::dump(const Decl *node) -> void {
   llvm::TypeSwitch<const Decl *>(node)
-      .Case<FunctionDecl>([&](auto *node) {
-        this->dump(node);
-      });
+      .Case<FunctionDecl, StructDecl>([&](auto *node) { this->dump(node);})
+      .Default([&](const Decl *) { llvm_unreachable(""); });
 }
 
-auto Dumper::dump(const Parameter *node) -> void {
-  auto id = node->first.get();
-  auto type = node->second.get();
+auto Dumper::dump(const VariableDecl *node) -> void {
+  auto id = node->variable().get();
+  auto type = node->type().get();
   INDENT();
-  llvm::errs() << "Parameter (id=" << id->name() << " " << loc(id)
+  llvm::errs() << "Variable (id=" << id->name() << " " << loc(id)
                << ") (type=" << type->name() << " " << loc(type) << ")\n";
 }
+
+// Functions
 
 auto Dumper::dump(const Prototype *node) -> void {
   auto id = node->id().get();
@@ -88,7 +92,7 @@ auto Dumper::dump(const Prototype *node) -> void {
   llvm::errs() << "Prototype " << loc(node)
                << " (name="<< id->name() << " " << loc(id) << ")\n";
   for (auto& parameter : node->parameters())
-    dump(&parameter);
+    dump(parameter.get());
 }
 
 auto Dumper::dump(const FunctionDecl *node) -> void {
@@ -98,6 +102,17 @@ auto Dumper::dump(const FunctionDecl *node) -> void {
   for (auto &expr : *node) {
     dump(expr.get());
   }
+}
+
+// Structs
+
+auto Dumper::dump(const StructDecl *node) -> void {
+  INDENT();
+  auto id = node->id().get();
+  llvm::errs() << "StructDecl " << loc(node)
+               << " (name="<< id->name() << " " << loc(id) << ")\n";
+  for (auto& var : node->variables())
+    dump(var.get());
 }
 
 // Expressions
