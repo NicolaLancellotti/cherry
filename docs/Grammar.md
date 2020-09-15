@@ -31,7 +31,7 @@ function-call-expression → identifier function-call-argument-clause
 function-call-argument-clause → `(` `)`  
 function-call-argument-clause → `(` function-call-argument-list `)`       
 function-call-argument-list → function-call-argument    
-function-call-argument-list → function-call-argument `,` function-call-argument-list
+function-call-argument-list → function-call-argument `,` function-call-argument-list  
 function-call-argument → literal  
 function-call-argument → identifier      
 
@@ -41,6 +41,7 @@ statements → statement statements<sub>opt</sub>
 
 ## Declarations  
 declaration → function-declaration  
+declaration → struct-declaration    
 declarations → declaration declaration<sub>opt</sub>    
 
 **Top-level declaration**  
@@ -51,13 +52,17 @@ function-declaration → `fun` function-name function-signature  function-body
 function-name → identifier  
 function-signature → parameter-clause  
 parameter-clause → `(` `)`    
-parameter-clause → `(` parameter-list `)`
+parameter-clause → `(` parameter-list `)`  
 parameter-list → parameter  
 parameter-list → parameter , parameter-list  
 parameter → parameter-name type-annotation  
-parameter-name → identifier
+parameter-name → identifier  
 type-annotation → `:` type   
 function-body → `{` statements<sub>opt</sub> `}`  
 
 ## Types
 type → identifier    
+struct-declaration → `struct` type `{`  struct-members<sub>opt</sub> `}`  
+struct-members → struct-member  
+struct-members → struct-member `,` struct-members    
+struct-member → identifier type-annotation  
