@@ -15,8 +15,9 @@ cmake --build . --target check-cherry
 ```sh
 cmake --build . --target mlir-doc
 ```
-## Grammar
+## Grammar & Builtins
 [Cherry grammar](/docs/Grammar.md)
+[Builtins](/docs/Builtins.md)
 
 ## Run the Driver
 
