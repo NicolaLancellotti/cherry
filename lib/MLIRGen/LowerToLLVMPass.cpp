@@ -34,7 +34,7 @@ public:
     ModuleOp parentModule = op->getParentOfType<ModuleOp>();
     auto printfRef = getOrInsertPrintf(rewriter, parentModule, llvmDialect);
     Value formatSpecifierCst = getOrCreateGlobalString(
-        loc, rewriter, "frmt_spec", StringRef("%d\n\0", 4), parentModule,
+        loc, rewriter, "frmt_spec", StringRef("%llu\n\0", 6), parentModule,
         llvmDialect);
 
     auto printOp = cast<cherry::PrintOp>(op);
