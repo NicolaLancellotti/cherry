@@ -49,3 +49,38 @@ Example
 ```
 cherry-opt -lower-cherry-to-std -lower-cherry-std-to-llvm -print-ir-after-all main.mlir
 ```
+
+## Example
+main.cherry:
+```
+# This is a comment
+
+struct A { }
+
+struct B {
+  x: UInt64,
+  y: A
+}
+
+fun baz(x: B) { }
+
+fun bar(x: UInt64, y: UInt64) {
+  print(x);
+  print(y);
+  print(18446744073709551615);
+}
+
+fun main() {
+  bar(0, 1);
+}
+```
+run:
+```
+cherry-driver main.cherry
+```
+output:
+```
+0
+1
+18446744073709551615
+```
