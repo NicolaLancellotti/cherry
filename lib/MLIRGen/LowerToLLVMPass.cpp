@@ -5,12 +5,14 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "StructType.h"
 #include "cherry/MLIRGen/CherryOps.h"
 #include "cherry/MLIRGen/Passes.h"
 #include "mlir/Conversion/StandardToLLVM/ConvertStandardToLLVM.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/StandardOps/IR/Ops.h"
 #include "mlir/Pass/Pass.h"
+#include "mlir/Transforms/DialectConversion.h"
 
 using namespace mlir;
 
@@ -38,7 +40,7 @@ public:
     auto printOp = cast<cherry::PrintOp>(op);
     auto input = printOp.input();
     Value newInput = input.getType() == rewriter.getI64Type()
-                               ? input : rewriter.create<LoadOp>(loc, input);
+                     ? input : rewriter.create<LoadOp>(loc, input);
 
     rewriter.create<CallOp>(loc, printfRef, rewriter.getIntegerType(32),
                             ArrayRef<Value>({formatSpecifierCst, newInput}));
@@ -104,15 +106,37 @@ struct CherryToLLVMLoweringPass
   auto runOnOperation() -> void final {
     LLVMConversionTarget target(getContext());
     target.addLegalOp<ModuleOp, ModuleTerminatorOp>();
+    llvmDialect = getContext().getRegisteredDialect<LLVM::LLVMDialect>();
 
     LLVMTypeConverter typeConverter(&getContext());
     OwningRewritePatternList patterns;
     populateStdToLLVMConversionPatterns(typeConverter, patterns);
+    typeConverter.addConversion([&](mlir::cherry::StructType type) {
+      return convertStructType(type);
+    });
     patterns.insert<PrintOpLowering>(&getContext());
 
     auto module = getOperation();
     if (failed(applyFullConversion(module, target, patterns)))
       signalPassFailure();
+  }
+
+private:
+  LLVM::LLVMDialect *llvmDialect;
+
+  Type convertStructType(mlir::cherry::StructType type) {
+    std::vector<LLVM::LLVMType> types;
+    for (auto t : type.getElementTypes()) {
+      if (t.isa<mlir::NoneType>()) {
+        types.push_back(LLVM::LLVMType::getInt1Ty(llvmDialect));
+      } else if (auto structType = t.dyn_cast<mlir::cherry::StructType>()) {
+        types.push_back(convertStructType(structType).cast<LLVM::LLVMType>());
+      } else {
+        LLVMTypeConverter typeConverter(&getContext());
+        types.push_back(typeConverter.convertType(t).cast<LLVM::LLVMType>());
+      }
+    }
+    return LLVM::LLVMType::getStructTy(llvmDialect, types);
   }
 };
 

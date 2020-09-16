@@ -5,8 +5,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "cherry/MLIRGen/MLIRGen.h"
+#include "StructType.h"
 #include "cherry/MLIRGen/CherryOps.h"
+#include "cherry/MLIRGen/MLIRGen.h"
 #include "cherry/AST/AST.h"
 #include "cherry/Basic/CherryResult.h"
 #include "mlir/IR/Builders.h"
@@ -37,7 +38,8 @@ public:
       mlir::Operation *op;
       if (gen(decl.get(), op))
         return failure();
-      module.push_back(op);
+      if (op)
+        module.push_back(op);
     }
 
     if (failed(mlir::verify(module))) {
@@ -52,7 +54,8 @@ public:
 private:
   const llvm::SourceMgr &_sourceManager;
   mlir::OpBuilder _builder;
-  std::map<llvm::StringRef, mlir::Value> _symbolTable;
+  std::map<llvm::StringRef, mlir::Value> _variableSymbols;
+  std::map<llvm::StringRef, mlir::Type> _typeSymbols;
 
   auto loc(const Node *node) -> mlir::Location {
     auto [line, col] = _sourceManager.getLineAndColumn(node->location());
@@ -61,10 +64,18 @@ private:
   }
 
   auto declareVariable(llvm::StringRef name, mlir::Value value) -> CherryResult {
-    if (_symbolTable.count(name))
+    if (_variableSymbols.count(name))
       return failure();
-    _symbolTable[name] = value;
+    _variableSymbols[name] = value;
     return success();
+  }
+
+  auto getType(llvm::StringRef name) -> mlir::Type {
+    if (name == "UInt64") {
+      return _builder.getI64Type();
+    } else {
+      return _typeSymbols[name];
+    }
   }
 
   auto gen(const Decl *node, mlir::Operation *&op) -> CherryResult {
@@ -76,6 +87,12 @@ private:
       op = func;
       return success();
     }
+    case Decl::Decl_Struct: {
+      if (gen(cast<StructDecl>(node)))
+        return failure();
+      op = nullptr;
+      return success();
+    }
     default:
       return failure();
     }
@@ -83,7 +100,7 @@ private:
 
   auto gen(const FunctionDecl *node,
            mlir::FuncOp& func) -> CherryResult {
-    _symbolTable = {};
+    _variableSymbols = {};
     if (gen(node->proto().get(), func))
       return failure();
 
@@ -104,7 +121,11 @@ private:
   auto gen(const Prototype *node, mlir::FuncOp& func) -> CherryResult {
     mlir::Type i64Type = _builder.getI64Type();
 
-    llvm::SmallVector<mlir::Type, 0> arg_types(node->parameters().size(), i64Type);
+    llvm::SmallVector<mlir::Type, 3> arg_types;
+    arg_types.reserve(node->parameters().size());
+    for (auto &param : node->parameters())
+      arg_types.push_back(getType(param->type()->name()));
+
     llvm::SmallVector<mlir::Type, 1> result_types(1, i64Type);
 
     auto funcType = _builder.getFunctionType(arg_types, result_types);
@@ -113,11 +134,29 @@ private:
     auto &entryBlock = *func.addEntryBlock();
     for (const auto &var_value : llvm::zip(node->parameters(),
                                            entryBlock.getArguments()))
-      if (declareVariable(std::get<0>(var_value).first->name(),
+      if (declareVariable(std::get<0>(var_value)->variable()->name(),
                           std::get<1>(var_value)))
         return failure();
 
     _builder.setInsertionPointToStart(&entryBlock);
+    return success();
+  }
+
+  auto gen(const StructDecl *node) -> CherryResult {
+    auto &variables = node->variables();
+    if (variables.size() == 0) {
+      _typeSymbols[node->id()->name()] = _builder.getNoneType();
+      return success();
+    }
+
+    std::vector<mlir::Type> elementTypes;
+    elementTypes.reserve(variables.size());
+    for (auto &variable : variables) {
+      mlir::Type type = getType(variable->type()->name());
+      elementTypes.push_back(type);
+    }
+
+    _typeSymbols[node->id()->name()] = StructType::get(elementTypes);
     return success();
   }
 
@@ -128,7 +167,7 @@ private:
     case Expr::Expr_Call:
       return gen(cast<CallExpr>(node), value);
     case Expr::Expr_Variable:
-      return gen(cast<Variable>(node), value);
+      return gen(cast<VariableExpr>(node), value);
     default:
       return failure();
     }
@@ -165,8 +204,8 @@ private:
     return success();
   }
 
-  auto gen(const Variable *node, mlir::Value& value) -> CherryResult {
-    value = _symbolTable[node->name()];
+  auto gen(const VariableExpr *node, mlir::Value& value) -> CherryResult {
+    value = _variableSymbols[node->name()];
     return success();
   }
 

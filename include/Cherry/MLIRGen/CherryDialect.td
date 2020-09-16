@@ -17,6 +17,12 @@ include "mlir/IR/OpBase.td"
 def Cherry_Dialect : Dialect {
     let name = "cherry";
     let cppNamespace = "cherry";
+
+  let extraClassDeclaration = [{
+    auto parseType(mlir::DialectAsmParser &parser) const -> mlir::Type;
+    auto printType(mlir::Type type,
+                   mlir::DialectAsmPrinter &printer) const -> void;
+  }];
 }
 
 //===----------------------------------------------------------------------===//

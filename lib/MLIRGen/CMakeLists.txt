@@ -11,6 +11,8 @@ add_mlir_dialect_library(cherryMLIRGen
 		LowerToStandardPass.cpp
 		LowerToLLVMPass.cpp
 
+		StructType.h
+
         ADDITIONAL_HEADER_DIRS
         ${PROJECT_SOURCE_DIR}/include/cherry/MLIRGen
 
