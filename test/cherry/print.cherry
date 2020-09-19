@@ -1,16 +1,22 @@
 # RUN: cherry-driver %s 2>&1| FileCheck %s
 
-fun baz () {
-	print(3);
+fun baz(x: UInt64) {
+  print(x);
 }
 
-fun bar () {
-	print(2);
+fun bar(x: UInt64, y: UInt64) {
+  print(x);
+  print(y);
+  print(18446744073709551615);
 }
 
-fun main () {
-	bar();
-	# CHECK: 2
-	baz();
-	# CHECK: 3
+fun main() {
+  bar(0, 1);
+  baz(print(2));
 }
+
+# CHECK: 0
+# CHECK: 1
+# CHECK: 18446744073709551615
+# CHECK: 2
+# CHECK: 2
