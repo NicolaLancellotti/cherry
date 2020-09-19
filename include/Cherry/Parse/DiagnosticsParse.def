@@ -33,8 +33,6 @@ ERROR(expected_comma_or_r_brace,
 
 ERROR(expected_expr,
     "expected expression")
-ERROR(expected_decimal_or_id,
-    "expected decimal or identifier")
 
 ERROR(integer_literal_overflows,
     "integer literal overflows")
@@ -48,8 +46,6 @@ ERROR(expected_semi,
     "expected `;` at end of declaration")
 
 // function call
-ERROR(expected_l_paren_func_call,
-    "expected `(` to begin a function call")
 ERROR(expected_comma_or_r_paren_arg_list,
     "expected `,` or `)` in argument list")
 

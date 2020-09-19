@@ -77,8 +77,13 @@ struct CallOpLowering : public ConversionPattern {
     auto callOp = dyn_cast<cherry::CallOp>(op);
 
     SmallVector<Value, 3> loads;
-    for (auto operand : operands)
-      loads.push_back(rewriter.create<LoadOp>(op->getLoc(), operand));
+    for (auto operand : operands) {
+      if (operand.getType().isInteger(64)) {
+        loads.push_back(operand);
+      } else {
+        loads.push_back(rewriter.create<LoadOp>(op->getLoc(), operand));
+      }
+    }
 
     rewriter.replaceOpWithNewOp<CallOp>(op, callOp.callee(),
                                         callOp.getResult().getType(),

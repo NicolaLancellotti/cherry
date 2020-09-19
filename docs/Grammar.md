@@ -19,6 +19,7 @@ decimal-digits → decimal-digit decimal-digits<sub>opt</sub>
 ## Expressions  
 expression → function-call-expression  
 expression → primary-expression  
+expression → variable-expression  
 
 **Primary expressions**    
 primary-expression → literal-expression    
@@ -32,8 +33,10 @@ function-call-argument-clause → `(` `)`
 function-call-argument-clause → `(` function-call-argument-list `)`       
 function-call-argument-list → function-call-argument    
 function-call-argument-list → function-call-argument `,` function-call-argument-list  
-function-call-argument → literal  
-function-call-argument → identifier      
+function-call-argument → expression    
+
+**Variable expression**
+variable-expression → identifier           
 
 ## Statements  
 statement → expression `;`  

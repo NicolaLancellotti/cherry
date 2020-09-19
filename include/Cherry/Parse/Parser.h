@@ -242,10 +242,10 @@ private:
       return success();
     }
     case Token::identifier: {
-      std::unique_ptr<CallExpr> fun;
-      if (parseFunctionCall_c(fun))
+      std::unique_ptr<Expr> var_or_fun;
+      if (parseVariableOrFunctionCall_c(var_or_fun))
         return failure();
-      expr = std::move(fun);
+      expr = std::move(var_or_fun);
       return success();
     }
     default:
@@ -263,35 +263,33 @@ private:
     return emitError(diag::integer_literal_overflows);
   }
 
-  auto parseFunctionCall_c(std::unique_ptr<CallExpr>& expr) -> CherryResult {
+  auto parseVariableOrFunctionCall_c(std::unique_ptr<Expr>& expr) -> CherryResult {
     auto location = tokenLoc();
     std::string name{spelling()};
     consume(Token::identifier);
 
-    if (parseToken(Token::l_paren, diag::expected_l_paren_func_call))
-      return failure();
+    if (tokenIs(Token::l_paren)) {
+      std::unique_ptr<CallExpr> callExp;
+      if (parseFunctionCall_c(location, name, callExp))
+        return failure();
+      expr = std::move(callExp);
+      return success();
+    }
 
+    expr = std::make_unique<VariableExpr>(location, std::move(name));
+    return success();
+  }
+
+  auto parseFunctionCall_c(llvm::SMLoc location,
+                           std::string name,
+                           std::unique_ptr<CallExpr>& expr) -> CherryResult {
+    consume(Token::l_paren);
     auto expressions = VectorUniquePtr<Expr>();
     while (!tokenIs(Token::r_paren)) {
-      switch (tokenKind()) {
-      case Token::decimal: {
-        std::unique_ptr<DecimalExpr> decimal;
-        if (parseDecimal_c(decimal))
-          return failure();
-        expressions.push_back(std::move(decimal));
-        break;
-      }
-      case Token::identifier: {
-        std::unique_ptr<VariableExpr> identifier;
-        if (parseIdentifier(identifier, diag::expected_id))
-          return failure();
-        expressions.push_back(std::move(identifier));
-        break;
-      }
-      default:
-        return emitError(diag::expected_decimal_or_id);
-      }
-
+      std::unique_ptr<Expr> exp;
+      if (parseExpression(exp))
+        return failure();
+      expressions.push_back(std::move(exp));
       if (tokenIs(Token::r_paren))
         break;
 
