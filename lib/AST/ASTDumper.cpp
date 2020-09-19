@@ -58,14 +58,15 @@ private:
   auto dump(const Expr *node) -> void;
   auto dump(const CallExpr *node) -> void;
   auto dump(const DecimalExpr *node) -> void;
+  auto dump(const StructExpr *node) -> void;
+  auto dump(const VariableExpr *node) -> void;
 };
 
 }// end namespace
 
 auto Dumper::dump(const Module *node) -> void {
-  for (auto &decl : *node) {
+  for (auto &decl : *node)
     dump(decl.get());
-  }
 }
 
 // Declarations
@@ -101,12 +102,9 @@ auto Dumper::dump(const FunctionDecl *node) -> void {
   INDENT();
   llvm::errs() << "FunctionDecl " << loc(node) << "\n";
   dump(node->proto().get());
-  for (auto &expr : *node) {
+  for (auto &expr : *node)
     dump(expr.get());
-  }
 }
-
-// Structs
 
 auto Dumper::dump(const StructDecl *node) -> void {
   INDENT();
@@ -121,7 +119,7 @@ auto Dumper::dump(const StructDecl *node) -> void {
 
 auto Dumper::dump(const Expr *node) -> void {
   llvm::TypeSwitch<const Expr *>(node)
-      .Case<CallExpr, DecimalExpr>([&](auto *node) { this->dump(node); })
+      .Case<CallExpr, DecimalExpr, VariableExpr, StructExpr>([&](auto *node) { this->dump(node); })
       .Default([&](const Expr *) {
         llvm_unreachable("Unexpected expression");
       });
@@ -130,14 +128,25 @@ auto Dumper::dump(const Expr *node) -> void {
 auto Dumper::dump(const CallExpr *node) -> void {
   INDENT();
   llvm::errs() << "CallExpr " << loc(node) << " callee=" << node->name() << "\n";
-  for (auto &expr : *node) {
+  for (auto &expr : *node)
     dump(expr.get());
-  }
 }
 
 auto Dumper::dump(const DecimalExpr *node) -> void {
   INDENT();
   llvm::errs() << "DecimalExpr " << loc(node) << " value=" << node->value() << "\n";
+}
+
+auto Dumper::dump(const StructExpr *node) -> void {
+  INDENT();
+  llvm::errs() << "StructExpr " << loc(node) << " type=" << node->type() << "\n";
+  for (auto &expr : *node)
+    dump(expr.get());
+}
+
+auto Dumper::dump(const VariableExpr *node) -> void {
+  INDENT();
+  llvm::errs() << "VariableExpr " << loc(node) << " name=" << node->name() << "\n";
 }
 
 namespace cherry {
