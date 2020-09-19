@@ -39,12 +39,12 @@ public:
 
     auto printOp = cast<cherry::PrintOp>(op);
     auto input = printOp.input();
-    Value newInput = input.getType() == rewriter.getI64Type()
+    Value newInput = input.getType().isInteger(64)
                      ? input : rewriter.create<LoadOp>(loc, input);
 
-    rewriter.create<CallOp>(loc, printfRef, rewriter.getIntegerType(32),
-                            ArrayRef<Value>({formatSpecifierCst, newInput}));
-    rewriter.eraseOp(op);
+    rewriter.replaceOpWithNewOp<CallOp>(op, printfRef,
+                                        rewriter.getI64Type(),
+                                        ArrayRef<Value>({formatSpecifierCst, newInput}));
     return success();
   }
 
@@ -59,7 +59,7 @@ private:
 
     // Create a function declaration for printf, the signature is:
     //   * `i32 (i8*, ...)`
-    auto llvmI32Ty = LLVM::LLVMType::getInt32Ty(llvmDialect);
+    auto llvmI32Ty = LLVM::LLVMType::getInt64Ty(llvmDialect);
     auto llvmI8PtrTy = LLVM::LLVMType::getInt8PtrTy(llvmDialect);
     auto llvmFnType = LLVM::LLVMType::getFunctionTy(llvmI32Ty, llvmI8PtrTy,
         /*isVarArg=*/true);
