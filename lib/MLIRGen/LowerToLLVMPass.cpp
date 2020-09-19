@@ -104,40 +104,39 @@ struct CherryToLLVMLoweringPass
     : public PassWrapper<CherryToLLVMLoweringPass, OperationPass<ModuleOp>> {
 
   auto runOnOperation() -> void final {
+    LLVM::LLVMDialect *llvmDialect = getContext().getRegisteredDialect<LLVM::LLVMDialect>();
+
+    // Target
     LLVMConversionTarget target(getContext());
     target.addLegalOp<ModuleOp, ModuleTerminatorOp>();
-    llvmDialect = getContext().getRegisteredDialect<LLVM::LLVMDialect>();
 
-    LLVMTypeConverter typeConverter(&getContext());
+    // Patterns
     OwningRewritePatternList patterns;
-    populateStdToLLVMConversionPatterns(typeConverter, patterns);
-    typeConverter.addConversion([&](mlir::cherry::StructType type) {
-      return convertStructType(type);
-    });
     patterns.insert<PrintOpLowering>(&getContext());
 
+    // Types conversions
+    LLVMTypeConverter typeConverter(&getContext());
+    populateStdToLLVMConversionPatterns(typeConverter, patterns);
+    typeConverter.addConversion([&](mlir::cherry::StructType type) {
+      std::vector<LLVM::LLVMType> types;
+      for (auto t : type.getElementTypes()) {
+        if (t.isa<mlir::NoneType>()) {
+          types.push_back(LLVM::LLVMType::getInt1Ty(llvmDialect));
+        } else if (auto structType = t.dyn_cast<mlir::cherry::StructType>()) {
+          types.push_back(typeConverter.convertType(structType).cast<LLVM::LLVMType>());
+        } else {
+          types.push_back(typeConverter.convertType(t).cast<LLVM::LLVMType>());
+        }
+      }
+      return LLVM::LLVMType::getStructTy(llvmDialect, types);
+    });
+
+    // Conversion
     auto module = getOperation();
     if (failed(applyFullConversion(module, target, patterns)))
       signalPassFailure();
   }
 
-private:
-  LLVM::LLVMDialect *llvmDialect;
-
-  Type convertStructType(mlir::cherry::StructType type) {
-    std::vector<LLVM::LLVMType> types;
-    for (auto t : type.getElementTypes()) {
-      if (t.isa<mlir::NoneType>()) {
-        types.push_back(LLVM::LLVMType::getInt1Ty(llvmDialect));
-      } else if (auto structType = t.dyn_cast<mlir::cherry::StructType>()) {
-        types.push_back(convertStructType(structType).cast<LLVM::LLVMType>());
-      } else {
-        LLVMTypeConverter typeConverter(&getContext());
-        types.push_back(typeConverter.convertType(t).cast<LLVM::LLVMType>());
-      }
-    }
-    return LLVM::LLVMType::getStructTy(llvmDialect, types);
-  }
 };
 
 } // end namespace
