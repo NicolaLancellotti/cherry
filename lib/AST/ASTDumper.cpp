@@ -73,7 +73,9 @@ auto Dumper::dump(const Module *node) -> void {
 auto Dumper::dump(const Decl *node) -> void {
   llvm::TypeSwitch<const Decl *>(node)
       .Case<FunctionDecl, StructDecl>([&](auto *node) { this->dump(node);})
-      .Default([&](const Decl *) { llvm_unreachable(""); });
+      .Default([&](const Decl *) {
+        llvm_unreachable("Unexpected declaration");
+      });
 }
 
 auto Dumper::dump(const VariableDecl *node) -> void {
@@ -119,12 +121,9 @@ auto Dumper::dump(const StructDecl *node) -> void {
 
 auto Dumper::dump(const Expr *node) -> void {
   llvm::TypeSwitch<const Expr *>(node)
-      .Case<CallExpr, DecimalExpr>([&](auto *node) {
-        this->dump(node);
-      })
+      .Case<CallExpr, DecimalExpr>([&](auto *node) { this->dump(node); })
       .Default([&](const Expr *) {
-        INDENT();
-        llvm::errs() << "<unknown expr, kind " << node->getKind() << ">\n";
+        llvm_unreachable("Unexpected expression");
       });
 }
 

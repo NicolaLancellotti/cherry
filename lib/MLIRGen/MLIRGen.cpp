@@ -94,7 +94,7 @@ private:
       return success();
     }
     default:
-      return failure();
+      llvm_unreachable("Unexpected declaration");
     }
   }
 
@@ -169,7 +169,7 @@ private:
     case Expr::Expr_Variable:
       return gen(cast<VariableExpr>(node), value);
     default:
-      return failure();
+      llvm_unreachable("Unexpected expression");
     }
   }
 

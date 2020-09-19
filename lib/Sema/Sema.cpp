@@ -137,7 +137,7 @@ private:
       return sema(cast<StructDecl>(node));
     }
     default:
-      return failure();
+      llvm_unreachable("Unexpected declaration");
     }
   }
 
@@ -202,7 +202,7 @@ private:
     case Expr::Expr_Variable:
       return sema(cast<VariableExpr>(node), type);
     default:
-      return failure();
+      llvm_unreachable("Unexpected expression");
     }
   }
 
