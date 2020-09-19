@@ -242,10 +242,10 @@ private:
       return success();
     }
     case Token::identifier: {
-      std::unique_ptr<Expr> var_or_fun;
-      if (parseVariableOrFunctionCall_c(var_or_fun))
+      std::unique_ptr<Expr> expression;
+      if (parseIdentifier_c(expression))
         return failure();
-      expr = std::move(var_or_fun);
+      expr = std::move(expression);
       return success();
     }
     default:
@@ -263,21 +263,30 @@ private:
     return emitError(diag::integer_literal_overflows);
   }
 
-  auto parseVariableOrFunctionCall_c(std::unique_ptr<Expr>& expr) -> CherryResult {
+  auto parseIdentifier_c(std::unique_ptr<Expr>& expr) -> CherryResult {
     auto location = tokenLoc();
     std::string name{spelling()};
     consume(Token::identifier);
 
-    if (tokenIs(Token::l_paren)) {
+    switch (tokenKind()) {
+    case Token::l_paren: {
       std::unique_ptr<CallExpr> callExp;
       if (parseFunctionCall_c(location, name, callExp))
         return failure();
       expr = std::move(callExp);
       return success();
     }
-
-    expr = std::make_unique<VariableExpr>(location, std::move(name));
-    return success();
+    case Token::l_brace: {
+      std::unique_ptr<StructExpr> expression;
+      if (parseStructExpr_c(location, name, expression))
+        return failure();
+      expr = std::move(expression);
+      return success();
+    }
+    default:
+      expr = std::make_unique<VariableExpr>(location, std::move(name));
+      return success();
+    }
   }
 
   auto parseFunctionCall_c(llvm::SMLoc location,
@@ -301,6 +310,30 @@ private:
     consume(Token::r_paren);
     expr = std::make_unique<CallExpr>(location, std::move(name),
                                       std::move(expressions));
+    return success();
+  }
+
+  auto parseStructExpr_c(llvm::SMLoc location,
+                         std::string name,
+                         std::unique_ptr<StructExpr>& expr) -> CherryResult {
+    consume(Token::l_brace);
+    auto expressions = VectorUniquePtr<Expr>();
+    while (!tokenIs(Token::r_brace)) {
+      std::unique_ptr<Expr> exp;
+      if (parseExpression(exp))
+        return failure();
+      expressions.push_back(std::move(exp));
+      if (tokenIs(Token::r_brace))
+        break;
+
+      if (parseToken(Token::comma,
+                     diag::expected_comma_or_r_brace))
+        return failure();
+    }
+
+    consume(Token::r_brace);
+    expr = std::make_unique<StructExpr>(location, std::move(name),
+                                        std::move(expressions));
     return success();
   }
 
