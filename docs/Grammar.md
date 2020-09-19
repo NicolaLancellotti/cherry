@@ -20,6 +20,7 @@ decimal-digits → decimal-digit decimal-digits<sub>opt</sub>
 expression → function-call-expression  
 expression → primary-expression  
 expression → variable-expression  
+expression → struct-expression  
 
 **Primary expressions**    
 primary-expression → literal-expression    
@@ -36,7 +37,12 @@ function-call-argument-list → function-call-argument `,` function-call-argumen
 function-call-argument → expression    
 
 **Variable expression**
-variable-expression → identifier           
+variable-expression → identifier  
+
+**Struct constructor**  
+struct-expression → type `{` struct-expression-argument-list `}`         
+struct-expression-argument-list → expression    
+struct-expression-argument-list → expression `,` function-call-argument-list  
 
 ## Statements  
 statement → expression `;`  
