@@ -13,6 +13,8 @@ using namespace cherry;
 
 namespace {
 
+using llvm::errs;
+
 struct Indent {
   Indent(int &level) : level(level) { ++level; }
   ~Indent() { --level; }
@@ -32,7 +34,7 @@ public:
 private:
   auto indent() -> void {
     for (int i = 0; i < curIndent; i++)
-      llvm::errs() << "  ";
+      errs() << "  ";
   }
 
   int curIndent = 0;
@@ -48,10 +50,8 @@ private:
   // Declarations
   auto dump(const Decl *node) -> void;
   auto dump(const VariableDecl *node) -> void;
-
   auto dump(const Prototype *node) -> void;
   auto dump(const FunctionDecl *node) -> void;
-
   auto dump(const StructDecl *node) -> void;
 
   // Expressions
@@ -73,7 +73,9 @@ auto Dumper::dump(const Module *node) -> void {
 
 auto Dumper::dump(const Decl *node) -> void {
   llvm::TypeSwitch<const Decl *>(node)
-      .Case<FunctionDecl, StructDecl>([&](auto *node) { this->dump(node);})
+      .Case<FunctionDecl, StructDecl>([&](auto *node) {
+        this->dump(node);
+      })
       .Default([&](const Decl *) {
         llvm_unreachable("Unexpected declaration");
       });
@@ -83,8 +85,8 @@ auto Dumper::dump(const VariableDecl *node) -> void {
   auto id = node->variable().get();
   auto type = node->type().get();
   INDENT();
-  llvm::errs() << "Variable (id=" << id->name() << " " << loc(id)
-               << ") (type=" << type->name() << " " << loc(type) << ")\n";
+  errs() << "Variable (id=" << id->name() << " " << loc(id)
+         << ") (type=" << type->name() << " " << loc(type) << ")\n";
 }
 
 // Functions
@@ -92,15 +94,15 @@ auto Dumper::dump(const VariableDecl *node) -> void {
 auto Dumper::dump(const Prototype *node) -> void {
   auto id = node->id().get();
   INDENT();
-  llvm::errs() << "Prototype " << loc(node)
-               << " (name="<< id->name() << " " << loc(id) << ")\n";
+  errs() << "Prototype " << loc(node)
+         << " (name="<< id->name() << " " << loc(id) << ")\n";
   for (auto& parameter : node->parameters())
     dump(parameter.get());
 }
 
 auto Dumper::dump(const FunctionDecl *node) -> void {
   INDENT();
-  llvm::errs() << "FunctionDecl " << loc(node) << "\n";
+  errs() << "FunctionDecl " << loc(node) << "\n";
   dump(node->proto().get());
   for (auto &expr : *node)
     dump(expr.get());
@@ -109,8 +111,8 @@ auto Dumper::dump(const FunctionDecl *node) -> void {
 auto Dumper::dump(const StructDecl *node) -> void {
   INDENT();
   auto id = node->id().get();
-  llvm::errs() << "StructDecl " << loc(node)
-               << " (name="<< id->name() << " " << loc(id) << ")\n";
+  errs() << "StructDecl " << loc(node)
+         << " (name="<< id->name() << " " << loc(id) << ")\n";
   for (auto& var : node->variables())
     dump(var.get());
 }
@@ -119,7 +121,9 @@ auto Dumper::dump(const StructDecl *node) -> void {
 
 auto Dumper::dump(const Expr *node) -> void {
   llvm::TypeSwitch<const Expr *>(node)
-      .Case<CallExpr, DecimalExpr, VariableExpr, StructExpr>([&](auto *node) { this->dump(node); })
+      .Case<CallExpr, DecimalExpr, VariableExpr, StructExpr>([&](auto *node) {
+        this->dump(node);
+      })
       .Default([&](const Expr *) {
         llvm_unreachable("Unexpected expression");
       });
@@ -127,26 +131,26 @@ auto Dumper::dump(const Expr *node) -> void {
 
 auto Dumper::dump(const CallExpr *node) -> void {
   INDENT();
-  llvm::errs() << "CallExpr " << loc(node) << " callee=" << node->name() << "\n";
+  errs() << "CallExpr " << loc(node) << " callee=" << node->name() << "\n";
   for (auto &expr : *node)
     dump(expr.get());
 }
 
 auto Dumper::dump(const DecimalExpr *node) -> void {
   INDENT();
-  llvm::errs() << "DecimalExpr " << loc(node) << " value=" << node->value() << "\n";
+  errs() << "DecimalExpr " << loc(node) << " value=" << node->value() << "\n";
 }
 
 auto Dumper::dump(const StructExpr *node) -> void {
   INDENT();
-  llvm::errs() << "StructExpr " << loc(node) << " type=" << node->type() << "\n";
+  errs() << "StructExpr " << loc(node) << " type=" << node->type() << "\n";
   for (auto &expr : *node)
     dump(expr.get());
 }
 
 auto Dumper::dump(const VariableExpr *node) -> void {
   INDENT();
-  llvm::errs() << "VariableExpr " << loc(node) << " name=" << node->name() << "\n";
+  errs() << "VariableExpr " << loc(node) << " name=" << node->name() << "\n";
 }
 
 namespace cherry {
