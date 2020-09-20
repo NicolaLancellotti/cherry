@@ -16,7 +16,6 @@
 #include "mlir/IR/StandardTypes.h"
 #include "mlir/IR/Verifier.h"
 #include "llvm/ADT/ScopedHashTable.h"
-#include "llvm/Support/SMLoc.h"
 #include <map>
 
 namespace {
@@ -149,7 +148,7 @@ private:
       return success();
     }
 
-    std::vector<mlir::Type> elementTypes;
+    llvm::SmallVector<mlir::Type, 2> elementTypes;
     elementTypes.reserve(variables.size());
     for (auto &variable : variables) {
       mlir::Type type = getType(variable->type()->name());

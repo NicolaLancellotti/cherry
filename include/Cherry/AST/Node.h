@@ -8,12 +8,12 @@
 #ifndef CHERRY_NODE_H
 #define CHERRY_NODE_H
 
+#include "llvm/ADT/SmallVector.h"
 #include "llvm/Support/SMLoc.h"
-#include <list>
 
 namespace cherry {
 
-template<typename T> using VectorUniquePtr = std::vector<std::unique_ptr<T>>;
+template<typename T> using VectorUniquePtr = llvm::SmallVector<std::unique_ptr<T>, 2>;
 
 class Node {
 public:

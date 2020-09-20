@@ -9,6 +9,7 @@
 #include "Symbols.h"
 #include "DiagnosticsSema.h"
 #include "cherry/AST/AST.h"
+#include "llvm/ADT/SmallSet.h"
 
 namespace {
 using namespace cherry;
@@ -81,7 +82,7 @@ private:
   }
 
   auto sema(const Prototype *node) -> CherryResult {
-    std::vector<std::string> types;
+    llvm::SmallVector<std::string, 2> types;
     for (auto &par : node->parameters()) {
       auto type = par->type().get();
       auto typeName = type->name();
@@ -103,14 +104,14 @@ private:
   }
 
   auto sema(const StructDecl *node) -> CherryResult {
-    std::vector<std::string> types;
-    std::set<std::string> variables;
+    llvm::SmallVector<std::string, 2> types;
+    llvm::SmallSet<std::string, 4> variables;
     for (auto &varDecl : *node) {
       auto type = varDecl->type().get();
       auto var = varDecl->variable().get();
       if (symbols.checkType(type->name()))
         return emitError(type, diag::type_undefined);
-      if (variables.find(var->name()) != variables.end())
+      if (variables.count(var->name()) > 0)
         return emitError(var, diag::var_redefinition);
       variables.insert(var->name());
       types.push_back(type->name());

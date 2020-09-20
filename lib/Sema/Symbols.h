@@ -11,7 +11,6 @@
 #include "cherry/AST/AST.h"
 #include "cherry/Basic/CherryResult.h"
 #include <map>
-#include <set>
 
 namespace cherry {
 using mlir::failure;
@@ -21,12 +20,12 @@ class Symbols {
 public:
   auto addBuiltins() -> void {
     _typeSymbols.insert(make_pair(UInt64Type,
-                                  std::vector<std::string>{}));
+                                  llvm::SmallVector<std::string, 2>{}));
     _functionSymbols.insert(make_pair("print",
-                                      std::vector<std::string>{UInt64Type}));
+                                      llvm::SmallVector<std::string, 2>{UInt64Type}));
   }
 
-  auto declareFunction(std::string name, std::vector<std::string> types) -> CherryResult {
+  auto declareFunction(std::string name, llvm::SmallVector<std::string, 2> types) -> CherryResult {
     if (_functionSymbols.find(name) != _functionSymbols.end())
       return failure();
     _functionSymbols.insert(make_pair(name, std::move(types)));
@@ -43,7 +42,7 @@ public:
   }
 
   auto declareType(const Identifier *node,
-                   std::vector<std::string> types) -> CherryResult {
+                   llvm::SmallVector<std::string, 2> types) -> CherryResult {
     auto name = node->name();
     if (_typeSymbols.find(name) != _typeSymbols.end())
       return failure();
@@ -88,8 +87,8 @@ public:
 
   const std::string UInt64Type = "UInt64";
 private:
-  std::map</*name*/ std::string, /*types*/ std::vector<std::string>> _functionSymbols;
-  std::map</*name*/ std::string, /*types*/ std::vector<std::string>> _typeSymbols;
+  std::map</*name*/ std::string, /*types*/ llvm::SmallVector<std::string, 2>> _functionSymbols;
+  std::map</*name*/ std::string, /*types*/ llvm::SmallVector<std::string, 2>> _typeSymbols;
   std::map</*name*/std::string, /*type*/std::string> _variableSymbols;
 };
 

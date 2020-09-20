@@ -118,7 +118,7 @@ struct CherryToLLVMLoweringPass
     LLVMTypeConverter typeConverter(&getContext());
     populateStdToLLVMConversionPatterns(typeConverter, patterns);
     typeConverter.addConversion([&](mlir::cherry::StructType type) {
-      std::vector<LLVM::LLVMType> types;
+      SmallVector<LLVM::LLVMType, 2> types;
       for (auto t : type.getElementTypes()) {
         if (t.isa<mlir::NoneType>()) {
           types.push_back(LLVM::LLVMType::getInt1Ty(llvmDialect));
