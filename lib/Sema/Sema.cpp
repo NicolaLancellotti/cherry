@@ -44,13 +44,14 @@ private:
   const std::string UInt64Type = "UInt64";
   const llvm::SourceMgr &_sourceManager;
   std::map</*name*/ std::string, /*types*/ std::vector<std::string>> _functionSymbols;
-  std::set<std::string> _typeSymbols;
+  std::map</*name*/ std::string, /*types*/ std::vector<std::string>> _typeSymbols;
   std::map</*name*/std::string, /*type*/std::string> _variableSymbols;
 
   // Symbols
 
   auto addBuiltins() -> void {
-    _typeSymbols.insert(UInt64Type);
+    _typeSymbols.insert(make_pair(UInt64Type,
+                                      std::vector<std::string>{}));
     _functionSymbols.insert(make_pair("print",
                                       std::vector<std::string>{UInt64Type}));
   }
@@ -70,17 +71,26 @@ private:
     return &_functionSymbols[name];
   }
 
-  auto declareType(const Identifier *node) -> CherryResult {
+  auto declareType(const Identifier *node,
+                   std::vector<std::string> types) -> CherryResult {
     auto name = node->name();
     if (_typeSymbols.find(name) != _typeSymbols.end())
       return failure();
-    _typeSymbols.insert(name);
+    _typeSymbols.insert(make_pair(name, std::move(types)));
     return success();
   }
 
-  auto checkTypeExist(const Identifier *node) -> CherryResult {
-    if (_typeSymbols.find(node->name()) == _typeSymbols.end())
+  auto checkType(const std::string& type) -> CherryResult {
+    if (_typeSymbols.find(type) == _typeSymbols.end())
       return failure();
+    return success();
+  }
+
+  auto getType(std::string name, llvm::ArrayRef<std::string>& types) -> CherryResult {
+    auto symbol = _typeSymbols.find(name);
+    if (symbol == _typeSymbols.end())
+      return failure();
+    types = symbol->second;
     return success();
   }
 
@@ -177,18 +187,20 @@ private:
   }
 
   auto sema(const StructDecl *node) -> CherryResult {
+    std::vector<std::string> types;
     std::set<std::string> variables;
     for (auto &varDecl : *node) {
       auto type = varDecl->type().get();
       auto var = varDecl->variable().get();
-      if (checkTypeExist(type))
+      if (checkType(type->name()))
         return emitError(type, diag::type_undefined);
       if (variables.find(var->name()) != variables.end())
         return emitError(var, diag::var_redefinition);
       variables.insert(var->name());
+      types.push_back(type->name());
     }
     auto id = node->id().get();
-    if (declareType(id))
+    if (declareType(id, std::move(types)))
       return emitError(id, diag::type_redefinition);
     return success();
   }
@@ -201,6 +213,8 @@ private:
       return sema(cast<CallExpr>(node), type);
     case Expr::Expr_Variable:
       return sema(cast<VariableExpr>(node), type);
+    case Expr::Expr_Struct:
+      return sema(cast<StructExpr>(node), type);
     default:
       llvm_unreachable("Unexpected expression");
     }
@@ -246,6 +260,29 @@ private:
 
   auto sema(const DecimalExpr *node, std::string& type) -> CherryResult {
     type = UInt64Type;
+    return success();
+  }
+
+  auto sema(const StructExpr *node, std::string& type) -> CherryResult {
+    auto typeName = node->type();
+    llvm::ArrayRef<std::string> fieldsTypes;
+    if (getType(typeName, fieldsTypes))
+      return emitError(node, diag::type_undefined);
+
+    if (node->expressions().size() != fieldsTypes.size())
+      return emitError(node, diag::wrong_num_arg);
+
+    for (const auto &expr_type : llvm::zip(*node, fieldsTypes)) {
+      auto &expr = std::get<0>(expr_type);
+      auto &fieldType = std::get<1>(expr_type);
+      std::string exprType;
+      if (sema(expr.get(), exprType))
+        return failure();
+      if (exprType != fieldType)
+        return emitError(expr.get(), diag::func_param_type_mismatch);
+    }
+
+    type = node->type();
     return success();
   }
 };

@@ -14,6 +14,8 @@ ERROR(func_param, "function `%s` takes %d parameters")
 ERROR(func_param_type_mismatch, "type mismatch")
 ERROR(type_undefined, "undefined type")
 
+ERROR(wrong_num_arg, "wrong number of arguments")
+
 ERROR(var_undefined, "undefined variable")
 ERROR(var_redefinition, "redefinition of variable")
 
