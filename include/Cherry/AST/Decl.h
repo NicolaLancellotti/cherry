@@ -9,7 +9,7 @@
 #define CHERRY_DECL_H
 
 #include "Node.h"
-#include <string>
+#include "llvm/ADT/StringRef.h"
 
 namespace cherry {
 
@@ -43,10 +43,10 @@ private:
 class Identifier final : public Node {
 public:
   explicit Identifier(llvm::SMLoc location,
-                      std::string name)
-      : Node{location}, _name(std::move(name)) {};
+                      llvm::StringRef name)
+      : Node{location}, _name(name.str()) {};
 
-  auto name() const -> const std::string& {
+  auto name() const -> llvm::StringRef {
     return _name;
   }
 

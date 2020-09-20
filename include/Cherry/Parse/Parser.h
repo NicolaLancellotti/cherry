@@ -130,11 +130,11 @@ private:
   auto parseIdentifier_c(std::unique_ptr<Expr>& expr) -> CherryResult;
 
   auto parseFunctionCall_c(llvm::SMLoc location,
-                           std::string name,
+                           llvm::StringRef name,
                            std::unique_ptr<Expr>& expr) -> CherryResult;
 
   auto parseStructExpr_c(llvm::SMLoc location,
-                         std::string name,
+                         llvm::StringRef name,
                          std::unique_ptr<Expr>& expr) -> CherryResult;
 
 };

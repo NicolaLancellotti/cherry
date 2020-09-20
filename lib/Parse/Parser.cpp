@@ -166,7 +166,7 @@ auto Parser::parseIdentifier(unique_ptr<T>& identifier,
   auto name = spelling();
   if (parseToken(Token::identifier, message))
     return failure();
-  identifier = make_unique<T>(location, std::string(name));
+  identifier = make_unique<T>(location, name);
   return success();
 }
 
@@ -208,7 +208,7 @@ auto Parser::parseDecimal_c(unique_ptr<Expr>& expr) -> CherryResult {
 
 auto Parser::parseIdentifier_c(unique_ptr<Expr>& expr) -> CherryResult {
   auto location = tokenLoc();
-  std::string name{spelling()};
+  auto name = spelling();
   consume(Token::identifier);
   switch (tokenKind()) {
   case Token::l_paren:
@@ -216,13 +216,13 @@ auto Parser::parseIdentifier_c(unique_ptr<Expr>& expr) -> CherryResult {
   case Token::l_brace:
     return parseStructExpr_c(location, name, expr);
   default:
-    expr = make_unique<VariableExpr>(location, move(name));
+    expr = make_unique<VariableExpr>(location, name);
     return success();
   }
 }
 
 auto Parser::parseFunctionCall_c(llvm::SMLoc location,
-                                 std::string name,
+                                 llvm::StringRef name,
                                  unique_ptr<Expr>& expr) -> CherryResult {
   consume(Token::l_paren);
   auto expressions = VectorUniquePtr<Expr>();
@@ -230,12 +230,12 @@ auto Parser::parseFunctionCall_c(llvm::SMLoc location,
                        diag::expected_comma_or_r_paren,
                        diag::expected_r_paren))
     return failure();
-  expr = make_unique<CallExpr>(location, move(name), move(expressions));
+  expr = make_unique<CallExpr>(location, name, move(expressions));
   return success();
 }
 
 auto Parser::parseStructExpr_c(llvm::SMLoc location,
-                               std::string name,
+                               llvm::StringRef name,
                                unique_ptr<Expr>& expr) -> CherryResult {
   consume(Token::l_brace);
   auto expressions = VectorUniquePtr<Expr>();
@@ -243,6 +243,6 @@ auto Parser::parseStructExpr_c(llvm::SMLoc location,
                        diag::expected_comma_or_r_brace,
                        diag::expected_r_brace))
     return failure();
-  expr = make_unique<StructExpr>(location, move(name), move(expressions));
+  expr = make_unique<StructExpr>(location, name, move(expressions));
   return success();
 }

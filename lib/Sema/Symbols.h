@@ -10,6 +10,7 @@
 
 #include "cherry/AST/AST.h"
 #include "cherry/Basic/CherryResult.h"
+#include "llvm/Support/raw_ostream.h"
 #include <map>
 
 namespace cherry {
@@ -19,21 +20,22 @@ using mlir::success;
 class Symbols {
 public:
   auto addBuiltins() -> void {
-    _typeSymbols.insert(make_pair(UInt64Type,
-                                  llvm::SmallVector<std::string, 2>{}));
-    _functionSymbols.insert(make_pair("print",
-                                      llvm::SmallVector<std::string, 2>{UInt64Type}));
+     _typeSymbols.insert(std::make_pair(UInt64Type,
+                                       llvm::SmallVector<llvm::StringRef, 2>{}));
+    _functionSymbols.insert(std::make_pair("print",
+                                           llvm::SmallVector<llvm::StringRef, 2>{UInt64Type}));
   }
 
-  auto declareFunction(std::string name, llvm::SmallVector<std::string, 2> types) -> CherryResult {
+  auto declareFunction(llvm::StringRef name,
+                       llvm::SmallVector<llvm::StringRef, 2> types) -> CherryResult {
     if (_functionSymbols.find(name) != _functionSymbols.end())
       return failure();
-    _functionSymbols.insert(make_pair(name, std::move(types)));
+    _functionSymbols.insert(std::make_pair(name, std::move(types)));
     return success();
   }
 
-  auto getFunction(std::string name,
-                   llvm::ArrayRef<std::string>& types)  -> CherryResult {
+  auto getFunction(llvm::StringRef name,
+                   llvm::ArrayRef<llvm::StringRef>& types)  -> CherryResult {
     auto symbol = _functionSymbols.find(name);
     if (symbol == _functionSymbols.end())
       return failure();
@@ -42,21 +44,22 @@ public:
   }
 
   auto declareType(const Identifier *node,
-                   llvm::SmallVector<std::string, 2> types) -> CherryResult {
+                   llvm::SmallVector<llvm::StringRef, 2> types) -> CherryResult {
     auto name = node->name();
-    if (_typeSymbols.find(name) != _typeSymbols.end())
+    if (_typeSymbols.find(name.str()) != _typeSymbols.end())
       return failure();
-    _typeSymbols.insert(make_pair(name, std::move(types)));
+    _typeSymbols.insert(std::make_pair(name, std::move(types)));
     return success();
   }
 
-  auto checkType(const std::string& type) -> CherryResult {
+  auto checkType(llvm::StringRef type) -> CherryResult {
     if (_typeSymbols.find(type) == _typeSymbols.end())
       return failure();
     return success();
   }
 
-  auto getType(std::string name, llvm::ArrayRef<std::string>& types) -> CherryResult {
+  auto getType(llvm::StringRef name,
+               llvm::ArrayRef<llvm::StringRef>& types) -> CherryResult {
     auto symbol = _typeSymbols.find(name);
     if (symbol == _typeSymbols.end())
       return failure();
@@ -68,15 +71,15 @@ public:
     _variableSymbols = {};
   }
 
-  auto declareVariable(const VariableExpr *var, std::string type) -> CherryResult {
+  auto declareVariable(const VariableExpr *var, llvm::StringRef type) -> CherryResult {
     auto name = var->name();
     if (_variableSymbols.find(name) != _variableSymbols.end())
       return failure();
-    _variableSymbols.insert(make_pair(name, type));
+    _variableSymbols.insert(std::make_pair(name, type));
     return success();
   }
 
-  auto getVariableType(const VariableExpr *node, std::string &type) -> CherryResult {
+  auto getVariableType(const VariableExpr *node, llvm::StringRef& type) -> CherryResult {
     auto symbol = _variableSymbols.find(node->name());
     if (symbol == _variableSymbols.end()) {
       return failure();
@@ -85,11 +88,11 @@ public:
     return success();
   }
 
-  const std::string UInt64Type = "UInt64";
+  const llvm::StringRef UInt64Type = "UInt64";
 private:
-  std::map</*name*/ std::string, /*types*/ llvm::SmallVector<std::string, 2>> _functionSymbols;
-  std::map</*name*/ std::string, /*types*/ llvm::SmallVector<std::string, 2>> _typeSymbols;
-  std::map</*name*/std::string, /*type*/std::string> _variableSymbols;
+  std::map</*name*/ llvm::StringRef, /*types*/ llvm::SmallVector<llvm::StringRef, 2>> _functionSymbols;
+  std::map</*name*/ llvm::StringRef, /*types*/ llvm::SmallVector<llvm::StringRef, 2>> _typeSymbols;
+  std::map</*name*/llvm::StringRef, /*type*/ llvm::StringRef> _variableSymbols;
 };
 
 } // end namespace cherry

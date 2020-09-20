@@ -9,7 +9,7 @@
 #define CHERRY_EXPR_H
 
 #include "Node.h"
-#include <string>
+#include "llvm/ADT/StringRef.h"
 
 namespace cherry {
 
@@ -41,14 +41,14 @@ private:
 class VariableExpr final : public Expr {
 public:
   explicit VariableExpr(llvm::SMLoc location,
-                        std::string name)
-      : Expr{Expr_Variable, location}, _name(std::move(name)) {};
+                        llvm::StringRef name)
+      : Expr{Expr_Variable, location}, _name(name.str()) {};
 
   static auto classof(const Expr * node) -> bool {
     return node->getKind() == Expr_Variable;
   }
 
-  auto name() const -> const std::string& {
+  auto name() const -> llvm::StringRef {
     return _name;
   }
 
@@ -62,17 +62,17 @@ private:
 class CallExpr final : public Expr {
 public:
   explicit CallExpr(llvm::SMLoc location,
-                    std::string name,
+                    llvm::StringRef name,
                     VectorUniquePtr<Expr> expressions)
       : Expr{Expr_Call, location},
-        _name(std::move(name)),
+        _name(name.str()),
         _expressions(std::move(expressions)) {};
 
   static auto classof(const Expr * node) -> bool {
     return node->getKind() == Expr_Call;
   }
 
-  auto name() const -> const std::string& {
+  auto name() const -> llvm::StringRef {
     return _name;
   }
 
@@ -115,16 +115,16 @@ private:
 class StructExpr final : public Expr {
 public:
   explicit StructExpr(llvm::SMLoc location,
-                      std::string type,
+                      llvm::StringRef type,
                       VectorUniquePtr<Expr> expressions)
-      : Expr{Expr_Struct, location}, _type(std::move(type)),
+      : Expr{Expr_Struct, location}, _type(type.str()),
         _expressions(std::move(expressions)) {};
 
   static auto classof(const Expr * node) -> bool {
     return node->getKind() == Expr_Struct;
   }
 
-  auto type() const -> const std::string& {
+  auto type() const -> llvm::StringRef {
     return _type;
   }
 

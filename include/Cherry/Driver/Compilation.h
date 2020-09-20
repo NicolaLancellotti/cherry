@@ -8,9 +8,9 @@
 #ifndef CHERRY_COMPILATION_H
 #define CHERRY_COMPILATION_H
 
+#include "mlir/IR/MLIRContext.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/SourceMgr.h"
-#include "mlir/IR/MLIRContext.h"
 
 namespace mlir {
 class OwningModuleRef;
@@ -32,7 +32,7 @@ public:
     LLVM
   };
 
-  static auto make(std::string filename,
+  static auto make(llvm::StringRef filename,
                    bool enableOpt) -> std::unique_ptr<Compilation>;
 
   auto dumpTokens() -> int;

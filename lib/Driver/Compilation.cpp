@@ -30,7 +30,7 @@
 
 using namespace cherry;
 
-auto Compilation::make(std::string filename,
+auto Compilation::make(llvm::StringRef filename,
                        bool enableOpt) -> std::unique_ptr<Compilation> {
   mlir::registerDialect<mlir::cherry::CherryDialect>();
   mlir::registerDialect<mlir::StandardOpsDialect>();
