@@ -5,49 +5,44 @@
 //
 //===----------------------------------------------------------------------===//
 
-// ___________________________________________________________________________
-// Parse Declarations
+ERROR(expected_semi,
+  "expected `;`")
 
-ERROR(expected_fun_struct, "expected `fun` or `struct`")
-
-// prototype
-ERROR(expected_id,
-    "expected identifier")
 ERROR(expected_colon,
-     "expected `:`")
-ERROR(expected_type,
-     "expected type")
-ERROR(expected_l_paren_in_arg_list,
-    "expected `(` in argument list of function declaration")
+  "expected `:`")
 
+ERROR(expected_l_paren,
+  "expected `(`")
 
-// Parse Types
+ERROR(expected_r_paren,
+  "expected `)`")
+
 ERROR(expected_l_brace,
-    "expected `{`")
+  "expected `{`")
+
+ERROR(expected_r_brace,
+  "expected `}`")
 
 ERROR(expected_comma_or_r_brace,
-    "expected `,` or `}`")
+  "expected `,` or `}`")
 
-// ___________________________________________________________________________
-// Parse Expressions
+ERROR(expected_comma_or_r_paren,
+  "expected `,` or `)`")
+
+ERROR(expected_fun_struct,
+  "expected `fun` or `struct`")
+
+ERROR(expected_type,
+  "expected type")
+
+ERROR(expected_id,
+  "expected identifier")
 
 ERROR(expected_expr,
     "expected expression")
 
 ERROR(integer_literal_overflows,
     "integer literal overflows")
-
-// function body
-ERROR(expected_l_brace_func_body,
-    "expected `{` in body of function declaration")
-ERROR(expected_r_brace_func_body,
-    "expected `}` at end of brace statement")
-ERROR(expected_semi,
-    "expected `;` at end of declaration")
-
-// function call
-ERROR(expected_comma_or_r_paren_arg_list,
-    "expected `,` or `)` in argument list")
 
 // ___________________________________________________________________________
 #undef ERROR

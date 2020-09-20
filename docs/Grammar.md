@@ -39,9 +39,9 @@ function-call-argument → expression
 **Variable expression**
 variable-expression → identifier  
 
-**Struct constructor**  
-struct-expression → type `{` struct-expression-argument-list `}`         
-struct-expression-argument-list → expression    
+**Struct expression**  
+struct-expression → type `{` struct-expression-argument-list<sub>opt</sub> `}`         
+struct-expression-argument-list → expression `,`<sub>opt</sub>     
 struct-expression-argument-list → expression `,` function-call-argument-list  
 
 ## Statements  
@@ -51,7 +51,7 @@ statements → statement statements<sub>opt</sub>
 ## Declarations  
 declaration → function-declaration  
 declaration → struct-declaration    
-declarations → declaration declaration<sub>opt</sub>    
+declarations → declaration declarations<sub>opt</sub>    
 
 **Top-level declaration**  
 top-level-declaration → declarations   
@@ -59,11 +59,9 @@ top-level-declaration → declarations
 **Function declaration**  
 function-declaration → `fun` function-name function-signature  function-body  
 function-name → identifier  
-function-signature → parameter-clause  
-parameter-clause → `(` `)`    
-parameter-clause → `(` parameter-list `)`  
-parameter-list → parameter  
-parameter-list → parameter , parameter-list  
+function-signature → `(` parameter-list<sub>opt</sub>  `)`  
+parameter-list → parameter `,`<sub>opt</sub>   
+parameter-list → parameter `,` parameter-list  
 parameter → parameter-name type-annotation  
 parameter-name → identifier  
 type-annotation → `:` type   
@@ -72,6 +70,6 @@ function-body → `{` statements<sub>opt</sub> `}`
 ## Types
 type → identifier    
 struct-declaration → `struct` type `{`  struct-members<sub>opt</sub> `}`  
-struct-members → struct-member  
+struct-members → struct-member `,`<sub>opt</sub>   
 struct-members → struct-member `,` struct-members    
 struct-member → identifier type-annotation  
