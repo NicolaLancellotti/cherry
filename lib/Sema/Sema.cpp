@@ -6,119 +6,35 @@
 //===----------------------------------------------------------------------===//
 
 #include "Sema.h"
+#include "Symbols.h"
 #include "DiagnosticsSema.h"
 #include "cherry/AST/AST.h"
-#include "cherry/Basic/CherryResult.h"
-#include <map>
-#include <set>
 
 namespace {
 using namespace cherry;
 using llvm::cast;
-using std::make_pair;
-using mlir::failure;
-using mlir::success;
 
 class SemaImpl {
 public:
   SemaImpl(const llvm::SourceMgr &sourceManager)
       : _sourceManager{sourceManager} {
-    addBuiltins();
+    symbols.addBuiltins();
   }
 
   auto sema(const Module &node) -> CherryResult {
-    for (auto &decl : node) {
+    for (auto &decl : node)
       if (sema(decl.get()))
         return failure();
-    }
 
-    auto symbol = _functionSymbols.find("main");
-    if (symbol == _functionSymbols.end() || symbol->second.size() != 0) {
+    llvm::ArrayRef<std::string> types;
+    if (symbols.getFunction("main", types) || types.size() != 0)
       return emitError(llvm::SMLoc{}, diag::main_undefined);
-    }
-
     return success();
   }
 
 private:
-  const std::string UInt64Type = "UInt64";
   const llvm::SourceMgr &_sourceManager;
-  std::map</*name*/ std::string, /*types*/ std::vector<std::string>> _functionSymbols;
-  std::map</*name*/ std::string, /*types*/ std::vector<std::string>> _typeSymbols;
-  std::map</*name*/std::string, /*type*/std::string> _variableSymbols;
-
-  // Symbols
-
-  auto addBuiltins() -> void {
-    _typeSymbols.insert(make_pair(UInt64Type,
-                                      std::vector<std::string>{}));
-    _functionSymbols.insert(make_pair("print",
-                                      std::vector<std::string>{UInt64Type}));
-  }
-
-  auto declareFunction(std::string name, std::vector<std::string> types) -> CherryResult {
-    if (getFunction(name))
-      return failure();
-    _functionSymbols.insert(make_pair(name, std::move(types)));
-    return success();
-  }
-
-  auto getFunction(std::string name) -> std::vector<std::string>* {
-    auto types = _functionSymbols.find(name);
-    if (types == _functionSymbols.end())
-      return nullptr;
-
-    return &_functionSymbols[name];
-  }
-
-  auto declareType(const Identifier *node,
-                   std::vector<std::string> types) -> CherryResult {
-    auto name = node->name();
-    if (_typeSymbols.find(name) != _typeSymbols.end())
-      return failure();
-    _typeSymbols.insert(make_pair(name, std::move(types)));
-    return success();
-  }
-
-  auto checkType(const std::string& type) -> CherryResult {
-    if (_typeSymbols.find(type) == _typeSymbols.end())
-      return failure();
-    return success();
-  }
-
-  auto getType(std::string name, llvm::ArrayRef<std::string>& types) -> CherryResult {
-    auto symbol = _typeSymbols.find(name);
-    if (symbol == _typeSymbols.end())
-      return failure();
-    types = symbol->second;
-    return success();
-  }
-
-  auto resetVariables() {
-    _variableSymbols = {};
-  }
-
-  auto declareVariable(const VariableExpr *var, std::string type) -> CherryResult {
-    auto name = var->name();
-    if (_variableSymbols.find(name) != _variableSymbols.end())
-      return failure();
-    _variableSymbols.insert(make_pair(name, type));
-    return success();
-  }
-
-  auto checkVariableExist(const VariableExpr *node) -> CherryResult {
-    if (_variableSymbols.find(node->name()) == _variableSymbols.end())
-      return failure();
-    return success();
-  }
-
-  auto variableType(const VariableExpr *node) -> std::string {
-    auto symbol = _variableSymbols.find(node->name());
-    if (symbol == _variableSymbols.end()) {
-      return "";
-    }
-    return symbol->second;
-  }
+  Symbols symbols;
 
   // Errors
 
@@ -152,7 +68,7 @@ private:
   }
 
   auto sema(const FunctionDecl *node) -> CherryResult {
-    resetVariables();
+    symbols.resetVariables();
     if (sema(node->proto().get()))
       return failure();
 
@@ -169,15 +85,15 @@ private:
     for (auto &par : node->parameters()) {
       auto type = par->type().get();
       auto typeName = type->name();
-      if (checkTypeExist(type))
+      if (symbols.checkType(type->name()))
         return emitError(type, diag::type_undefined);
-      if (declareVariable(par->variable().get(), typeName))
+      if (symbols.declareVariable(par->variable().get(), typeName))
         return emitError(par->variable().get(), diag::var_redefinition);
       types.push_back(typeName);
     }
 
     auto name = node->id()->name();
-    if (declareFunction(name, std::move(types))) {
+    if (symbols.declareFunction(name, std::move(types))) {
       const char *diagnostic = diag::func_redefinition;
       char buffer[50];
       sprintf(buffer, diagnostic, name.c_str());
@@ -192,7 +108,7 @@ private:
     for (auto &varDecl : *node) {
       auto type = varDecl->type().get();
       auto var = varDecl->variable().get();
-      if (checkType(type->name()))
+      if (symbols.checkType(type->name()))
         return emitError(type, diag::type_undefined);
       if (variables.find(var->name()) != variables.end())
         return emitError(var, diag::var_redefinition);
@@ -200,7 +116,7 @@ private:
       types.push_back(type->name());
     }
     auto id = node->id().get();
-    if (declareType(id, std::move(types)))
+    if (symbols.declareType(id, std::move(types)))
       return emitError(id, diag::type_redefinition);
     return success();
   }
@@ -221,16 +137,15 @@ private:
   }
 
   auto sema(const VariableExpr *node, std::string& type) -> CherryResult {
-    if (checkVariableExist(node))
+    if (symbols.getVariableType(node, type))
       return emitError(node, diag::var_undefined);
-    type = variableType(node);
     return success();
   }
 
   auto sema(const CallExpr *node, std::string& type) -> CherryResult {
     auto name = node->name();
-    std::vector<std::string>* parametersTypes = getFunction(name);
-    if (!parametersTypes) {
+    llvm::ArrayRef<std::string> parametersTypes;
+    if (symbols.getFunction(name, parametersTypes)) {
       const char * diagnostic = diag::func_undefined;
       char buffer [50];
       sprintf(buffer, diagnostic, name.c_str());
@@ -238,35 +153,36 @@ private:
     }
 
     auto &expressions = node->expressions();
-    if (expressions.size() != parametersTypes->size()) {
+    if (expressions.size() != parametersTypes.size()) {
       const char * diagnostic = diag::func_param;
       char buffer [50];
-      sprintf(buffer, diagnostic, name.c_str(), parametersTypes->size());
+      sprintf(buffer, diagnostic, name.c_str(), parametersTypes.size());
       return emitError(node, buffer);
     }
 
-    for (int i = 0; i < expressions.size(); ++i) {
-      auto type = (*parametersTypes)[i];
-      auto &expr = expressions[i];
+    for (const auto &expr_type : llvm::zip(expressions, parametersTypes)) {
+      auto &expr = std::get<0>(expr_type);
+      auto type = std::get<1>(expr_type);
       std::string exprType;
       if (sema(expr.get(), exprType))
         return failure();
       if (exprType != type)
         return emitError(expr.get(), diag::func_param_type_mismatch);
     }
-    type = UInt64Type;
+
+    type = symbols.UInt64Type;
     return success();
   }
 
   auto sema(const DecimalExpr *node, std::string& type) -> CherryResult {
-    type = UInt64Type;
+    type = symbols.UInt64Type;
     return success();
   }
 
   auto sema(const StructExpr *node, std::string& type) -> CherryResult {
     auto typeName = node->type();
     llvm::ArrayRef<std::string> fieldsTypes;
-    if (getType(typeName, fieldsTypes))
+    if (symbols.getType(typeName, fieldsTypes))
       return emitError(node, diag::type_undefined);
 
     if (node->expressions().size() != fieldsTypes.size())
