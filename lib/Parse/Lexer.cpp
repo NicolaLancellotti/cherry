@@ -10,19 +10,19 @@
 
 using namespace cherry;
 
-Lexer::Lexer(const llvm::SourceMgr &sourceMgr): sourceMgr(sourceMgr) {
+Lexer::Lexer(const llvm::SourceMgr &sourceMgr): _sourceMgr(sourceMgr) {
   auto bufferID = sourceMgr.getMainFileID();
-  curBuffer = sourceMgr.getMemoryBuffer(bufferID)->getBuffer();
-  curPtr = curBuffer.begin();
+  _curBuffer = sourceMgr.getMemoryBuffer(bufferID)->getBuffer();
+  _curPtr = _curBuffer.begin();
 }
 
 auto Lexer::lexToken() -> Token {
   while (true) {
     Restart:
-    const char *tokStart = curPtr;
-    switch (*curPtr++) {
+    const char *tokStart = _curPtr;
+    switch (*_curPtr++) {
     default:
-      if (isalpha(curPtr[-1]))
+      if (isalpha(_curPtr[-1]))
         return lexIdentifierOrKeyword(tokStart);
 
       return formToken(Token::error, tokStart);
@@ -33,7 +33,7 @@ auto Lexer::lexToken() -> Token {
       // Handle whitespace.
       continue;
     case 0:
-      if (curPtr - 1 == curBuffer.end())
+      if (_curPtr - 1 == _curBuffer.end())
         return formToken(Token::eof, tokStart);
       continue;
     case ';':
@@ -63,10 +63,10 @@ auto Lexer::lexToken() -> Token {
       return lexDecimal(tokStart);
     case '#': {
       while (true) {
-        if (*curPtr == '\n' || *curPtr == 0) {
+        if (*_curPtr == '\n' || *_curPtr == 0) {
           goto Restart;
         }
-        curPtr++;
+        _curPtr++;
       }
     }
     }
@@ -75,10 +75,10 @@ auto Lexer::lexToken() -> Token {
 
 auto Lexer::lexIdentifierOrKeyword(const char *tokStart) -> Token {
   // Match [0-9a-zA-Z]*
-  while (isalpha(*curPtr) || isdigit(*curPtr))
-    ++curPtr;
+  while (isalpha(*_curPtr) || isdigit(*_curPtr))
+    ++_curPtr;
 
-  llvm::StringRef spelling(tokStart, curPtr - tokStart);
+  llvm::StringRef spelling(tokStart, _curPtr - tokStart);
 
   Token::Kind kind = llvm::StringSwitch<Token::Kind>(spelling)
 #define TOK_KEYWORD(SPELLING) .Case(#SPELLING, Token::kw_##SPELLING)
@@ -89,8 +89,8 @@ auto Lexer::lexIdentifierOrKeyword(const char *tokStart) -> Token {
 }
 
 auto Lexer::lexDecimal(const char *tokStart) -> Token {
-  while (isdigit(*curPtr))
-    ++curPtr;
+  while (isdigit(*_curPtr))
+    ++_curPtr;
 
   return formToken(Token::decimal, tokStart);
 }

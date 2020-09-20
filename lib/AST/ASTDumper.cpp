@@ -22,7 +22,7 @@ struct Indent {
 };
 
 #define INDENT()                                                               \
-  Indent level_(curIndent);                                                    \
+  Indent level_(_curIndent);                                                    \
   indent();
 
 class Dumper {
@@ -33,11 +33,11 @@ public:
 
 private:
   auto indent() -> void {
-    for (int i = 0; i < curIndent; i++)
+    for (int i = 0; i < _curIndent; i++)
       errs() << "  ";
   }
 
-  int curIndent = 0;
+  int _curIndent = 0;
   const llvm::SourceMgr &_sourceManager;
 
   template <typename T>

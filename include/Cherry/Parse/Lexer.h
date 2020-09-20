@@ -35,15 +35,15 @@ public:
 
 private:
   auto formToken(Token::Kind kind, const char *tokStart) -> Token {
-    return Token(kind, llvm::StringRef(tokStart, curPtr - tokStart));
+    return Token(kind, llvm::StringRef(tokStart, _curPtr - tokStart));
   }
 
   auto lexIdentifierOrKeyword(const char *tokStart) -> Token;
   auto lexDecimal(const char *tokStart) -> Token;
 
-  const llvm::SourceMgr &sourceMgr;
-  llvm::StringRef curBuffer;
-  const char *curPtr;
+  const llvm::SourceMgr &_sourceMgr;
+  llvm::StringRef _curBuffer;
+  const char *_curPtr;
 
   Lexer(const Lexer &) = delete;
   auto operator=(const Lexer &) -> void = delete;

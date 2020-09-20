@@ -39,7 +39,7 @@ public:
 private:
   Token _token;
   std::unique_ptr<Lexer> _lexer;
-  llvm::SourceMgr& _sourceManager;
+  llvm::SourceMgr &_sourceManager;
 
   // ___________________________________________________________________________
   // Lex
