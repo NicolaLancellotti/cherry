@@ -10,6 +10,7 @@
 
 #include "cherry/AST/AST.h"
 #include "cherry/Basic/CherryResult.h"
+#include "cherry/Basic/CherryTypes.h"
 #include "llvm/Support/raw_ostream.h"
 #include <map>
 
@@ -20,9 +21,9 @@ using mlir::success;
 class Symbols {
 public:
   auto addBuiltins() -> void {
-     _typeSymbols.insert(std::make_pair(UInt64Type, &emptyVector));
+     _typeSymbols.insert(std::make_pair(types::UInt64Type, &emptyVector));
     _functionSymbols.insert(std::make_pair("print",
-                                           llvm::SmallVector<llvm::StringRef, 2>{UInt64Type}));
+                                           llvm::SmallVector<llvm::StringRef, 2>{types::UInt64Type}));
   }
 
   auto declareFunction(llvm::StringRef name,
@@ -87,7 +88,6 @@ public:
     return success();
   }
 
-  const llvm::StringRef UInt64Type = "UInt64";
   VectorUniquePtr<VariableDecl> emptyVector;
 private:
   std::map</*name*/ llvm::StringRef, /*types*/ llvm::SmallVector<llvm::StringRef, 2>> _functionSymbols;

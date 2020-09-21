@@ -173,12 +173,12 @@ private:
         return emitError(expr.get(), diag::func_param_type_mismatch);
     }
 
-    type = _symbols.UInt64Type;
+    type = types::UInt64Type;
     return success();
   }
 
   auto sema(const DecimalExpr *node, llvm::StringRef& type) -> CherryResult {
-    type = _symbols.UInt64Type;
+    type = types::UInt64Type;
     return success();
   }
 
