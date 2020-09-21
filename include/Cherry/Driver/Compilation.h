@@ -42,6 +42,7 @@ public:
   auto dumpLLVMfromMLIR() -> int;
   auto dumpLLVM() -> int;
 
+  auto typecheck() -> int;
   auto jit() -> int;
 
   auto sourceManager() -> llvm::SourceMgr& { return _sourceManager; };

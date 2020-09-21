@@ -111,7 +111,15 @@ auto Compilation::genLLVM(std::unique_ptr<llvm::Module>& llvmModule) -> CherryRe
   return success();
 }
 
-auto Compilation:: jit() -> int {
+auto Compilation::typecheck() -> int {
+  std::unique_ptr<Module> module;
+  if (parse(module) || cherry::sema(_sourceManager, *module.get()))
+    return EXIT_FAILURE;
+
+  return EXIT_SUCCESS;
+}
+
+auto Compilation::jit() -> int {
   mlir::OwningModuleRef module;
   if (genMLIR(module, Lowering::LLVM))
     return EXIT_FAILURE;

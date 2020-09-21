@@ -6,10 +6,6 @@
 using namespace cherry;
 namespace cl = llvm::cl;
 
-static cl::opt<std::string> inputFilename(cl::Positional,
-                                          cl::desc("<input file>"),
-                                          cl::init("-"),
-                                          cl::value_desc("filename"));
 namespace {
 enum Action {
   None,
@@ -20,16 +16,20 @@ enum Action {
   DumpMLIRLLVM,
   DumpLLVM,
 };
-} // end namespace
 
-namespace {
 enum Backend {
   MLIR,
   LLVM,
 };
 } // end namespace
 
-static cl::opt<bool> enableOpt("opt", cl::desc("Enable optimizations"));
+static cl::opt<std::string> inputFilename(cl::Positional,
+                                          cl::desc("<input file>"),
+                                          cl::init("-"),
+                                          cl::value_desc("filename"));
+
+static cl::opt<bool> typecheck("typecheck",
+                               cl::desc("Parse and type-check input file"));
 
 static cl::opt<enum Action>
     dumpAction("dump",
@@ -52,6 +52,7 @@ static cl::opt<enum Action>
                cl::values(clEnumValN(DumpLLVM,
                                      "llvm",
                                      "output the LLVM dump")));
+
 static cl::opt<enum Backend>
     backend("b",
             cl::desc("Select the backend"),
@@ -63,6 +64,7 @@ static cl::opt<enum Backend>
                                   "llvm",
                                   "select the LLVM backend")));
 
+static cl::opt<bool> enableOpt("opt", cl::desc("Enable optimizations"));
 
 auto main(int argc, const char **argv) -> int {
   cl::ParseCommandLineOptions(argc, argv, "Cherry compiler\n");
@@ -72,6 +74,9 @@ auto main(int argc, const char **argv) -> int {
   if (compilation == nullptr ) {
     return EXIT_FAILURE;
   }
+
+  if (typecheck)
+    return compilation->typecheck();
 
   switch (dumpAction) {
   case Action::DumpTokens:
