@@ -1,4 +1,4 @@
-//===--- MLIRGen.cpp - MLIR Generator ---------------------------*- C++ -*-===//
+//===--- MLIRGen.h - MLIR Generator -----------------------------*- C++ -*-===//
 //
 // This source file is part of the Cherry open source project
 // See TODO for license information

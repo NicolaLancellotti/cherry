@@ -62,13 +62,6 @@ private:
     return _builder.getFileLineColLoc(identifier, line, col);
   }
 
-  auto declareVariable(llvm::StringRef name, mlir::Value value) -> CherryResult {
-    if (_variableSymbols.count(name))
-      return failure();
-    _variableSymbols[name] = value;
-    return success();
-  }
-
   auto getType(llvm::StringRef name) -> mlir::Type {
     if (name == "UInt64") {
       return _builder.getI64Type();
@@ -132,10 +125,11 @@ private:
 
     auto &entryBlock = *func.addEntryBlock();
     for (const auto &var_value : llvm::zip(node->parameters(),
-                                           entryBlock.getArguments()))
-      if (declareVariable(std::get<0>(var_value)->variable()->name(),
-                          std::get<1>(var_value)))
-        return failure();
+                                           entryBlock.getArguments())) {
+      auto name = std::get<0>(var_value)->variable()->name();
+      auto value = std::get<1>(var_value);
+      _variableSymbols[name] = value;
+    }
 
     _builder.setInsertionPointToStart(&entryBlock);
     return success();
@@ -174,11 +168,6 @@ private:
 
   auto genPrint(const CallExpr *node, mlir::Value& value) -> CherryResult {
     auto &expressions = node->expressions();
-    if (expressions.size() != 1) {
-      emitError(loc(node)) << "print call takes one argument ";
-      return failure();
-    }
-
     mlir::Value operand;
     if (gen(expressions.front().get(), operand))
       return failure();
@@ -188,9 +177,8 @@ private:
   }
 
   auto gen(const CallExpr *node, mlir::Value& value) -> CherryResult {
-    if (node->name() == "print") {
+    if (node->name() == "print")
       return genPrint(node, value);
-    }
 
     llvm::SmallVector<mlir::Value, 4> operands;
     for (auto &expr : *node) {
