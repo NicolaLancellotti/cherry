@@ -86,3 +86,8 @@ output:
 1
 18446744073709551615
 ```
+
+## Unimplemented features
+Struct expressions and struct access expressions 
+can be parsed and type-checked but the lowering 
+to MLIR or LLVM is not implemented yet.
