@@ -1,75 +1,79 @@
-# Cherry Grammar
+# Cherry Grammar  
 
-## Lexical Structure
+## Lexical Structure  
 
-**Identifiers**  
+**GRAMMAR OF AN IDENTIFIER**  
 identifier → identifier-head identifier-characters<sub>opt</sub>  
-
 identifier-head → `Upper or lowercase letter A through Z`  
-identifier-characters → identifier-character identifier-characters<sub>opt</sub>      
+identifier-characters → identifier-character identifier-characters<sub>opt</sub>  
 identifier-character → identifier-head  
 identifier-character → `Digit 0 through 9`  
 
-**Literals**  
-literal → decimal-literal    
-decimal-literal → decimal-digit decimal-digits<sub>opt</sub>    
-decimal-digit → `Digit 0 through 9`    
-decimal-digits → decimal-digit decimal-digits<sub>opt</sub>     
+**GRAMMAR OF A LITERAL**  
+literal → decimal-literal  
+decimal-literal → decimal-digit decimal-digits<sub>opt</sub>  
+decimal-digit → `Digit 0 through 9`  
+decimal-digits → decimal-digit decimal-digits<sub>opt</sub>  
 
 ## Expressions  
-expression → function-call-expression  
 expression → primary-expression  
-expression → variable-expression  
-expression → struct-expression  
+expression → struct-access  
 
-**Primary expressions**    
-primary-expression → literal-expression    
+**GRAMMAR OF A PRIMARY EXPRESSION**  
+primary-expression → literal-expression  
+primary-expression → variable-expression  
+primary-expression → function-call-expression  
+primary-expression → struct-expression  
 
-**Literal expressions**  
-literal-expression → literal
+**GRAMMAR OF A LITERAL EXPRESSION**  
+literal-expression → literal  
 
-**Call expression**  
-function-call-expression → identifier function-call-argument-clause    
+**GRAMMAR OF A CALL EXPRESSION**  
+function-call-expression → identifier function-call-argument-clause  
 function-call-argument-clause → `(` `)`  
-function-call-argument-clause → `(` function-call-argument-list `)`       
-function-call-argument-list → function-call-argument    
+function-call-argument-clause → `(` function-call-argument-list `)`  
+function-call-argument-list → function-call-argument  
 function-call-argument-list → function-call-argument `,` function-call-argument-list  
-function-call-argument → expression    
+function-call-argument → expression  
 
-**Variable expression**
+**GRAMMAR OF A VARIABLE EXPRESSION**  
 variable-expression → identifier  
 
-**Struct expression**  
-struct-expression → type `{` struct-expression-argument-list<sub>opt</sub> `}`         
-struct-expression-argument-list → expression `,`<sub>opt</sub>     
+**GRAMMAR OF A STRUCT EXPRESSION**  
+struct-expression → type `{` struct-expression-argument-list<sub>opt</sub> `}`  
+struct-expression-argument-list → expression `,`<sub>opt</sub>  
 struct-expression-argument-list → expression `,` function-call-argument-list  
 
+**GRAMMAR OF A STRUCT ACCESS EXPRESSION**  
+struct-access → struct-expression `.` identifier  
+struct-access → struct-access `.` identifier  
+  
 ## Statements  
 statement → expression `;`  
-statements → statement statements<sub>opt</sub>    
+statements → statement statements<sub>opt</sub>  
 
 ## Declarations  
 declaration → function-declaration  
-declaration → struct-declaration    
-declarations → declaration declarations<sub>opt</sub>    
+declaration → struct-declaration  
+declarations → declaration declarations<sub>opt</sub>  
 
-**Top-level declaration**  
-top-level-declaration → declarations   
+**GRAMMAR OF A TOP-LEVEL DECLARATION**  
+top-level-declaration → declarations  
 
-**Function declaration**  
+**GRAMMAR OF A FUNCTION DECLARATION**  
 function-declaration → `fun` function-name function-signature  function-body  
 function-name → identifier  
 function-signature → `(` parameter-list<sub>opt</sub>  `)`  
-parameter-list → parameter `,`<sub>opt</sub>   
+parameter-list → parameter `,`<sub>opt</sub>  
 parameter-list → parameter `,` parameter-list  
 parameter → parameter-name type-annotation  
 parameter-name → identifier  
-type-annotation → `:` type   
+type-annotation → `:` type  
 function-body → `{` statements<sub>opt</sub> `}`  
 
-## Types
-type → identifier    
+**GRAMMAR OF A STRUCT DECLARATION**    
+type → identifier  
 struct-declaration → `struct` type `{`  struct-members<sub>opt</sub> `}`  
-struct-members → struct-member `,`<sub>opt</sub>   
-struct-members → struct-member `,` struct-members    
+struct-members → struct-member `,`<sub>opt</sub>  
+struct-members → struct-member `,` struct-members  
 struct-member → identifier type-annotation  

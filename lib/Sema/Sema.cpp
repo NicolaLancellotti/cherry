@@ -117,7 +117,7 @@ private:
       types.push_back(type->name());
     }
     auto id = node->id().get();
-    if (_symbols.declareType(id, std::move(types)))
+    if (_symbols.declareType(node))
       return emitError(id, diag::type_redefinition);
     return success();
   }
@@ -132,6 +132,8 @@ private:
       return sema(cast<VariableExpr>(node), type);
     case Expr::Expr_Struct:
       return sema(cast<StructExpr>(node), type);
+    case Expr::Expr_Binary:
+      return sema(cast<BinaryExpr>(node), type);
     default:
       llvm_unreachable("Unexpected expression");
     }
@@ -182,16 +184,16 @@ private:
 
   auto sema(const StructExpr *node, llvm::StringRef& type) -> CherryResult {
     auto typeName = node->type();
-    llvm::ArrayRef<llvm::StringRef> fieldsTypes;
-    if (_symbols.getType(typeName, fieldsTypes))
+    const VectorUniquePtr<VariableDecl>* fieldsTypes;
+    if (_symbols.getType(typeName, &fieldsTypes))
       return emitError(node, diag::type_undefined);
 
-    if (node->expressions().size() != fieldsTypes.size())
+    if (node->expressions().size() != fieldsTypes->size())
       return emitError(node, diag::wrong_num_arg);
 
-    for (const auto &expr_type : llvm::zip(*node, fieldsTypes)) {
+    for (const auto &expr_type : llvm::zip(*node, *fieldsTypes)) {
       auto &expr = std::get<0>(expr_type);
-      auto &fieldType = std::get<1>(expr_type);
+      auto fieldType = std::get<1>(expr_type)->type()->name();
       llvm::StringRef exprType;
       if (sema(expr.get(), exprType))
         return failure();
@@ -202,6 +204,31 @@ private:
     type = node->type();
     return success();
   }
+
+  auto sema(const BinaryExpr *node, llvm::StringRef& type) -> CherryResult {
+    // sema struct access
+    llvm::StringRef lhsType;
+    if (sema(node->lhs().get(), lhsType))
+      return failure();
+
+    VariableExpr *var = llvm::dyn_cast<VariableExpr>(node->rhs().get());
+    if (!var)
+      return emitError(node->rhs().get(), diag::expected_field);
+
+    auto fieldName = var->name();
+    const VectorUniquePtr<VariableDecl>* fieldsTypes;
+    _symbols.getType(lhsType, &fieldsTypes);
+
+    for (auto &f : *fieldsTypes) {
+      if (f->variable()->name() == fieldName) {
+        type = f->type()->name();
+        return success();
+      }
+    }
+
+    return emitError(node->rhs().get(), diag::field_undefined);
+  }
+
 };
 
 } // end namespace

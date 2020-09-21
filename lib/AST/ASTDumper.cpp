@@ -60,6 +60,7 @@ private:
   auto dump(const DecimalExpr *node) -> void;
   auto dump(const StructExpr *node) -> void;
   auto dump(const VariableExpr *node) -> void;
+  auto dump(const BinaryExpr *node) -> void;
 };
 
 }// end namespace
@@ -121,7 +122,8 @@ auto Dumper::dump(const StructDecl *node) -> void {
 
 auto Dumper::dump(const Expr *node) -> void {
   llvm::TypeSwitch<const Expr *>(node)
-      .Case<CallExpr, DecimalExpr, VariableExpr, StructExpr>([&](auto *node) {
+      .Case<CallExpr, DecimalExpr, VariableExpr,
+            StructExpr, BinaryExpr>([&](auto *node) {
         this->dump(node);
       })
       .Default([&](const Expr *) {
@@ -151,6 +153,13 @@ auto Dumper::dump(const StructExpr *node) -> void {
 auto Dumper::dump(const VariableExpr *node) -> void {
   INDENT();
   errs() << "VariableExpr " << loc(node) << " name=" << node->name() << "\n";
+}
+
+auto Dumper::dump(const BinaryExpr *node) -> void {
+  INDENT();
+  errs() << "BinaryExpr " << loc(node) << " op=" << node->op() << "\n";
+  dump(node->lhs().get());
+  dump(node->rhs().get());
 }
 
 namespace cherry {

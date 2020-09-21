@@ -174,13 +174,10 @@ auto Parser::parseIdentifier(unique_ptr<T>& identifier,
 // Parse Expressions
 
 auto Parser::parseExpression(unique_ptr<Expr>& expr) -> CherryResult {
-  switch (tokenKind()) {
-  case Token::decimal:
-    return parseDecimal_c(expr);
-  case Token::identifier:
-    return parseIdentifier_c(expr);
-  default:
-    return emitError(diag::expected_expr);
+  if (parsePrimaryExpression(expr)) {
+    return failure();
+  } else {
+    return parseBinaryExpRHS(0, expr);
   }
 }
 
@@ -196,6 +193,17 @@ auto Parser::parseExpressions(VectorUniquePtr<Expr>& expressions,
                    expressions, parseElement);
 }
 
+auto Parser::parsePrimaryExpression(unique_ptr<Expr>& expr) -> CherryResult {
+  switch (tokenKind()) {
+  case Token::decimal:
+    return parseDecimal_c(expr);
+  case Token::identifier:
+    return parseFuncStructVar_c(expr);
+  default:
+    return emitError(diag::expected_expr);
+  }
+}
+
 auto Parser::parseDecimal_c(unique_ptr<Expr>& expr) -> CherryResult {
   auto loc = tokenLoc();
   if (auto value = token().getUInt64IntegerValue()) {
@@ -206,7 +214,7 @@ auto Parser::parseDecimal_c(unique_ptr<Expr>& expr) -> CherryResult {
   return emitError(diag::integer_literal_overflows);
 }
 
-auto Parser::parseIdentifier_c(unique_ptr<Expr>& expr) -> CherryResult {
+auto Parser::parseFuncStructVar_c(unique_ptr<Expr> &expr) -> CherryResult {
   auto location = tokenLoc();
   auto name = spelling();
   consume(Token::identifier);
@@ -245,4 +253,38 @@ auto Parser::parseStructExpr_c(llvm::SMLoc location,
     return failure();
   expr = make_unique<StructExpr>(location, name, move(expressions));
   return success();
+}
+
+auto Parser::parseBinaryExpRHS(int exprPrec, std::unique_ptr<Expr>& expr) -> CherryResult {
+  while (true) {
+    int tokPrec = getTokenPrecedence();
+    if (tokPrec < exprPrec)
+      return success();
+
+    Token t = token();
+    consume(t.getKind());
+    auto location = tokenLoc();
+
+    unique_ptr<Expr> rhs;
+    if (parsePrimaryExpression(rhs))
+      return emitError(diag::expected_expr);
+
+    int nextPrec = getTokenPrecedence();
+    if (tokPrec < nextPrec) {
+      if (parseBinaryExpRHS(tokPrec + 1, rhs))
+        return failure();
+    }
+
+    expr = std::make_unique<BinaryExpr>(location, t.getSpelling(),
+                                        std::move(expr), std::move(rhs));
+  }
+}
+
+auto Parser::getTokenPrecedence() -> int {
+  switch (tokenKind()) {
+  case Token::dot:
+    return 10;
+  default:
+    return -1;
+  }
 }

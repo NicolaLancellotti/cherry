@@ -23,6 +23,7 @@ public:
     Expr_Decimal,
     Expr_Variable,
     Expr_Struct,
+    Expr_Binary
   };
 
   explicit Expr(ExpressionKind kind,
@@ -139,6 +140,40 @@ private:
 public:
   auto begin() const -> decltype(_expressions.begin()) { return _expressions.begin(); }
   auto end() const -> decltype(_expressions.end()) { return _expressions.end(); }
+};
+
+// _____________________________________________________________________________
+// Binary expression
+
+class BinaryExpr final : public Expr {
+public:
+  explicit BinaryExpr(llvm::SMLoc location,
+                      llvm::StringRef op,
+                      std::unique_ptr<Expr> lhs,
+                      std::unique_ptr<Expr> rhs)
+      : Expr{Expr_Binary, location}, _op{op.str()},
+        _lhs{std::move(lhs)}, _rhs{std::move(rhs)} {};
+
+  static auto classof(const Expr * node) -> bool {
+    return node->getKind() == Expr_Binary;
+  }
+
+  auto lhs() const -> const std::unique_ptr<Expr>& {
+    return _lhs;
+  }
+
+  auto rhs() const -> const std::unique_ptr<Expr>& {
+    return _rhs;
+  }
+
+  auto op() const -> llvm::StringRef {
+    return _op;
+  }
+
+private:
+  std::unique_ptr<Expr> _lhs;
+  std::unique_ptr<Expr> _rhs;
+  std::string _op;
 };
 
 

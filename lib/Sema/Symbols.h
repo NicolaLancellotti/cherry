@@ -20,8 +20,7 @@ using mlir::success;
 class Symbols {
 public:
   auto addBuiltins() -> void {
-     _typeSymbols.insert(std::make_pair(UInt64Type,
-                                       llvm::SmallVector<llvm::StringRef, 2>{}));
+     _typeSymbols.insert(std::make_pair(UInt64Type, &emptyVector));
     _functionSymbols.insert(std::make_pair("print",
                                            llvm::SmallVector<llvm::StringRef, 2>{UInt64Type}));
   }
@@ -43,12 +42,12 @@ public:
     return success();
   }
 
-  auto declareType(const Identifier *node,
-                   llvm::SmallVector<llvm::StringRef, 2> types) -> CherryResult {
-    auto name = node->name();
+  auto declareType(const StructDecl *node) -> CherryResult {
+    auto name = node->id()->name();
     if (_typeSymbols.find(name.str()) != _typeSymbols.end())
       return failure();
-    _typeSymbols.insert(std::make_pair(name, std::move(types)));
+
+    _typeSymbols.insert(std::make_pair(name, &(node->variables())));
     return success();
   }
 
@@ -59,11 +58,11 @@ public:
   }
 
   auto getType(llvm::StringRef name,
-               llvm::ArrayRef<llvm::StringRef>& types) -> CherryResult {
+               const VectorUniquePtr<VariableDecl>** types) -> CherryResult {
     auto symbol = _typeSymbols.find(name);
     if (symbol == _typeSymbols.end())
       return failure();
-    types = symbol->second;
+    *types = symbol->second;
     return success();
   }
 
@@ -89,9 +88,10 @@ public:
   }
 
   const llvm::StringRef UInt64Type = "UInt64";
+  VectorUniquePtr<VariableDecl> emptyVector;
 private:
   std::map</*name*/ llvm::StringRef, /*types*/ llvm::SmallVector<llvm::StringRef, 2>> _functionSymbols;
-  std::map</*name*/ llvm::StringRef, /*types*/ llvm::SmallVector<llvm::StringRef, 2>> _typeSymbols;
+  std::map</*name*/ llvm::StringRef, /*types*/ const VectorUniquePtr<VariableDecl>*> _typeSymbols;
   std::map</*name*/llvm::StringRef, /*type*/ llvm::StringRef> _variableSymbols;
 };
 

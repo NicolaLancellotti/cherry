@@ -50,6 +50,8 @@ auto Lexer::lexToken() -> Token {
       return formToken(Token::r_brace, tokStart);
     case ':':
       return formToken(Token::colon, tokStart);
+    case '.':
+      return formToken(Token::dot, tokStart);
     case '0':
     case '1':
     case '2':

@@ -21,5 +21,8 @@ ERROR(var_redefinition, "redefinition of variable")
 
 ERROR(type_redefinition, "redefinition of type")
 
+ERROR(expected_field, "expected struct field")
+ERROR(field_undefined, "undefined field")
+
 // ___________________________________________________________________________
 #undef ERROR

@@ -125,9 +125,11 @@ private:
                         const char * const separator_error,
                         const char * const end_error) -> CherryResult;
 
+  auto parsePrimaryExpression(std::unique_ptr<Expr>& expr) -> CherryResult;
+
   auto parseDecimal_c(std::unique_ptr<Expr>& expr) -> CherryResult;
 
-  auto parseIdentifier_c(std::unique_ptr<Expr>& expr) -> CherryResult;
+  auto parseFuncStructVar_c(std::unique_ptr<Expr>& expr) -> CherryResult;
 
   auto parseFunctionCall_c(llvm::SMLoc location,
                            llvm::StringRef name,
@@ -136,6 +138,9 @@ private:
   auto parseStructExpr_c(llvm::SMLoc location,
                          llvm::StringRef name,
                          std::unique_ptr<Expr>& expr) -> CherryResult;
+
+  auto parseBinaryExpRHS(int exprPrec, std::unique_ptr<Expr>& expr) -> CherryResult;
+  auto getTokenPrecedence() -> int;
 
 };
 
