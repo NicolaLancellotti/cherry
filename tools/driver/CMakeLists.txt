@@ -14,6 +14,7 @@ target_link_libraries(cherry-driver
         cherryBasic
         cherryDriver
         cherryParse
+        cherryLLVMGen
         cherryMLIRGen
         cherrySema
 )

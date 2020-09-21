@@ -6,6 +6,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "cherry/Driver/Compilation.h"
+#include "cherry/LLVMGen/LLVMGen.h"
 #include "cherry/MLIRGen/CherryDialect.h"
 #include "cherry/MLIRGen/MLIRGen.h"
 #include "cherry/MLIRGen/Passes.h"
@@ -64,11 +65,11 @@ auto Compilation::genMLIR(mlir::OwningModuleRef& module,
   if (cherry::sema(_sourceManager, *moduleAST.get()))
     return failure();
 
-  module = mlirGen(_sourceManager, _context, *moduleAST);
+  module = mlirGen(_sourceManager, _mlirContext, *moduleAST);
   if (!module)
     return failure();
 
-  mlir::PassManager pm(&_context);
+  mlir::PassManager pm(&_mlirContext);
   if (_enableOpt) {
     mlir::OpPassManager &optPM = pm.nest<mlir::FuncOp>();
     optPM.addPass(mlir::createCanonicalizerPass());
@@ -161,11 +162,21 @@ auto Compilation::dumpMLIR(Lowering lowering) -> int {
   return EXIT_SUCCESS;
 }
 
-auto Compilation::dumpLLVM() -> int {
+auto Compilation::dumpLLVMfromMLIR() -> int {
   std::unique_ptr<llvm::Module> llvmModule;
   if (genLLVM(llvmModule))
     return EXIT_FAILURE;
 
   llvm::errs() << *llvmModule << "\n";
+  return EXIT_SUCCESS;
+}
+
+auto Compilation::dumpLLVM() -> int {
+  std::unique_ptr<Module> module;
+  if (parse(module))
+    return EXIT_FAILURE;
+
+  auto llvmModule = llvmGen(_llvmContext, *module);
+  llvmModule->print(llvm::errs(), nullptr);
   return EXIT_SUCCESS;
 }

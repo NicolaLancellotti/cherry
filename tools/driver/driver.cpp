@@ -18,14 +18,21 @@ enum Action {
   DumpMLIR,
   DumpMLIRStandard,
   DumpMLIRLLVM,
-  DumpLLVM
+  DumpLLVM,
+};
+} // end namespace
+
+namespace {
+enum Backend {
+  MLIR,
+  LLVM,
 };
 } // end namespace
 
 static cl::opt<bool> enableOpt("opt", cl::desc("Enable optimizations"));
 
 static cl::opt<enum Action>
-    emitAction("dump",
+    dumpAction("dump",
                cl::desc("Select the kind of output desired"),
                cl::values(clEnumValN(DumpTokens,
                                      "tokens",
@@ -45,6 +52,17 @@ static cl::opt<enum Action>
                cl::values(clEnumValN(DumpLLVM,
                                      "llvm",
                                      "output the LLVM dump")));
+static cl::opt<enum Backend>
+    backend("b",
+            cl::desc("Select the backend"),
+            cl::init(MLIR),
+            cl::values(clEnumValN(MLIR,
+                                  "mlir",
+                                  "select the MLIR backend")),
+            cl::values(clEnumValN(LLVM,
+                                  "llvm",
+                                  "select the LLVM backend")));
+
 
 auto main(int argc, const char **argv) -> int {
   cl::ParseCommandLineOptions(argc, argv, "Cherry compiler\n");
@@ -55,9 +73,9 @@ auto main(int argc, const char **argv) -> int {
     return EXIT_FAILURE;
   }
 
-  switch (emitAction) {
+  switch (dumpAction) {
   case Action::DumpTokens:
-      return compilation->dumpTokens();
+    return compilation->dumpTokens();
   case Action::DumpAST:
     return compilation->dumpAST();
   case Action::DumpMLIR:
@@ -67,7 +85,11 @@ auto main(int argc, const char **argv) -> int {
   case Action::DumpMLIRLLVM:
     return compilation->dumpMLIR(Compilation::Lowering::LLVM);
   case Action::DumpLLVM:
-    return compilation->dumpLLVM();
+    if (backend == Backend::MLIR) {
+      return compilation->dumpLLVMfromMLIR();
+    } else {
+      return compilation->dumpLLVM();
+    }
   default:
     return compilation->jit();
   }

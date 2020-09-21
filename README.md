@@ -29,15 +29,17 @@ cherry-driver main.cherry
 ```
 
 ### Driver Flags
-Meaning                    |  Flag
-|--------------------------|-------------------|
-Enable optimisation        | -opt
-Dump tokens 			   | -dump=tokens
-Dump the AST               | -dump=ast
-Dump the MLIR (cherry)     | -dump=mlir
-Dump the MLIR (standard)   | -dump=mlir-std
-Dump the MLIR (LLVM)       | -dump=mlir-llvm
-Dump the LLVM IR           | -dump=llvm
+Meaning                             |  Flag
+|-----------------------------------|-------------------|
+Enable optimisation                 | -opt
+Dump tokens 			            | -dump=tokens
+Dump the AST                        | -dump=ast
+Dump the MLIR (cherry)              | -dump=mlir
+Dump the MLIR (standard)            | -dump=mlir-std
+Dump the MLIR (LLVM)                | -dump=mlir-llvm
+Dump the LLVM IR                    | -dump=llvm
+Select the LLVM backend             | -b=llvm
+Select the MLIR backend (default)   | -b=mlir
 
 Example
 ```

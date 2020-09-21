@@ -11,6 +11,7 @@
 #include "mlir/IR/MLIRContext.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/SourceMgr.h"
+#include "llvm/IR/LLVMContext.h"
 
 namespace mlir {
 class OwningModuleRef;
@@ -38,6 +39,7 @@ public:
   auto dumpTokens() -> int;
   auto dumpAST() -> int;
   auto dumpMLIR(Lowering lowering) -> int;
+  auto dumpLLVMfromMLIR() -> int;
   auto dumpLLVM() -> int;
 
   auto jit() -> int;
@@ -47,7 +49,8 @@ public:
 private:
   llvm::SourceMgr _sourceManager;
   bool _enableOpt;
-  mlir::MLIRContext _context;
+  mlir::MLIRContext _mlirContext;
+  llvm::LLVMContext _llvmContext;
 
   auto parse(std::unique_ptr<Module>& module) -> CherryResult;
   auto genMLIR(mlir::OwningModuleRef& module,
