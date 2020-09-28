@@ -35,7 +35,7 @@ Select the LLVM backend             | -b=llvm
 Select the MLIR backend (default)   | -b=mlir
 Parse and type-check                | -typecheck
 Enable optimisation                 | -opt
-Generate a target ".o" object file  | -c[=<filename>]  
+Generate a target ".o" object file  | -c[=\<filename>]  
 
 ## Examples
 main.cherry:
