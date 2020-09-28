@@ -25,7 +25,7 @@ cmake --build . --target mlir-doc
 ### Driver Flags
 Meaning                             |  Flag
 |-----------------------------------|-------------------|
-Dump tokens 			            | -dump=tokens
+Dump tokens 			                  | -dump=tokens
 Dump the AST                        | -dump=ast
 Dump the MLIR (cherry)              | -dump=mlir
 Dump the MLIR (standard)            | -dump=mlir-std
@@ -74,7 +74,7 @@ output:
 18446744073709551615
 ```
 
-### Generate an object file, compile and run
+### Generate an object file and run
 run:
 ```
 cherry-driver main.cherry -c=a.o
@@ -97,6 +97,7 @@ cherry-opt -lower-cherry-to-std -lower-cherry-std-to-llvm -print-ir-after-all ma
 ```
 
 ## Unimplemented features
-Struct expressions and struct access expressions 
+- Struct constructors and struct access expressions 
 can be parsed and type-checked but the lowering 
 to MLIR or LLVM is not implemented yet.
+- JIT is available only with the MLIR backend
