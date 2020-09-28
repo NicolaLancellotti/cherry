@@ -20,7 +20,8 @@ namespace cherry {
 class Module;
 class CherryResult;
 
-auto llvmGen(llvm::LLVMContext &context,
+auto llvmGen(const llvm::SourceMgr &sourceManager,
+             llvm::LLVMContext &context,
              const Module &moduleAST,
              std::unique_ptr<llvm::Module> &module) -> CherryResult;
 
