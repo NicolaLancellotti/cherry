@@ -28,7 +28,11 @@ using mlir::success;
 class MLIRGenImpl {
 public:
   MLIRGenImpl(const llvm::SourceMgr &sourceManager, mlir::MLIRContext &context)
-      : _sourceManager{sourceManager}, _builder(&context) {}
+      : _sourceManager{sourceManager},
+        _builder(&context),
+        _fileNameIdentifier{_builder.getIdentifier(
+            _sourceManager.getMemoryBuffer(_sourceManager.getMainFileID())
+                ->getBufferIdentifier())} {}
 
   auto gen(const Module &node) -> CherryResult;
 
@@ -38,6 +42,7 @@ private:
   mlir::OpBuilder _builder;
   std::map<llvm::StringRef, mlir::Value> _variableSymbols;
   std::map<llvm::StringRef, mlir::Type> _typeSymbols;
+  mlir::Identifier _fileNameIdentifier;
 
   // Declarations
   auto gen(const Decl *node, mlir::Operation *&op) -> CherryResult;
@@ -55,8 +60,7 @@ private:
   // Utility
   auto loc(const Node *node) -> mlir::Location {
     auto [line, col] = _sourceManager.getLineAndColumn(node->location());
-    auto identifier = _builder.getIdentifier("main.cherry");
-    return _builder.getFileLineColLoc(identifier, line, col);
+    return _builder.getFileLineColLoc(_fileNameIdentifier, line, col);
   }
 
   auto getType(llvm::StringRef name) -> mlir::Type {
