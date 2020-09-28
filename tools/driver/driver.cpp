@@ -28,6 +28,11 @@ static cl::opt<std::string> inputFilename(cl::Positional,
                                           cl::init("-"),
                                           cl::value_desc("filename"));
 
+static cl::opt<std::string> outputFilename("c",
+                                           cl::desc("Generate a target \".o\" object file"),
+                                           cl::ValueOptional,
+                                           cl::value_desc("filename"));
+
 static cl::opt<bool> typecheck("typecheck",
                                cl::desc("Parse and type-check input file"));
 
@@ -70,10 +75,13 @@ auto main(int argc, const char **argv) -> int {
   cl::ParseCommandLineOptions(argc, argv, "Cherry compiler\n");
 
   std::unique_ptr<Compilation> compilation = Compilation::make(inputFilename,
-                                                               enableOpt);
-  if (compilation == nullptr ) {
+                                                               enableOpt,
+                                                               backend == Backend::LLVM);
+  if (compilation == nullptr)
     return EXIT_FAILURE;
-  }
+
+  if (outputFilename.getPosition())
+    return compilation->genObjectFile(outputFilename != "" ? outputFilename.c_str() : "a.o");
 
   if (typecheck)
     return compilation->typecheck();
@@ -90,11 +98,7 @@ auto main(int argc, const char **argv) -> int {
   case Action::DumpMLIRLLVM:
     return compilation->dumpMLIR(Compilation::Lowering::LLVM);
   case Action::DumpLLVM:
-    if (backend == Backend::MLIR) {
-      return compilation->dumpLLVMfromMLIR();
-    } else {
-      return compilation->dumpLLVM();
-    }
+    return compilation->dumpLLVM();
   default:
     return compilation->jit();
   }

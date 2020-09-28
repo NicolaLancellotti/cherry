@@ -225,9 +225,12 @@ auto LLVMGenImpl::gen(const DecimalExpr *node, llvm::Value *&value) -> CherryRes
 namespace cherry {
 
 auto llvmGen(llvm::LLVMContext &context,
-             const Module &moduleAST) -> std::unique_ptr<llvm::Module> {
+             const Module &moduleAST,
+             std::unique_ptr<llvm::Module> &module) -> CherryResult {
   auto generator = std::make_unique<LLVMGenImpl>(context);
-  return generator->gen(moduleAST) ? nullptr : std::move(generator->module);
+  auto result =  generator->gen(moduleAST);
+  module = std::move(generator->module);
+  return result;
 }
 
 } // end namespace cherry

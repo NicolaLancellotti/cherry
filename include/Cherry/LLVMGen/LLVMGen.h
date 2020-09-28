@@ -18,9 +18,11 @@ class LLVMContext;
 
 namespace cherry {
 class Module;
+class CherryResult;
 
 auto llvmGen(llvm::LLVMContext &context,
-             const Module &moduleAST) -> std::unique_ptr<llvm::Module>;
+             const Module &moduleAST,
+             std::unique_ptr<llvm::Module> &module) -> CherryResult;
 
 } // end namespace cherry
 

@@ -19,10 +19,12 @@ class SourceMgr;
 
 namespace cherry {
 class Module;
+class CherryResult;
 
 auto mlirGen(const llvm::SourceMgr &sourceManager,
              mlir::MLIRContext &context,
-             const Module &moduleAST) -> mlir::OwningModuleRef;
+             const Module &moduleAST,
+             mlir::OwningModuleRef &module) -> CherryResult;
 
 } // end namespace cherry
 

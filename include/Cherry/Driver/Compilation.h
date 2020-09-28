@@ -34,22 +34,24 @@ public:
   };
 
   static auto make(llvm::StringRef filename,
-                   bool enableOpt) -> std::unique_ptr<Compilation>;
+                   bool enableOpt,
+                   bool backendLLVM) -> std::unique_ptr<Compilation>;
 
   auto dumpTokens() -> int;
   auto dumpAST() -> int;
   auto dumpMLIR(Lowering lowering) -> int;
-  auto dumpLLVMfromMLIR() -> int;
   auto dumpLLVM() -> int;
 
   auto typecheck() -> int;
   auto jit() -> int;
+  auto genObjectFile(const char *outputFileName) -> int;
 
   auto sourceManager() -> llvm::SourceMgr& { return _sourceManager; };
 
 private:
   llvm::SourceMgr _sourceManager;
   bool _enableOpt;
+  bool _backendLLVM;
   mlir::MLIRContext _mlirContext;
   llvm::LLVMContext _llvmContext;
 

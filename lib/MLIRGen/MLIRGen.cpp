@@ -224,9 +224,12 @@ namespace cherry {
 
 auto mlirGen(const llvm::SourceMgr &sourceManager,
              mlir::MLIRContext &context,
-             const Module &moduleAST) -> mlir::OwningModuleRef {
+             const Module &moduleAST,
+             mlir::OwningModuleRef &module) -> CherryResult {
   auto generator = MLIRGenImpl(sourceManager, context);
-  return generator.gen(moduleAST) ? nullptr : generator.module;
+  auto result = generator.gen(moduleAST);
+  module = generator.module;
+  return result;
 }
 
 } // end namespace cherry

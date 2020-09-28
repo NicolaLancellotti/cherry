@@ -22,12 +22,6 @@ cmake --build . --target mlir-doc
 
 ## Run the Driver
 
-### Run JIT
-Example
-```
-cherry-driver main.cherry
-```
-
 ### Driver Flags
 Meaning                             |  Flag
 |-----------------------------------|-------------------|
@@ -41,19 +35,9 @@ Select the LLVM backend             | -b=llvm
 Select the MLIR backend (default)   | -b=mlir
 Parse and type-check                | -typecheck
 Enable optimisation                 | -opt
+Generate a target ".o" object file  | -c[=<filename>]  
 
-Example
-```
-cherry-driver -dump=mlir main.cherry
-```
-
-## Run the Optimiser
-Example
-```
-cherry-opt -lower-cherry-to-std -lower-cherry-std-to-llvm -print-ir-after-all main.mlir
-```
-
-## Example
+## Examples
 main.cherry:
 ```
 # This is a comment
@@ -77,6 +61,8 @@ fun main() {
   bar(0, 1);
 }
 ```
+
+### Run JIT
 run:
 ```
 cherry-driver main.cherry
@@ -86,6 +72,28 @@ output:
 0
 1
 18446744073709551615
+```
+
+### Generate an object file, compile and run
+run:
+```
+cherry-driver main.cherry -c=a.o
+
+clang a.o
+
+./a.out 
+```
+output:
+```
+0
+1
+18446744073709551615
+```
+
+## Run the Optimiser
+Example
+```
+cherry-opt -lower-cherry-to-std -lower-cherry-std-to-llvm -print-ir-after-all main.mlir
 ```
 
 ## Unimplemented features
