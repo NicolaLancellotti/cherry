@@ -15,12 +15,17 @@
 #include "llvm/IR/DIBuilder.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/IRBuilder.h"
+#include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Type.h"
 #include "llvm/IR/Verifier.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Transforms/InstCombine/InstCombine.h"
+#include "llvm/Transforms/Scalar.h"
+#include "llvm/Transforms/Scalar/GVN.h"
+#include "llvm/Transforms/Utils.h"
 #include <map>
 #include <memory>
 
@@ -34,17 +39,21 @@ using mlir::success;
 
 class LLVMGenImpl {
 public:
-  LLVMGenImpl(const llvm::SourceMgr &sourceManager, llvm::LLVMContext &context)
-      : _sourceManager{sourceManager}, _context{context}, _builder{context} {}
+  LLVMGenImpl(const llvm::SourceMgr &sourceManager, llvm::LLVMContext &context,
+              bool enableOpt)
+      : _sourceManager{sourceManager}, _context{context}, _builder{context},
+        _enableOpt{enableOpt} {}
 
   auto gen(const Module &node) -> CherryResult;
 
   std::unique_ptr<llvm::Module> module;
 private:
+  bool _enableOpt;
   const llvm::SourceMgr &_sourceManager;
   llvm::LLVMContext &_context;
   llvm::IRBuilder<> _builder;
-  std::map<llvm::StringRef, llvm::Value*> _variableSymbols;
+  std::unique_ptr<llvm::legacy::FunctionPassManager> _pass;
+  std::map<llvm::StringRef, llvm::AllocaInst*> _variableSymbols;
   std::map<llvm::StringRef, llvm::Type*> _typeSymbols;
 #ifdef CHERRY_DEBUG_INFO
   std::unique_ptr<llvm::DIBuilder> _dBuilder;
@@ -142,6 +151,23 @@ private:
 
 auto LLVMGenImpl::gen(const Module &node) -> CherryResult {
   module = std::make_unique<llvm::Module>("cherry module", _context);
+
+  _pass = std::make_unique<llvm::legacy::FunctionPassManager>(module.get());
+  if (_enableOpt) {
+    // Promote allocas to registers.
+    _pass->add(llvm::createPromoteMemoryToRegisterPass());
+    // Do simple "peephole" optimizations and bit-twiddling optzns.
+    _pass->add(llvm::createInstructionCombiningPass());
+    // Reassociate expressions.
+    _pass->add(llvm::createReassociatePass());
+    // Eliminate Common SubExpressions.
+    _pass->add(llvm::createGVNPass());
+    // Simplify the control flow graph (deleting unreachable blocks, etc).
+    _pass->add(llvm::createCFGSimplificationPass());
+
+    _pass->doInitialization();
+  }
+
 #ifdef CHERRY_DEBUG_INFO
   auto fileName = _sourceManager.getMemoryBuffer(_sourceManager.getMainFileID())
       ->getBufferIdentifier();
@@ -263,6 +289,8 @@ auto LLVMGenImpl::gen(const FunctionDecl *node) -> CherryResult {
   auto constant0 = llvm::ConstantInt::get(getType(types::UInt64Type), 0);
   _builder.CreateRet(constant0);
 
+  _pass->run(*func);
+
 #ifdef CHERRY_DEBUG_INFO
   _dlexicalBlocks.pop_back();
 #endif
@@ -318,8 +346,9 @@ namespace cherry {
 auto llvmGen(const llvm::SourceMgr &sourceManager,
              llvm::LLVMContext &context,
              const Module &moduleAST,
-             std::unique_ptr<llvm::Module> &module) -> CherryResult {
-  auto generator = std::make_unique<LLVMGenImpl>(sourceManager, context);
+             std::unique_ptr<llvm::Module> &module,
+             bool enableOpt) -> CherryResult {
+  auto generator = std::make_unique<LLVMGenImpl>(sourceManager, context, enableOpt);
 
   auto result =  generator->gen(moduleAST);
   module = std::move(generator->module);

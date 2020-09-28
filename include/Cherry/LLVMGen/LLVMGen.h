@@ -23,7 +23,8 @@ class CherryResult;
 auto llvmGen(const llvm::SourceMgr &sourceManager,
              llvm::LLVMContext &context,
              const Module &moduleAST,
-             std::unique_ptr<llvm::Module> &module) -> CherryResult;
+             std::unique_ptr<llvm::Module> &module,
+             bool enableOpt) -> CherryResult;
 
 } // end namespace cherry
 

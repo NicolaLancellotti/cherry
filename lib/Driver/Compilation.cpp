@@ -89,7 +89,8 @@ auto Compilation::genMLIR(mlir::OwningModuleRef &module,
 auto Compilation::genLLVM(std::unique_ptr<llvm::Module> &llvmModule) -> CherryResult {
   if (_backendLLVM) {
     std::unique_ptr<Module> module;
-    if (parse(module) || llvmGen(_sourceManager, _llvmContext, *module, llvmModule))
+    if (parse(module) ||
+        llvmGen(_sourceManager, _llvmContext, *module, llvmModule, _enableOpt))
       return failure();
   } else {
     mlir::OwningModuleRef module;
