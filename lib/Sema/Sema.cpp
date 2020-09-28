@@ -37,8 +37,23 @@ private:
   const llvm::SourceMgr &_sourceManager;
   Symbols _symbols;
 
-  // Errors
+  // Semantic Analysis
 
+  // Declarations
+  auto sema(const Decl *node) -> CherryResult;
+  auto sema(const Prototype *node) -> CherryResult;
+  auto sema(const FunctionDecl *node) -> CherryResult;
+  auto sema(const StructDecl *node) -> CherryResult;
+
+  // Expressions
+  auto sema(const Expr *node, llvm::StringRef &type) -> CherryResult;
+  auto sema(const CallExpr *node, llvm::StringRef &type) -> CherryResult;
+  auto sema(const VariableExpr *node, llvm::StringRef &type) -> CherryResult;
+  auto sema(const DecimalExpr *node, llvm::StringRef &type) -> CherryResult;
+  auto sema(const StructExpr *node, llvm::StringRef &type) -> CherryResult;
+  auto sema(const BinaryExpr *node, llvm::StringRef &type) -> CherryResult;
+
+  // Errors
   auto emitError(const Node *node, const llvm::Twine &msg) -> CherryResult {
     _sourceManager.PrintMessage(node->location(),
                                 llvm::SourceMgr::DiagKind::DK_Error,
@@ -53,185 +68,183 @@ private:
     return failure();
   }
 
-  // Semantic Analysis
-
-  auto sema(const Decl *node) -> CherryResult {
-    switch (node->getKind()) {
-    case Decl::Decl_Function: {
-      return sema(cast<FunctionDecl>(node));
-    }
-    case Decl::Decl_Struct: {
-      return sema(cast<StructDecl>(node));
-    }
-    default:
-      llvm_unreachable("Unexpected declaration");
-    }
-  }
-
-  auto sema(const FunctionDecl *node) -> CherryResult {
-    _symbols.resetVariables();
-    if (sema(node->proto().get()))
-      return failure();
-
-    for (auto &expr : *node) {
-      llvm::StringRef type;
-      if (sema(expr.get(), type))
-        return failure();
-    }
-    return success();
-  }
-
-  auto sema(const Prototype *node) -> CherryResult {
-    llvm::SmallVector<llvm::StringRef, 2> types;
-    for (auto &par : node->parameters()) {
-      auto type = par->type().get();
-      auto typeName = type->name();
-      if (_symbols.checkType(type->name()))
-        return emitError(type, diag::type_undefined);
-      if (_symbols.declareVariable(par->variable().get(), typeName))
-        return emitError(par->variable().get(), diag::var_redefinition);
-      types.push_back(typeName);
-    }
-
-    auto name = node->id()->name();
-    if (_symbols.declareFunction(name, std::move(types))) {
-      const char *diagnostic = diag::func_redefinition;
-      char buffer[50];
-      sprintf(buffer, diagnostic, name.str().c_str());
-      return emitError(node->id().get(), buffer);
-    }
-    return success();
-  }
-
-  auto sema(const StructDecl *node) -> CherryResult {
-    llvm::SmallVector<llvm::StringRef, 2> types;
-    llvm::SmallSet<llvm::StringRef, 4> variables;
-    for (auto &varDecl : *node) {
-      auto type = varDecl->type().get();
-      auto var = varDecl->variable().get();
-      if (_symbols.checkType(type->name()))
-        return emitError(type, diag::type_undefined);
-      if (variables.count(var->name()) > 0)
-        return emitError(var, diag::var_redefinition);
-      variables.insert(var->name());
-      types.push_back(type->name());
-    }
-    auto id = node->id().get();
-    if (_symbols.declareType(node))
-      return emitError(id, diag::type_redefinition);
-    return success();
-  }
-
-  auto sema(const Expr *node, llvm::StringRef& type) -> CherryResult {
-    switch (node->getKind()) {
-    case Expr::Expr_Decimal:
-      return sema(cast<DecimalExpr>(node), type);
-    case Expr::Expr_Call:
-      return sema(cast<CallExpr>(node), type);
-    case Expr::Expr_Variable:
-      return sema(cast<VariableExpr>(node), type);
-    case Expr::Expr_Struct:
-      return sema(cast<StructExpr>(node), type);
-    case Expr::Expr_Binary:
-      return sema(cast<BinaryExpr>(node), type);
-    default:
-      llvm_unreachable("Unexpected expression");
-    }
-  }
-
-  auto sema(const VariableExpr *node, llvm::StringRef& type) -> CherryResult {
-    if (_symbols.getVariableType(node, type))
-      return emitError(node, diag::var_undefined);
-    return success();
-  }
-
-  auto sema(const CallExpr *node, llvm::StringRef& type) -> CherryResult {
-    auto name = node->name();
-    llvm::ArrayRef<llvm::StringRef> parametersTypes;
-    if (_symbols.getFunction(name, parametersTypes)) {
-      const char * diagnostic = diag::func_undefined;
-      char buffer [50];
-      sprintf(buffer, diagnostic, name.str().c_str());
-      return emitError(node, buffer);
-    }
-
-    auto &expressions = node->expressions();
-    if (expressions.size() != parametersTypes.size()) {
-      const char * diagnostic = diag::func_param;
-      char buffer [50];
-      sprintf(buffer, diagnostic, name.str().c_str(), parametersTypes.size());
-      return emitError(node, buffer);
-    }
-
-    for (const auto &expr_type : llvm::zip(expressions, parametersTypes)) {
-      auto &expr = std::get<0>(expr_type);
-      auto type = std::get<1>(expr_type);
-      llvm::StringRef exprType;
-      if (sema(expr.get(), exprType))
-        return failure();
-      if (exprType != type)
-        return emitError(expr.get(), diag::func_param_type_mismatch);
-    }
-
-    type = types::UInt64Type;
-    return success();
-  }
-
-  auto sema(const DecimalExpr *node, llvm::StringRef& type) -> CherryResult {
-    type = types::UInt64Type;
-    return success();
-  }
-
-  auto sema(const StructExpr *node, llvm::StringRef& type) -> CherryResult {
-    auto typeName = node->type();
-    const VectorUniquePtr<VariableDecl>* fieldsTypes;
-    if (_symbols.getType(typeName, &fieldsTypes))
-      return emitError(node, diag::type_undefined);
-
-    if (node->expressions().size() != fieldsTypes->size())
-      return emitError(node, diag::wrong_num_arg);
-
-    for (const auto &expr_type : llvm::zip(*node, *fieldsTypes)) {
-      auto &expr = std::get<0>(expr_type);
-      auto fieldType = std::get<1>(expr_type)->type()->name();
-      llvm::StringRef exprType;
-      if (sema(expr.get(), exprType))
-        return failure();
-      if (exprType != fieldType)
-        return emitError(expr.get(), diag::func_param_type_mismatch);
-    }
-
-    type = node->type();
-    return success();
-  }
-
-  auto sema(const BinaryExpr *node, llvm::StringRef& type) -> CherryResult {
-    // sema struct access
-    llvm::StringRef lhsType;
-    if (sema(node->lhs().get(), lhsType))
-      return failure();
-
-    VariableExpr *var = llvm::dyn_cast<VariableExpr>(node->rhs().get());
-    if (!var)
-      return emitError(node->rhs().get(), diag::expected_field);
-
-    auto fieldName = var->name();
-    const VectorUniquePtr<VariableDecl>* fieldsTypes;
-    _symbols.getType(lhsType, &fieldsTypes);
-
-    for (auto &f : *fieldsTypes) {
-      if (f->variable()->name() == fieldName) {
-        type = f->type()->name();
-        return success();
-      }
-    }
-
-    return emitError(node->rhs().get(), diag::field_undefined);
-  }
-
 };
 
 } // end namespace
+
+auto SemaImpl::sema(const Decl *node) -> CherryResult {
+  switch (node->getKind()) {
+  case Decl::Decl_Function: {
+    return sema(cast<FunctionDecl>(node));
+  }
+  case Decl::Decl_Struct: {
+    return sema(cast<StructDecl>(node));
+  }
+  default:
+    llvm_unreachable("Unexpected declaration");
+  }
+}
+
+auto SemaImpl::sema(const Prototype *node) -> CherryResult {
+  llvm::SmallVector<llvm::StringRef, 2> types;
+  for (auto &par : node->parameters()) {
+    auto type = par->type().get();
+    auto typeName = type->name();
+    if (_symbols.checkType(type->name()))
+      return emitError(type, diag::type_undefined);
+    if (_symbols.declareVariable(par->variable().get(), typeName))
+      return emitError(par->variable().get(), diag::var_redefinition);
+    types.push_back(typeName);
+  }
+
+  auto name = node->id()->name();
+  if (_symbols.declareFunction(name, std::move(types))) {
+    const char *diagnostic = diag::func_redefinition;
+    char buffer[50];
+    sprintf(buffer, diagnostic, name.str().c_str());
+    return emitError(node->id().get(), buffer);
+  }
+  return success();
+}
+
+auto SemaImpl::sema(const FunctionDecl *node) -> CherryResult {
+  _symbols.resetVariables();
+  if (sema(node->proto().get()))
+    return failure();
+
+  for (auto &expr : *node) {
+    llvm::StringRef type;
+    if (sema(expr.get(), type))
+      return failure();
+  }
+  return success();
+}
+
+auto SemaImpl::sema(const StructDecl *node) -> CherryResult {
+  llvm::SmallVector<llvm::StringRef, 2> types;
+  llvm::SmallSet<llvm::StringRef, 4> variables;
+  for (auto &varDecl : *node) {
+    auto type = varDecl->type().get();
+    auto var = varDecl->variable().get();
+    if (_symbols.checkType(type->name()))
+      return emitError(type, diag::type_undefined);
+    if (variables.count(var->name()) > 0)
+      return emitError(var, diag::var_redefinition);
+    variables.insert(var->name());
+    types.push_back(type->name());
+  }
+  auto id = node->id().get();
+  if (_symbols.declareType(node))
+    return emitError(id, diag::type_redefinition);
+  return success();
+}
+
+auto SemaImpl::sema(const Expr *node, llvm::StringRef &type) -> CherryResult {
+  switch (node->getKind()) {
+  case Expr::Expr_Decimal:
+    return sema(cast<DecimalExpr>(node), type);
+  case Expr::Expr_Call:
+    return sema(cast<CallExpr>(node), type);
+  case Expr::Expr_Variable:
+    return sema(cast<VariableExpr>(node), type);
+  case Expr::Expr_Struct:
+    return sema(cast<StructExpr>(node), type);
+  case Expr::Expr_Binary:
+    return sema(cast<BinaryExpr>(node), type);
+  default:
+    llvm_unreachable("Unexpected expression");
+  }
+}
+
+auto SemaImpl::sema(const CallExpr *node, llvm::StringRef &type) -> CherryResult {
+  auto name = node->name();
+  llvm::ArrayRef<llvm::StringRef> parametersTypes;
+  if (_symbols.getFunction(name, parametersTypes)) {
+    const char *diagnostic = diag::func_undefined;
+    char buffer [50];
+    sprintf(buffer, diagnostic, name.str().c_str());
+    return emitError(node, buffer);
+  }
+
+  auto &expressions = node->expressions();
+  if (expressions.size() != parametersTypes.size()) {
+    const char *diagnostic = diag::func_param;
+    char buffer [50];
+    sprintf(buffer, diagnostic, name.str().c_str(), parametersTypes.size());
+    return emitError(node, buffer);
+  }
+
+  for (const auto &expr_type : llvm::zip(expressions, parametersTypes)) {
+    auto &expr = std::get<0>(expr_type);
+    auto type = std::get<1>(expr_type);
+    llvm::StringRef exprType;
+    if (sema(expr.get(), exprType))
+      return failure();
+    if (exprType != type)
+      return emitError(expr.get(), diag::func_param_type_mismatch);
+  }
+
+  type = types::UInt64Type;
+  return success();
+}
+
+auto SemaImpl::sema(const VariableExpr *node, llvm::StringRef &type) -> CherryResult {
+  if (_symbols.getVariableType(node, type))
+    return emitError(node, diag::var_undefined);
+  return success();
+}
+
+auto SemaImpl::sema(const DecimalExpr *node, llvm::StringRef &type) -> CherryResult {
+  type = types::UInt64Type;
+  return success();
+}
+
+auto SemaImpl::sema(const StructExpr *node, llvm::StringRef &type) -> CherryResult {
+  auto typeName = node->type();
+  const VectorUniquePtr<VariableDecl> *fieldsTypes;
+  if (_symbols.getType(typeName, fieldsTypes))
+    return emitError(node, diag::type_undefined);
+
+  if (node->expressions().size() != fieldsTypes->size())
+    return emitError(node, diag::wrong_num_arg);
+
+  for (const auto &expr_type : llvm::zip(*node, *fieldsTypes)) {
+    auto &expr = std::get<0>(expr_type);
+    auto fieldType = std::get<1>(expr_type)->type()->name();
+    llvm::StringRef exprType;
+    if (sema(expr.get(), exprType))
+      return failure();
+    if (exprType != fieldType)
+      return emitError(expr.get(), diag::func_param_type_mismatch);
+  }
+
+  type = node->type();
+  return success();
+}
+
+auto SemaImpl::sema(const BinaryExpr *node, llvm::StringRef &type) -> CherryResult {
+  // sema struct access
+  llvm::StringRef lhsType;
+  if (sema(node->lhs().get(), lhsType))
+    return failure();
+
+  VariableExpr *var = llvm::dyn_cast<VariableExpr>(node->rhs().get());
+  if (!var)
+    return emitError(node->rhs().get(), diag::expected_field);
+
+  auto fieldName = var->name();
+  const VectorUniquePtr<VariableDecl> *fieldsTypes;
+  _symbols.getType(lhsType, fieldsTypes);
+
+  for (auto &f : *fieldsTypes) {
+    if (f->variable()->name() == fieldName) {
+      type = f->type()->name();
+      return success();
+    }
+  }
+
+  return emitError(node->rhs().get(), diag::field_undefined);
+}
 
 namespace cherry {
 

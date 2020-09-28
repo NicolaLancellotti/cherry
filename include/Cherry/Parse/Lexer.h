@@ -21,7 +21,7 @@ public:
 
   auto lexToken() -> Token;
 
-  static auto tokenize(const llvm::SourceMgr &sourceManager, Lexer& lexer) -> void {
+  static auto tokenize(const llvm::SourceMgr &sourceManager, Lexer &lexer) -> void {
     while (true) {
       auto token = lexer.lexToken();
       if (token.is(Token::eof)) {

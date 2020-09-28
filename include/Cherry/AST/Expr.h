@@ -45,7 +45,7 @@ public:
                         llvm::StringRef name)
       : Expr{Expr_Variable, location}, _name(name.str()) {};
 
-  static auto classof(const Expr * node) -> bool {
+  static auto classof(const Expr *node) -> bool {
     return node->getKind() == Expr_Variable;
   }
 
@@ -69,7 +69,7 @@ public:
         _name(name.str()),
         _expressions(std::move(expressions)) {};
 
-  static auto classof(const Expr * node) -> bool {
+  static auto classof(const Expr *node) -> bool {
     return node->getKind() == Expr_Call;
   }
 
@@ -121,7 +121,7 @@ public:
       : Expr{Expr_Struct, location}, _type(type.str()),
         _expressions(std::move(expressions)) {};
 
-  static auto classof(const Expr * node) -> bool {
+  static auto classof(const Expr *node) -> bool {
     return node->getKind() == Expr_Struct;
   }
 
@@ -154,7 +154,7 @@ public:
       : Expr{Expr_Binary, location}, _op{op.str()},
         _lhs{std::move(lhs)}, _rhs{std::move(rhs)} {};
 
-  static auto classof(const Expr * node) -> bool {
+  static auto classof(const Expr *node) -> bool {
     return node->getKind() == Expr_Binary;
   }
 

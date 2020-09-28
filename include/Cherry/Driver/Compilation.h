@@ -53,10 +53,10 @@ private:
   mlir::MLIRContext _mlirContext;
   llvm::LLVMContext _llvmContext;
 
-  auto parse(std::unique_ptr<Module>& module) -> CherryResult;
-  auto genMLIR(mlir::OwningModuleRef& module,
+  auto parse(std::unique_ptr<Module> &module) -> CherryResult;
+  auto genMLIR(mlir::OwningModuleRef &module,
                Lowering lowering) -> CherryResult;
-  auto genLLVM(std::unique_ptr<llvm::Module>& llvmModule) -> CherryResult;
+  auto genLLVM(std::unique_ptr<llvm::Module> &llvmModule) -> CherryResult;
 };
 
 } // end namespace cherry

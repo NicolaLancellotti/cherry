@@ -50,13 +50,13 @@ auto Compilation::make(llvm::StringRef filename,
   return compilation;
 }
 
-auto Compilation::parse(std::unique_ptr<Module>& module) -> CherryResult {
+auto Compilation::parse(std::unique_ptr<Module> &module) -> CherryResult {
   auto lexer = std::make_unique<Lexer>(_sourceManager);
   auto parser = Parser{std::move(lexer), _sourceManager};
   return parser.parseModule(module);
 }
 
-auto Compilation::genMLIR(mlir::OwningModuleRef& module,
+auto Compilation::genMLIR(mlir::OwningModuleRef &module,
                           Lowering lowering) -> CherryResult {
   std::unique_ptr<Module> moduleAST;
   if (parse(moduleAST))
@@ -84,7 +84,7 @@ auto Compilation::genMLIR(mlir::OwningModuleRef& module,
   return pm.run(*module);
 }
 
-auto Compilation::genLLVM(std::unique_ptr<llvm::Module>& llvmModule) -> CherryResult {
+auto Compilation::genLLVM(std::unique_ptr<llvm::Module> &llvmModule) -> CherryResult {
   mlir::OwningModuleRef module;
   if (genMLIR(module, Lowering::LLVM))
     return failure();

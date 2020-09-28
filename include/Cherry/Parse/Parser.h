@@ -29,12 +29,12 @@ using PE = llvm::function_ref<CherryResult(std::unique_ptr<T>&)>;
 class Parser {
 public:
   Parser(std::unique_ptr<Lexer> lexer,
-         llvm::SourceMgr& sourceManager)
+         llvm::SourceMgr &sourceManager)
       : _token{lexer->lexToken()},
         _lexer{std::move(lexer)},
         _sourceManager{sourceManager} {}
 
-  auto parseModule(std::unique_ptr<Module>& module) -> CherryResult;
+  auto parseModule(std::unique_ptr<Module> &module) -> CherryResult;
 
 private:
   Token _token;
@@ -96,13 +96,13 @@ private:
   // ___________________________________________________________________________
   // Parse Declarations
 
-  auto parseDeclaration(std::unique_ptr<Decl>& decl) -> CherryResult;
+  auto parseDeclaration(std::unique_ptr<Decl> &decl) -> CherryResult;
 
-  auto parseFunctionDecl_c(std::unique_ptr<Decl>& decl) -> CherryResult;
+  auto parseFunctionDecl_c(std::unique_ptr<Decl> &decl) -> CherryResult;
 
-  auto parsePrototype_c(std::unique_ptr<Prototype>& proto) -> CherryResult;
+  auto parsePrototype_c(std::unique_ptr<Prototype> &proto) -> CherryResult;
 
-  auto parseStatements(VectorUniquePtr<Expr>& expressions,
+  auto parseStatements(VectorUniquePtr<Expr> &expressions,
                        Token::Kind separator,
                        Token::Kind end,
                        const char * const separator_error,
@@ -111,13 +111,13 @@ private:
   auto parseStructDecl_c(std::unique_ptr<Decl>&elem) -> CherryResult;
 
   template <typename T>
-  auto parseIdentifier(std::unique_ptr<T>& identifier,
+  auto parseIdentifier(std::unique_ptr<T> &identifier,
                        const char * const message) -> CherryResult;
 
   // ___________________________________________________________________________
   // Parse Expressions
 
-  auto parseExpression(std::unique_ptr<Expr>& expr) -> CherryResult;
+  auto parseExpression(std::unique_ptr<Expr> &expr) -> CherryResult;
 
   auto parseExpressions(VectorUniquePtr<Expr>&elem,
                         Token::Kind separator,
@@ -125,21 +125,21 @@ private:
                         const char * const separator_error,
                         const char * const end_error) -> CherryResult;
 
-  auto parsePrimaryExpression(std::unique_ptr<Expr>& expr) -> CherryResult;
+  auto parsePrimaryExpression(std::unique_ptr<Expr> &expr) -> CherryResult;
 
-  auto parseDecimal_c(std::unique_ptr<Expr>& expr) -> CherryResult;
+  auto parseDecimal_c(std::unique_ptr<Expr> &expr) -> CherryResult;
 
-  auto parseFuncStructVar_c(std::unique_ptr<Expr>& expr) -> CherryResult;
+  auto parseFuncStructVar_c(std::unique_ptr<Expr> &expr) -> CherryResult;
 
   auto parseFunctionCall_c(llvm::SMLoc location,
                            llvm::StringRef name,
-                           std::unique_ptr<Expr>& expr) -> CherryResult;
+                           std::unique_ptr<Expr> &expr) -> CherryResult;
 
   auto parseStructExpr_c(llvm::SMLoc location,
                          llvm::StringRef name,
-                         std::unique_ptr<Expr>& expr) -> CherryResult;
+                         std::unique_ptr<Expr> &expr) -> CherryResult;
 
-  auto parseBinaryExpRHS(int exprPrec, std::unique_ptr<Expr>& expr) -> CherryResult;
+  auto parseBinaryExpRHS(int exprPrec, std::unique_ptr<Expr> &expr) -> CherryResult;
   auto getTokenPrecedence() -> int;
 
 };

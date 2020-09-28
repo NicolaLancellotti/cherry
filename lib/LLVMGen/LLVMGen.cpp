@@ -34,22 +34,7 @@ public:
   LLVMGenImpl(llvm::LLVMContext &context)
       : _context{context}, _builder{context} {}
 
-  auto gen(const Module &node) -> CherryResult {
-    module = std::make_unique<llvm::Module>("cherry module", _context);
-    addBuiltins();
-
-    for (auto &decl : node) {
-      if (gen(decl.get()))
-        return failure();
-    }
-
-    if (llvm::verifyModule(*module)) {
-      llvm::errs() << "module verification error";
-      return failure();
-    }
-
-    return success();
-  }
+  auto gen(const Module &node) -> CherryResult;
 
   std::unique_ptr<llvm::Module> module;
 private:
@@ -58,6 +43,18 @@ private:
   std::map<llvm::StringRef, llvm::Value*> _variableSymbols;
   std::map<llvm::StringRef, llvm::Type*> _typeSymbols;
 
+  // Declarations
+  auto gen(const Decl *node) -> CherryResult;
+  auto gen(const Prototype *node, llvm::Function *&func) -> CherryResult;
+  auto gen(const FunctionDecl *node) -> CherryResult;
+
+  // Expressions
+  auto gen(const Expr *node, llvm::Value *&value) -> CherryResult;
+  auto gen(const CallExpr *node, llvm::Value *&value) -> CherryResult;
+  auto gen(const VariableExpr *node, llvm::Value *&value) -> CherryResult;
+  auto gen(const DecimalExpr *node, llvm::Value *&value) -> CherryResult;
+
+  // Utility
   auto getType(llvm::StringRef name) -> llvm::Type* {
     if (name == types::UInt64Type) {
       return llvm::Type::getInt64Ty(_context);
@@ -83,7 +80,7 @@ private:
     {
       auto funcType = llvm::FunctionType::get(llvmI64Ty, {llvmI64Ty}, false);
       auto printFunc = llvm::Function::Create(funcType,llvm::Function::ExternalLinkage,
-                                          "print",module.get());
+                                              "print",module.get());
 
       llvm::BasicBlock *bb = llvm::BasicBlock::Create(_context, "entry", printFunc);
       _builder.SetInsertPoint(bb);
@@ -105,110 +102,125 @@ private:
     llvm::IRBuilder<> TmpB(&func->getEntryBlock(), func->getEntryBlock().begin());
     return TmpB.CreateAlloca(type, nullptr, varName);
   }
-
-  auto gen(const Decl *node) -> CherryResult {
-    switch (node->getKind()) {
-    case Decl::Decl_Function:
-      return gen(cast<FunctionDecl>(node));
-    default:
-      llvm_unreachable("Unexpected declaration");
-    }
-  }
-
-  auto gen(const FunctionDecl *node) -> CherryResult {
-    _variableSymbols = {};
-    llvm::Function *func;
-    if (gen(node->proto().get(), func))
-      return failure();
-
-    for (auto &expr : *node) {
-      llvm::Value *value;
-      if (gen(expr.get(), value)) {
-        func->eraseFromParent();
-        return failure();
-      }
-    }
-
-    auto constant0 = llvm::ConstantInt::get(getType(types::UInt64Type), 0);
-    _builder.CreateRet(constant0);
-    return success();
-  }
-
-  auto gen(const Prototype *node, llvm::Function *&func) -> CherryResult {
-    llvm::SmallVector<llvm::Type*, 3> arg_types;
-    arg_types.reserve(node->parameters().size());
-    for (auto &param : node->parameters())
-      arg_types.push_back(getType(param->type()->name()));
-
-    auto result_type = getType(types::UInt64Type);
-
-    auto funcType = llvm::FunctionType::get(result_type, arg_types, false);
-    func = llvm::Function::Create(funcType,
-                                  llvm::Function::ExternalLinkage,
-                                  node->id()->name(),
-                                  module.get());
-
-    llvm::BasicBlock *bb = llvm::BasicBlock::Create(_context, "entry", func);
-    _builder.SetInsertPoint(bb);
-
-    for (const auto &param_arg : llvm::zip(node->parameters(), func->args())) {
-      auto &param = std::get<0>(param_arg);
-      auto &arg = std::get<1>(param_arg);
-      auto name = param->variable()->name();
-      arg.setName(name);
-
-      auto alloca = createEntryBlockAlloca(func, name, arg.getType());
-      _builder.CreateStore(&arg, alloca);
-      _variableSymbols[name] = alloca;
-    }
-
-    return success();
-  }
-
-  auto gen(const Expr *node, llvm::Value *&value) -> CherryResult {
-    switch (node->getKind()) {
-    case Expr::Expr_Decimal:
-      return gen(cast<DecimalExpr>(node), value);
-    case Expr::Expr_Call:
-      return gen(cast<CallExpr>(node), value);
-    case Expr::Expr_Variable:
-      return gen(cast<VariableExpr>(node), value);
-    default:
-      llvm_unreachable("Unexpected expression");
-    }
-  }
-
-  auto gen(const CallExpr *node, llvm::Value *&value) -> CherryResult {
-    llvm::SmallVector<llvm::Value*, 4> operands;
-    for (auto &expr : *node) {
-      llvm::Value *value;
-      if (gen(expr.get(), value))
-        return failure();
-      operands.push_back(value);
-    }
-
-    auto functionName = node->name();
-    llvm::Function *callee = module->getFunction(functionName);
-    value = _builder.CreateCall(callee, operands, functionName);
-    return success();
-  }
-
-  auto gen(const VariableExpr *node, llvm::Value *&value) -> CherryResult {
-    auto name = node->name();
-    auto alloca = _variableSymbols[name];
-    value = _builder.CreateLoad(alloca, name);
-    return success();
-  }
-
-  auto gen(const DecimalExpr *node, llvm::Value *&value) -> CherryResult {
-    value = llvm::ConstantInt::get(getType(types::UInt64Type), node->value());
-    return success();
-  }
-
 };
 
 } // end namespace
 
+auto LLVMGenImpl::gen(const Module &node) -> CherryResult {
+  module = std::make_unique<llvm::Module>("cherry module", _context);
+  addBuiltins();
+
+  for (auto &decl : node) {
+    if (gen(decl.get()))
+      return failure();
+  }
+
+  if (llvm::verifyModule(*module)) {
+    llvm::errs() << "module verification error";
+    return failure();
+  }
+
+  return success();
+}
+
+auto LLVMGenImpl::gen(const Decl *node) -> CherryResult {
+  switch (node->getKind()) {
+  case Decl::Decl_Function:
+    return gen(cast<FunctionDecl>(node));
+  default:
+    llvm_unreachable("Unexpected declaration");
+  }
+}
+
+auto LLVMGenImpl::gen(const Prototype *node, llvm::Function *&func) -> CherryResult {
+  llvm::SmallVector<llvm::Type*, 3> arg_types;
+  arg_types.reserve(node->parameters().size());
+  for (auto &param : node->parameters())
+    arg_types.push_back(getType(param->type()->name()));
+
+  auto result_type = getType(types::UInt64Type);
+
+  auto funcType = llvm::FunctionType::get(result_type, arg_types, false);
+  func = llvm::Function::Create(funcType,
+                                llvm::Function::ExternalLinkage,
+                                node->id()->name(),
+                                module.get());
+
+  llvm::BasicBlock *bb = llvm::BasicBlock::Create(_context, "entry", func);
+  _builder.SetInsertPoint(bb);
+
+  for (const auto &param_arg : llvm::zip(node->parameters(), func->args())) {
+    auto &param = std::get<0>(param_arg);
+    auto &arg = std::get<1>(param_arg);
+    auto name = param->variable()->name();
+    arg.setName(name);
+
+    auto alloca = createEntryBlockAlloca(func, name, arg.getType());
+    _builder.CreateStore(&arg, alloca);
+    _variableSymbols[name] = alloca;
+  }
+
+  return success();
+}
+
+auto LLVMGenImpl::gen(const FunctionDecl *node) -> CherryResult {
+  _variableSymbols = {};
+  llvm::Function *func;
+  if (gen(node->proto().get(), func))
+    return failure();
+
+  for (auto &expr : *node) {
+    llvm::Value *value;
+    if (gen(expr.get(), value)) {
+      func->eraseFromParent();
+      return failure();
+    }
+  }
+
+  auto constant0 = llvm::ConstantInt::get(getType(types::UInt64Type), 0);
+  _builder.CreateRet(constant0);
+  return success();
+}
+
+auto LLVMGenImpl::gen(const Expr *node, llvm::Value *&value) -> CherryResult {
+  switch (node->getKind()) {
+  case Expr::Expr_Decimal:
+    return gen(cast<DecimalExpr>(node), value);
+  case Expr::Expr_Call:
+    return gen(cast<CallExpr>(node), value);
+  case Expr::Expr_Variable:
+    return gen(cast<VariableExpr>(node), value);
+  default:
+    llvm_unreachable("Unexpected expression");
+  }
+}
+
+auto LLVMGenImpl::gen(const CallExpr *node, llvm::Value *&value) -> CherryResult {
+  llvm::SmallVector<llvm::Value*, 4> operands;
+  for (auto &expr : *node) {
+    llvm::Value *value;
+    if (gen(expr.get(), value))
+      return failure();
+    operands.push_back(value);
+  }
+
+  auto functionName = node->name();
+  llvm::Function *callee = module->getFunction(functionName);
+  value = _builder.CreateCall(callee, operands, functionName);
+  return success();
+}
+
+auto LLVMGenImpl::gen(const VariableExpr *node, llvm::Value *&value) -> CherryResult {
+  auto name = node->name();
+  auto alloca = _variableSymbols[name];
+  value = _builder.CreateLoad(alloca, name);
+  return success();
+}
+
+auto LLVMGenImpl::gen(const DecimalExpr *node, llvm::Value *&value) -> CherryResult {
+  value = llvm::ConstantInt::get(getType(types::UInt64Type), node->value());
+  return success();
+}
 
 namespace cherry {
 

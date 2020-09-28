@@ -12,8 +12,46 @@
 using namespace cherry;
 
 namespace {
-
 using llvm::errs;
+
+class Dumper {
+public:
+  Dumper(const llvm::SourceMgr &sourceManager): _sourceManager{sourceManager} {}
+
+  auto dump(const Module *node) -> void;
+
+private:
+  int _curIndent = 0;
+  const llvm::SourceMgr &_sourceManager;
+
+  // Declarations
+  auto dump(const Decl *node) -> void;
+  auto dump(const Prototype *node) -> void;
+  auto dump(const FunctionDecl *node) -> void;
+  auto dump(const StructDecl *node) -> void;
+  auto dump(const VariableDecl *node) -> void;
+
+  // Expressions
+  auto dump(const Expr *node) -> void;
+  auto dump(const CallExpr *node) -> void;
+  auto dump(const VariableExpr *node) -> void;
+  auto dump(const DecimalExpr *node) -> void;
+  auto dump(const StructExpr *node) -> void;
+  auto dump(const BinaryExpr *node) -> void;
+
+  // Utility
+  auto indent() -> void {
+    for (int i = 0; i < _curIndent; i++)
+      errs() << "  ";
+  }
+
+  template <typename T>
+  auto loc(T *node) -> std::string {
+    auto [line, col] = _sourceManager.getLineAndColumn(node->location());
+    return (llvm::Twine("loc=") + llvm::Twine(line) + llvm::Twine(":")
+            + llvm::Twine(col)).str();
+  }
+};
 
 struct Indent {
   Indent(int &level) : level(level) { ++level; }
@@ -25,52 +63,12 @@ struct Indent {
   Indent level_(_curIndent);                                                    \
   indent();
 
-class Dumper {
-public:
-  Dumper(const llvm::SourceMgr &sourceManager): _sourceManager{sourceManager} {}
-
-  auto dump(const Module *node) -> void;
-
-private:
-  auto indent() -> void {
-    for (int i = 0; i < _curIndent; i++)
-      errs() << "  ";
-  }
-
-  int _curIndent = 0;
-  const llvm::SourceMgr &_sourceManager;
-
-  template <typename T>
-  auto loc(T *node) -> std::string {
-    auto [line, col] = _sourceManager.getLineAndColumn(node->location());
-    return (llvm::Twine("loc=") + llvm::Twine(line) + llvm::Twine(":")
-            + llvm::Twine(col)).str();
-  }
-
-  // Declarations
-  auto dump(const Decl *node) -> void;
-  auto dump(const VariableDecl *node) -> void;
-  auto dump(const Prototype *node) -> void;
-  auto dump(const FunctionDecl *node) -> void;
-  auto dump(const StructDecl *node) -> void;
-
-  // Expressions
-  auto dump(const Expr *node) -> void;
-  auto dump(const CallExpr *node) -> void;
-  auto dump(const DecimalExpr *node) -> void;
-  auto dump(const StructExpr *node) -> void;
-  auto dump(const VariableExpr *node) -> void;
-  auto dump(const BinaryExpr *node) -> void;
-};
-
 }// end namespace
 
 auto Dumper::dump(const Module *node) -> void {
   for (auto &decl : *node)
     dump(decl.get());
 }
-
-// Declarations
 
 auto Dumper::dump(const Decl *node) -> void {
   llvm::TypeSwitch<const Decl *>(node)
@@ -82,22 +80,12 @@ auto Dumper::dump(const Decl *node) -> void {
       });
 }
 
-auto Dumper::dump(const VariableDecl *node) -> void {
-  auto id = node->variable().get();
-  auto type = node->type().get();
-  INDENT();
-  errs() << "Variable (id=" << id->name() << " " << loc(id)
-         << ") (type=" << type->name() << " " << loc(type) << ")\n";
-}
-
-// Functions
-
 auto Dumper::dump(const Prototype *node) -> void {
   auto id = node->id().get();
   INDENT();
   errs() << "Prototype " << loc(node)
          << " (name="<< id->name() << " " << loc(id) << ")\n";
-  for (auto& parameter : node->parameters())
+  for (auto &parameter : node->parameters())
     dump(parameter.get());
 }
 
@@ -114,16 +102,22 @@ auto Dumper::dump(const StructDecl *node) -> void {
   auto id = node->id().get();
   errs() << "StructDecl " << loc(node)
          << " (name="<< id->name() << " " << loc(id) << ")\n";
-  for (auto& var : node->variables())
+  for (auto &var : node->variables())
     dump(var.get());
 }
 
-// Expressions
+auto Dumper::dump(const VariableDecl *node) -> void {
+  auto id = node->variable().get();
+  auto type = node->type().get();
+  INDENT();
+  errs() << "Variable (id=" << id->name() << " " << loc(id)
+         << ") (type=" << type->name() << " " << loc(type) << ")\n";
+}
 
 auto Dumper::dump(const Expr *node) -> void {
   llvm::TypeSwitch<const Expr *>(node)
       .Case<CallExpr, DecimalExpr, VariableExpr,
-            StructExpr, BinaryExpr>([&](auto *node) {
+          StructExpr, BinaryExpr>([&](auto *node) {
         this->dump(node);
       })
       .Default([&](const Expr *) {
@@ -138,6 +132,11 @@ auto Dumper::dump(const CallExpr *node) -> void {
     dump(expr.get());
 }
 
+auto Dumper::dump(const VariableExpr *node) -> void {
+  INDENT();
+  errs() << "VariableExpr " << loc(node) << " name=" << node->name() << "\n";
+}
+
 auto Dumper::dump(const DecimalExpr *node) -> void {
   INDENT();
   errs() << "DecimalExpr " << loc(node) << " value=" << node->value() << "\n";
@@ -148,11 +147,6 @@ auto Dumper::dump(const StructExpr *node) -> void {
   errs() << "StructExpr " << loc(node) << " type=" << node->type() << "\n";
   for (auto &expr : *node)
     dump(expr.get());
-}
-
-auto Dumper::dump(const VariableExpr *node) -> void {
-  INDENT();
-  errs() << "VariableExpr " << loc(node) << " name=" << node->name() << "\n";
 }
 
 auto Dumper::dump(const BinaryExpr *node) -> void {

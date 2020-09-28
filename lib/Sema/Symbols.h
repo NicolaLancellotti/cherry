@@ -21,7 +21,7 @@ using mlir::success;
 class Symbols {
 public:
   auto addBuiltins() -> void {
-     _typeSymbols.insert(std::make_pair(types::UInt64Type, &emptyVector));
+    _typeSymbols.insert(std::make_pair(types::UInt64Type, &emptyVector));
     _functionSymbols.insert(std::make_pair("print",
                                            llvm::SmallVector<llvm::StringRef, 2>{types::UInt64Type}));
   }
@@ -35,7 +35,7 @@ public:
   }
 
   auto getFunction(llvm::StringRef name,
-                   llvm::ArrayRef<llvm::StringRef>& types)  -> CherryResult {
+                   llvm::ArrayRef<llvm::StringRef> &types)  -> CherryResult {
     auto symbol = _functionSymbols.find(name);
     if (symbol == _functionSymbols.end())
       return failure();
@@ -59,11 +59,11 @@ public:
   }
 
   auto getType(llvm::StringRef name,
-               const VectorUniquePtr<VariableDecl>** types) -> CherryResult {
+               const VectorUniquePtr<VariableDecl> *&types) -> CherryResult {
     auto symbol = _typeSymbols.find(name);
     if (symbol == _typeSymbols.end())
       return failure();
-    *types = symbol->second;
+    types = symbol->second;
     return success();
   }
 
@@ -79,7 +79,7 @@ public:
     return success();
   }
 
-  auto getVariableType(const VariableExpr *node, llvm::StringRef& type) -> CherryResult {
+  auto getVariableType(const VariableExpr *node, llvm::StringRef &type) -> CherryResult {
     auto symbol = _variableSymbols.find(node->name());
     if (symbol == _variableSymbols.end()) {
       return failure();
