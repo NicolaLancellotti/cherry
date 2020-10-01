@@ -23,7 +23,8 @@ public:
     Expr_Decimal,
     Expr_Variable,
     Expr_Struct,
-    Expr_Binary
+    Expr_Binary,
+    Expr_VariableDecl,
   };
 
   explicit Expr(ExpressionKind kind,
@@ -184,6 +185,39 @@ private:
   std::unique_ptr<Expr> _lhs;
   std::unique_ptr<Expr> _rhs;
   std::string _op;
+};
+
+// _____________________________________________________________________________
+// VariableDecl
+
+class VariableDeclExpr final : public Expr {
+public:
+  explicit VariableDeclExpr(llvm::SMLoc location,
+                            std::unique_ptr<VariableExpr> variable,
+                            std::unique_ptr<Identifier> type,
+                            std::unique_ptr<Expr> init)
+      : Expr{Expr_VariableDecl, location}, _variable(std::move(variable)),
+        _type(std::move(type)), _init{std::move(init)} {};
+
+  static auto classof(const Expr *node) -> bool {
+    return node->getKind() == Expr_VariableDecl;
+  }
+
+  auto variable() const -> const std::unique_ptr<VariableExpr>& {
+    return _variable;
+  }
+
+  auto type() const -> const std::unique_ptr<Identifier>& {
+    return _type;
+  }
+  auto init() const -> const std::unique_ptr<Expr>& {
+    return _init;
+  }
+
+private:
+  std::unique_ptr<VariableExpr> _variable;
+  std::unique_ptr<Identifier> _type;
+  std::unique_ptr<Expr> _init;
 };
 
 

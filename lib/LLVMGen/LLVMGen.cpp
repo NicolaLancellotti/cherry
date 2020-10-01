@@ -70,6 +70,7 @@ private:
   // Expressions
   auto gen(const Expr *node, llvm::Value *&value) -> CherryResult;
   auto gen(const CallExpr *node, llvm::Value *&value) -> CherryResult;
+  auto gen(const VariableDeclExpr *node, llvm::Value *&value) -> CherryResult;
   auto gen(const VariableExpr *node, llvm::Value *&value) -> CherryResult;
   auto gen(const DecimalExpr *node, llvm::Value *&value) -> CherryResult;
   auto gen(const BinaryExpr *node, llvm::Value *&value) -> CherryResult;
@@ -306,6 +307,8 @@ auto LLVMGenImpl::gen(const Expr *node, llvm::Value *&value) -> CherryResult {
     return gen(cast<DecimalExpr>(node), value);
   case Expr::Expr_Call:
     return gen(cast<CallExpr>(node), value);
+  case Expr::Expr_VariableDecl:
+    return gen(cast<VariableDeclExpr>(node), value);
   case Expr::Expr_Variable:
     return gen(cast<VariableExpr>(node), value);
   case Expr::Expr_Binary:
@@ -328,6 +331,27 @@ auto LLVMGenImpl::gen(const CallExpr *node, llvm::Value *&value) -> CherryResult
   auto functionName = node->name();
   llvm::Function *callee = module->getFunction(functionName);
   value = _builder.CreateCall(callee, operands, functionName);
+  return success();
+}
+
+auto LLVMGenImpl::gen(const VariableDeclExpr *node,
+                      llvm::Value *&value) -> CherryResult {
+  auto name = node->variable()->name();
+  auto typeName = node->type()->name();
+  auto llvmType = getType(typeName);
+
+  llvm::Value *initValue;
+  if (gen(node->init().get(), initValue))
+    return failure();
+
+  auto func = _builder.GetInsertBlock()->getParent();
+  auto alloca = createEntryBlockAlloca(func, name, llvmType);
+  _variableSymbols[name] = alloca;
+  emitLocation(node);
+  _builder.CreateStore(initValue, alloca);
+
+  auto constant0 = llvm::ConstantInt::get(getType(types::UInt64Type), 0);
+  value = constant0;
   return success();
 }
 
@@ -355,6 +379,7 @@ auto LLVMGenImpl::gen(const BinaryExpr *node, llvm::Value *&value) -> CherryResu
 
 auto LLVMGenImpl::genAssign(const BinaryExpr *node,
                             llvm::Value *&value) -> CherryResult {
+  emitLocation(node);
   llvm::Value *rhsValue;
   if (gen(node->rhs().get(), rhsValue))
     return failure();

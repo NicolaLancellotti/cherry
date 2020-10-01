@@ -48,6 +48,7 @@ private:
   // Expressions
   auto sema(const Expr *node, llvm::StringRef &type) -> CherryResult;
   auto sema(const CallExpr *node, llvm::StringRef &type) -> CherryResult;
+  auto sema(const VariableDeclExpr *node, llvm::StringRef &type) -> CherryResult;
   auto sema(const VariableExpr *node, llvm::StringRef &type) -> CherryResult;
   auto sema(const DecimalExpr *node, llvm::StringRef &type) -> CherryResult;
   auto sema(const StructExpr *node, llvm::StringRef &type) -> CherryResult;
@@ -93,7 +94,7 @@ auto SemaImpl::sema(const Prototype *node) -> CherryResult {
   for (auto &par : node->parameters()) {
     auto type = par->type().get();
     auto typeName = type->name();
-    if (_symbols.checkType(type->name()))
+    if (_symbols.checkType(typeName))
       return emitError(type, diag::type_undefined);
     if (_symbols.declareVariable(par->variable().get(), typeName))
       return emitError(par->variable().get(), diag::var_redefinition);
@@ -148,6 +149,8 @@ auto SemaImpl::sema(const Expr *node, llvm::StringRef &type) -> CherryResult {
     return sema(cast<DecimalExpr>(node), type);
   case Expr::Expr_Call:
     return sema(cast<CallExpr>(node), type);
+  case Expr::Expr_VariableDecl:
+    return sema(cast<VariableDeclExpr>(node), type);
   case Expr::Expr_Variable:
     return sema(cast<VariableExpr>(node), type);
   case Expr::Expr_Struct:
@@ -191,6 +194,26 @@ auto SemaImpl::sema(const CallExpr *node, llvm::StringRef &type) -> CherryResult
   return success();
 }
 
+auto SemaImpl::sema(const VariableDeclExpr *node, llvm::StringRef &type) -> CherryResult {
+  auto var = node->variable().get();
+  auto varType = node->type().get();
+  auto varTypeName = varType->name();
+  if (_symbols.checkType(varTypeName))
+    return emitError(varType, diag::type_undefined);
+  if (_symbols.declareVariable(var, varTypeName))
+    return emitError(var, diag::var_redefinition);
+
+  auto initValue = node->init().get();
+  llvm::StringRef initValueType;
+  if (sema(initValue, initValueType))
+    return failure();
+
+  if (varTypeName != initValueType)
+    return emitError(initValue, diag::type_mismatch);
+
+  return success();
+}
+
 auto SemaImpl::sema(const VariableExpr *node, llvm::StringRef &type) -> CherryResult {
   if (_symbols.getVariableType(node, type))
     return emitError(node, diag::var_undefined);
@@ -204,7 +227,7 @@ auto SemaImpl::sema(const DecimalExpr *node, llvm::StringRef &type) -> CherryRes
 
 auto SemaImpl::sema(const StructExpr *node, llvm::StringRef &type) -> CherryResult {
   auto typeName = node->type();
-  const VectorUniquePtr<VariableDecl> *fieldsTypes;
+  const VectorUniquePtr<VariableDeclExpr> *fieldsTypes;
   if (_symbols.getType(typeName, fieldsTypes))
     return emitError(node, diag::type_undefined);
 
@@ -260,7 +283,7 @@ auto SemaImpl::semaStructAccess(const BinaryExpr *node,
     return emitError(node->rhs().get(), diag::expected_field);
 
   auto fieldName = var->name();
-  const VectorUniquePtr<VariableDecl> *fieldsTypes;
+  const VectorUniquePtr<VariableDeclExpr> *fieldsTypes;
   _symbols.getType(lhsType, fieldsTypes);
 
   for (auto &f : *fieldsTypes) {

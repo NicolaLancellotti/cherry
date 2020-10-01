@@ -11,6 +11,9 @@ ERROR(expected_semi,
 ERROR(expected_colon,
   "expected `:`")
 
+ERROR(expected_assign,
+  "expected `=`")
+
 ERROR(expected_l_paren,
   "expected `(`")
 

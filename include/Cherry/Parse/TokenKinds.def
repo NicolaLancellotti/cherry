@@ -52,6 +52,7 @@ TOK_PUNCTUATION(assign, "=")
 
 TOK_KEYWORD(fn)
 TOK_KEYWORD(struct)
+TOK_KEYWORD(var)
 
 #undef TOK_MARKER
 #undef TOK_IDENTIFIER

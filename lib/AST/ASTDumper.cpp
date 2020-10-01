@@ -29,11 +29,11 @@ private:
   auto dump(const Prototype *node) -> void;
   auto dump(const FunctionDecl *node) -> void;
   auto dump(const StructDecl *node) -> void;
-  auto dump(const VariableDecl *node) -> void;
 
   // Expressions
   auto dump(const Expr *node) -> void;
   auto dump(const CallExpr *node) -> void;
+  auto dump(const VariableDeclExpr *node) -> void;
   auto dump(const VariableExpr *node) -> void;
   auto dump(const DecimalExpr *node) -> void;
   auto dump(const StructExpr *node) -> void;
@@ -106,17 +106,9 @@ auto Dumper::dump(const StructDecl *node) -> void {
     dump(var.get());
 }
 
-auto Dumper::dump(const VariableDecl *node) -> void {
-  auto id = node->variable().get();
-  auto type = node->type().get();
-  INDENT();
-  errs() << "Variable (id=" << id->name() << " " << loc(id)
-         << ") (type=" << type->name() << " " << loc(type) << ")\n";
-}
-
 auto Dumper::dump(const Expr *node) -> void {
   llvm::TypeSwitch<const Expr *>(node)
-      .Case<CallExpr, DecimalExpr, VariableExpr,
+      .Case<CallExpr, DecimalExpr, VariableDeclExpr, VariableExpr,
           StructExpr, BinaryExpr>([&](auto *node) {
         this->dump(node);
       })
@@ -130,6 +122,16 @@ auto Dumper::dump(const CallExpr *node) -> void {
   errs() << "CallExpr " << loc(node) << " callee=" << node->name() << "\n";
   for (auto &expr : *node)
     dump(expr.get());
+}
+
+auto Dumper::dump(const VariableDeclExpr *node) -> void {
+  auto id = node->variable().get();
+  auto type = node->type().get();
+  INDENT();
+  errs() << "Variable (id=" << id->name() << " " << loc(id)
+         << ") (type=" << type->name() << " " << loc(type) << ")\n";
+  if (node->init())
+    dump(node->init().get());
 }
 
 auto Dumper::dump(const VariableExpr *node) -> void {

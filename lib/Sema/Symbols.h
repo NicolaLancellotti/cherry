@@ -59,7 +59,7 @@ public:
   }
 
   auto getType(llvm::StringRef name,
-               const VectorUniquePtr<VariableDecl> *&types) -> CherryResult {
+               const VectorUniquePtr<VariableDeclExpr> *&types) -> CherryResult {
     auto symbol = _typeSymbols.find(name);
     if (symbol == _typeSymbols.end())
       return failure();
@@ -88,10 +88,10 @@ public:
     return success();
   }
 
-  VectorUniquePtr<VariableDecl> emptyVector;
+  VectorUniquePtr<VariableDeclExpr> emptyVector;
 private:
   std::map</*name*/ llvm::StringRef, /*types*/ llvm::SmallVector<llvm::StringRef, 2>> _functionSymbols;
-  std::map</*name*/ llvm::StringRef, /*types*/ const VectorUniquePtr<VariableDecl>*> _typeSymbols;
+  std::map</*name*/ llvm::StringRef, /*types*/ const VectorUniquePtr<VariableDeclExpr>*> _typeSymbols;
   std::map</*name*/llvm::StringRef, /*type*/ llvm::StringRef> _variableSymbols;
 };
 
