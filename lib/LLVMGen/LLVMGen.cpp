@@ -29,8 +29,6 @@
 #include <map>
 #include <memory>
 
-#define CHERRY_DEBUG_INFO
-
 namespace {
 using namespace cherry;
 using llvm::cast;
@@ -42,12 +40,15 @@ public:
   LLVMGenImpl(const llvm::SourceMgr &sourceManager, llvm::LLVMContext &context,
               bool enableOpt)
       : _sourceManager{sourceManager}, _context{context}, _builder{context},
-        _enableOpt{enableOpt} {}
+        _enableOpt{enableOpt} {
+    _debugInfo = !enableOpt;
+  }
 
   auto gen(const Module &node) -> CherryResult;
 
   std::unique_ptr<llvm::Module> module;
 private:
+  bool _debugInfo;
   bool _enableOpt;
   const llvm::SourceMgr &_sourceManager;
   llvm::LLVMContext &_context;
@@ -55,12 +56,11 @@ private:
   std::unique_ptr<llvm::legacy::FunctionPassManager> _pass;
   std::map<llvm::StringRef, llvm::AllocaInst*> _variableSymbols;
   std::map<llvm::StringRef, llvm::Type*> _typeSymbols;
-#ifdef CHERRY_DEBUG_INFO
+  // Debug symbols
   std::unique_ptr<llvm::DIBuilder> _dBuilder;
   llvm::DICompileUnit *_dcu;
   std::vector<llvm::DIScope *> _dlexicalBlocks;
   std::map<llvm::StringRef, llvm::DIType*> _dTypeSymbols;
-#endif
 
   // Declarations
   auto gen(const Decl *node) -> CherryResult;
@@ -85,18 +85,16 @@ private:
     }
   }
 
-#ifdef CHERRY_DEBUG_INFO
   auto getDebugType(llvm::StringRef name) -> llvm::DIType* {
     return _dTypeSymbols[name];
   }
-#endif
 
   auto addBuiltins() -> void {
-#ifdef CHERRY_DEBUG_INFO
-    auto dUInt64Ty = _dBuilder->createBasicType(types::UInt64Type, 64,
-                                                llvm::dwarf::DW_ATE_unsigned);
-    _dTypeSymbols[types::UInt64Type] = dUInt64Ty;
-#endif
+    if (_debugInfo) {
+      auto dUInt64Ty = _dBuilder->createBasicType(types::UInt64Type, 64,
+                                                  llvm::dwarf::DW_ATE_unsigned);
+      _dTypeSymbols[types::UInt64Type] = dUInt64Ty;
+    }
 
     auto llvmI64Ty = llvm::IntegerType::get(_context, 64);
     auto llvmI32Ty = llvm::IntegerType::get(_context, 32);
@@ -139,13 +137,13 @@ private:
 
 
   auto emitLocation(const Node *node) -> void {
-#ifdef CHERRY_DEBUG_INFO
-    if (!node)
-      return _builder.SetCurrentDebugLocation(llvm::DebugLoc());
-    auto scope = _dlexicalBlocks.empty() ? _dcu : _dlexicalBlocks.back();
-    auto [line, col] = _sourceManager.getLineAndColumn(node->location());
-    _builder.SetCurrentDebugLocation(llvm::DebugLoc::get(line, col, scope));
-#endif
+    if (_debugInfo) {
+      if (!node)
+        return _builder.SetCurrentDebugLocation(llvm::DebugLoc());
+      auto scope = _dlexicalBlocks.empty() ? _dcu : _dlexicalBlocks.back();
+      auto [line, col] = _sourceManager.getLineAndColumn(node->location());
+      _builder.SetCurrentDebugLocation(llvm::DebugLoc::get(line, col, scope));
+    }
   }
 
 };
@@ -171,15 +169,15 @@ auto LLVMGenImpl::gen(const Module &node) -> CherryResult {
     _pass->doInitialization();
   }
 
-#ifdef CHERRY_DEBUG_INFO
-  auto fileName = _sourceManager.getMemoryBuffer(_sourceManager.getMainFileID())
-      ->getBufferIdentifier();
-  _dBuilder = std::make_unique<llvm::DIBuilder>(*module);
-  _dcu = _dBuilder->createCompileUnit(
-      llvm::dwarf::DW_LANG_C,
-      _dBuilder->createFile(fileName, "."),
-      "Cherry Compiler", 0, "", 0);
-#endif
+  if (_debugInfo) {
+    auto fileName =
+        _sourceManager.getMemoryBuffer(_sourceManager.getMainFileID())
+            ->getBufferIdentifier();
+    _dBuilder = std::make_unique<llvm::DIBuilder>(*module);
+    _dcu = _dBuilder->createCompileUnit(llvm::dwarf::DW_LANG_C,
+                                        _dBuilder->createFile(fileName, "."),
+                                        "Cherry Compiler", 0, "", 0);
+  }
 
   addBuiltins();
 
@@ -188,9 +186,9 @@ auto LLVMGenImpl::gen(const Module &node) -> CherryResult {
       return failure();
   }
 
-#ifdef CHERRY_DEBUG_INFO
-  _dBuilder->finalize();
-#endif
+  if (_debugInfo) {
+    _dBuilder->finalize();
+  }
 
   if (llvm::verifyModule(*module)) {
     llvm::errs() << "module verification error";
@@ -215,16 +213,16 @@ auto LLVMGenImpl::gen(const Prototype *node, llvm::Function *&func) -> CherryRes
   argTypes.reserve(node->parameters().size());
 
   llvm::SmallVector<llvm::Metadata *, 8> debugTypes;
-#ifdef CHERRY_DEBUG_INFO
-  debugTypes.push_back(getDebugType(types::UInt64Type)); // result
-#endif
+  if (_debugInfo) {
+    debugTypes.push_back(getDebugType(types::UInt64Type)); // result
+  }
 
   for (auto &param : node->parameters()) {
     auto typeName = param->type()->name();
     argTypes.push_back(getType(typeName));
-#ifdef CHERRY_DEBUG_INFO
-    debugTypes.push_back(getDebugType(typeName));
-#endif
+    if (_debugInfo) {
+      debugTypes.push_back(getDebugType(typeName));
+    }
   }
 
   auto resultType = getType(types::UInt64Type);
@@ -237,18 +235,21 @@ auto LLVMGenImpl::gen(const Prototype *node, llvm::Function *&func) -> CherryRes
   llvm::BasicBlock *bb = llvm::BasicBlock::Create(_context, "entry", func);
   _builder.SetInsertPoint(bb);
 
-#ifdef CHERRY_DEBUG_INFO
   auto [line, col] = _sourceManager.getLineAndColumn(node->location());
-  auto unit = _dBuilder->createFile(_dcu->getFilename(), _dcu->getDirectory());
-  auto subroutineType = _dBuilder->createSubroutineType(
-      _dBuilder->getOrCreateTypeArray(debugTypes));
-  auto sp = _dBuilder->createFunction(
-      unit, name, llvm::StringRef(), unit, line, subroutineType, line,
-      llvm::DINode::FlagPrototyped, llvm::DISubprogram::SPFlagDefinition);
-  func->setSubprogram(sp);
-  _dlexicalBlocks.push_back(sp);
-  emitLocation(nullptr);
-#endif
+  llvm::DIFile *unit;
+  llvm::DISubprogram *sp;
+  if (_debugInfo) {
+    unit =
+        _dBuilder->createFile(_dcu->getFilename(), _dcu->getDirectory());
+    auto subroutineType = _dBuilder->createSubroutineType(
+        _dBuilder->getOrCreateTypeArray(debugTypes));
+    sp = _dBuilder->createFunction(
+        unit, name, llvm::StringRef(), unit, line, subroutineType, line,
+        llvm::DINode::FlagPrototyped, llvm::DISubprogram::SPFlagDefinition);
+    func->setSubprogram(sp);
+    _dlexicalBlocks.push_back(sp);
+    emitLocation(nullptr);
+  }
 
   unsigned index = 0;
   for (const auto &param_arg : llvm::zip(node->parameters(), func->args())) {
@@ -258,15 +259,15 @@ auto LLVMGenImpl::gen(const Prototype *node, llvm::Function *&func) -> CherryRes
     arg.setName(name);
 
     auto alloca = createEntryBlockAlloca(func, name, arg.getType());
-#ifdef CHERRY_DEBUG_INFO
-    auto dparm = _dBuilder->createParameterVariable(
-        sp, name, ++index, unit, line, getDebugType(param->type()->name()),
-        true);
+    if (_debugInfo) {
+      auto dparm = _dBuilder->createParameterVariable(
+          sp, name, ++index, unit, line, getDebugType(param->type()->name()),
+          true);
 
-    _dBuilder->insertDeclare(alloca, dparm, _dBuilder->createExpression(),
-                             llvm::DebugLoc::get(line, 0, sp),
-                             _builder.GetInsertBlock());
-#endif
+      _dBuilder->insertDeclare(alloca, dparm, _dBuilder->createExpression(),
+                               llvm::DebugLoc::get(line, 0, sp),
+                               _builder.GetInsertBlock());
+    }
 
     _builder.CreateStore(&arg, alloca);
     _variableSymbols[name] = alloca;
@@ -294,9 +295,9 @@ auto LLVMGenImpl::gen(const FunctionDecl *node) -> CherryResult {
 
   _pass->run(*func);
 
-#ifdef CHERRY_DEBUG_INFO
-  _dlexicalBlocks.pop_back();
-#endif
+  if (_debugInfo) {
+    _dlexicalBlocks.pop_back();
+  }
 
   return success();
 }
