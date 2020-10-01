@@ -56,6 +56,8 @@ private:
   auto gen(const CallExpr *node, mlir::Value &value) -> CherryResult;
   auto gen(const VariableExpr *node, mlir::Value &value) -> CherryResult;
   auto gen(const DecimalExpr *node, mlir::Value &value) -> CherryResult;
+  auto gen(const BinaryExpr *node, mlir::Value &value) -> CherryResult;
+  auto genAssign(const BinaryExpr *node, mlir::Value &value) -> CherryResult;
 
   // Utility
   auto loc(const Node *node) -> mlir::Location {
@@ -184,6 +186,8 @@ auto MLIRGenImpl::gen(const Expr *node, mlir::Value &value) -> CherryResult {
     return gen(cast<CallExpr>(node), value);
   case Expr::Expr_Variable:
     return gen(cast<VariableExpr>(node), value);
+  case Expr::Expr_Binary:
+    return gen(cast<BinaryExpr>(node), value);
   default:
     llvm_unreachable("Unexpected expression");
   }
@@ -221,6 +225,28 @@ auto MLIRGenImpl::gen(const VariableExpr *node, mlir::Value &value) -> CherryRes
 
 auto MLIRGenImpl::gen(const DecimalExpr *node, mlir::Value &value) -> CherryResult {
   value = _builder.create<ConstantOp>(loc(node), node->value());
+  return success();
+}
+
+auto MLIRGenImpl::gen(const BinaryExpr *node, mlir::Value &value) -> CherryResult {
+  auto op = node->op();
+  if (op == "=")
+    return genAssign(node, value);
+  else
+    llvm_unreachable("Unexpected BinaryExpr operator");
+}
+
+auto MLIRGenImpl::genAssign(const BinaryExpr *node, mlir::Value &value) -> CherryResult {
+  mlir::Value rhsValue;
+  if (gen(node->rhs().get(), rhsValue))
+    return failure();
+
+  // TODO: handle struct access
+  auto lhs = static_cast<VariableExpr *>(node->lhs().get());
+  auto name = lhs->name();
+
+  _variableSymbols[name] =  rhsValue;
+  value = rhsValue;
   return success();
 }
 
