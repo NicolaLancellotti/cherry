@@ -151,7 +151,7 @@ auto Dumper::dump(const StructExpr *node) -> void {
 
 auto Dumper::dump(const BinaryExpr *node) -> void {
   INDENT();
-  errs() << "BinaryExpr " << loc(node) << " op=" << node->op() << "\n";
+  errs() << "BinaryExpr " << loc(node) << " op=`" << node->op() << "`\n";
   dump(node->lhs().get());
   dump(node->rhs().get());
 }

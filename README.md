@@ -38,7 +38,7 @@ Enable optimisation                 | -opt
 Generate a target ".o" object file  | -c[=\<filename>]  
 
 ## Examples
-main.cherry:
+### Syntax example
 ```
 # This is a comment
 
@@ -53,8 +53,8 @@ fun baz(x: B) { }
 
 fun bar(x: UInt64, y: UInt64) {
   print(x);
-  print(y);
   print(18446744073709551615);
+  x = y;
 }
 
 fun main() {
@@ -63,31 +63,17 @@ fun main() {
 ```
 
 ### Run JIT
-run:
 ```
 cherry-driver main.cherry
 ```
-output:
-```
-0
-1
-18446744073709551615
-```
 
 ### Generate an object file and run
-run:
 ```
 cherry-driver main.cherry -c=a.o
 
 clang a.o
 
 ./a.out 
-```
-output:
-```
-0
-1
-18446744073709551615
 ```
 
 ## Run the Optimiser

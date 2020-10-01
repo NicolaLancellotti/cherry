@@ -72,6 +72,8 @@ private:
   auto gen(const CallExpr *node, llvm::Value *&value) -> CherryResult;
   auto gen(const VariableExpr *node, llvm::Value *&value) -> CherryResult;
   auto gen(const DecimalExpr *node, llvm::Value *&value) -> CherryResult;
+  auto gen(const BinaryExpr *node, llvm::Value *&value) -> CherryResult;
+  auto genAssign(const BinaryExpr *node, llvm::Value *&value) -> CherryResult;
 
   // Utility
   auto getType(llvm::StringRef name) -> llvm::Type* {
@@ -306,6 +308,8 @@ auto LLVMGenImpl::gen(const Expr *node, llvm::Value *&value) -> CherryResult {
     return gen(cast<CallExpr>(node), value);
   case Expr::Expr_Variable:
     return gen(cast<VariableExpr>(node), value);
+  case Expr::Expr_Binary:
+    return gen(cast<BinaryExpr>(node), value);
   default:
     llvm_unreachable("Unexpected expression");
   }
@@ -338,6 +342,29 @@ auto LLVMGenImpl::gen(const VariableExpr *node, llvm::Value *&value) -> CherryRe
 auto LLVMGenImpl::gen(const DecimalExpr *node, llvm::Value *&value) -> CherryResult {
   emitLocation(node);
   value = llvm::ConstantInt::get(getType(types::UInt64Type), node->value());
+  return success();
+}
+
+auto LLVMGenImpl::gen(const BinaryExpr *node, llvm::Value *&value) -> CherryResult {
+  auto op = node->op();
+  if (op == "=")
+    return genAssign(node, value);
+  else
+    llvm_unreachable("Unexpected BinaryExpr operator");
+}
+
+auto LLVMGenImpl::genAssign(const BinaryExpr *node,
+                            llvm::Value *&value) -> CherryResult {
+  llvm::Value *rhsValue;
+  if (gen(node->rhs().get(), rhsValue))
+    return failure();
+
+  // TODO: handle struct access
+  auto lhs = static_cast<VariableExpr *>(node->lhs().get());
+  auto name = lhs->name();
+  auto alloca = _variableSymbols[name];
+  _builder.CreateStore(rhsValue, alloca);
+  value = rhsValue;
   return success();
 }
 

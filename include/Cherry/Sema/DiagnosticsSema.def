@@ -11,7 +11,7 @@ ERROR(func_redefinition, "redefinition of `%s`")
 ERROR(func_undefined, "cannot find function `%s`")
 
 ERROR(func_param, "function `%s` takes %d parameters")
-ERROR(func_param_type_mismatch, "type mismatch")
+ERROR(type_mismatch, "type mismatch")
 ERROR(type_undefined, "undefined type")
 
 ERROR(wrong_num_arg, "wrong number of arguments")
@@ -23,6 +23,7 @@ ERROR(type_redefinition, "redefinition of type")
 
 ERROR(expected_field, "expected struct field")
 ERROR(field_undefined, "undefined field")
+ERROR(expected_lvalue, "expected lvalue")
 
 // ___________________________________________________________________________
 #undef ERROR

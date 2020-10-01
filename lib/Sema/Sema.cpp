@@ -52,6 +52,9 @@ private:
   auto sema(const DecimalExpr *node, llvm::StringRef &type) -> CherryResult;
   auto sema(const StructExpr *node, llvm::StringRef &type) -> CherryResult;
   auto sema(const BinaryExpr *node, llvm::StringRef &type) -> CherryResult;
+  auto semaAssign(const BinaryExpr *node, llvm::StringRef &type) -> CherryResult;
+  auto semaStructAccess(const BinaryExpr *node,
+                        llvm::StringRef &type) -> CherryResult;
 
   // Errors
   auto emitError(const Node *node, const llvm::Twine &msg) -> CherryResult {
@@ -181,7 +184,7 @@ auto SemaImpl::sema(const CallExpr *node, llvm::StringRef &type) -> CherryResult
     if (sema(expr.get(), exprType))
       return failure();
     if (exprType != type)
-      return emitError(expr.get(), diag::func_param_type_mismatch);
+      return emitError(expr.get(), diag::type_mismatch);
   }
 
   type = types::UInt64Type;
@@ -215,19 +218,43 @@ auto SemaImpl::sema(const StructExpr *node, llvm::StringRef &type) -> CherryResu
     if (sema(expr.get(), exprType))
       return failure();
     if (exprType != fieldType)
-      return emitError(expr.get(), diag::func_param_type_mismatch);
+      return emitError(expr.get(), diag::type_mismatch);
   }
 
   type = node->type();
   return success();
 }
 
-auto SemaImpl::sema(const BinaryExpr *node, llvm::StringRef &type) -> CherryResult {
-  // sema struct access
+auto SemaImpl::sema(const BinaryExpr *node,
+                    llvm::StringRef &type) -> CherryResult {
+  auto op = node->op();
+  if (op == "=")
+    return semaAssign(node, type);
+  else if (op == ".")
+    return semaStructAccess(node, type);
+  else
+    llvm_unreachable("Unexpected BinaryExpr operator");
+}
+
+auto SemaImpl::semaAssign(const BinaryExpr *node,
+                          llvm::StringRef &type) -> CherryResult {
+  llvm::StringRef lhsType;
+  llvm::StringRef rhsType;
+  if (sema(node->lhs().get(), lhsType) || sema(node->rhs().get(), rhsType))
+    return failure();
+  if (!node->lhs()->isLvalue())
+    return emitError(node->lhs().get(), diag::expected_lvalue);
+  if (lhsType != rhsType)
+    return emitError(node->rhs().get(), diag::type_mismatch);
+  type = lhsType;
+  return success();
+}
+
+auto SemaImpl::semaStructAccess(const BinaryExpr *node,
+                                llvm::StringRef &type) -> CherryResult {
   llvm::StringRef lhsType;
   if (sema(node->lhs().get(), lhsType))
     return failure();
-
   VariableExpr *var = llvm::dyn_cast<VariableExpr>(node->rhs().get());
   if (!var)
     return emitError(node->rhs().get(), diag::expected_field);

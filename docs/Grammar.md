@@ -15,15 +15,19 @@ decimal-literal → decimal-digit decimal-digits<sub>opt</sub>
 decimal-digit → `Digit 0 through 9`  
 decimal-digits → decimal-digit decimal-digits<sub>opt</sub>  
 
-## Expressions  
-expression → primary-expression  
-expression → struct-access  
+## Expressions
+expression → lvalue  
+expression → rvalue   
 
-**GRAMMAR OF A PRIMARY EXPRESSION**  
-primary-expression → literal-expression  
-primary-expression → variable-expression  
-primary-expression → function-call-expression  
-primary-expression → struct-expression  
+**GRAMMAR OF A LVALUE EXPRESSION**  
+lvalue → variable-expression  
+lvalue → struct-access  
+
+**GRAMMAR OF A RVALUE EXPRESSION**  
+rvalue → literal-expression  
+rvalue → function-call-expression  
+rvalue → struct-expression  
+rvalue → assign-expression  
 
 **GRAMMAR OF A LITERAL EXPRESSION**  
 literal-expression → literal  
@@ -44,9 +48,12 @@ struct-expression → type `{` struct-expression-argument-list<sub>opt</sub> `}`
 struct-expression-argument-list → expression `,`<sub>opt</sub>  
 struct-expression-argument-list → expression `,` function-call-argument-list  
 
-**GRAMMAR OF A STRUCT ACCESS EXPRESSION**  
-struct-access → struct-expression `.` identifier  
+**GRAMMAR OF A STRUCT ACCESS EXPRESSION**   
+struct-access → lvalue `.` identifier    
 struct-access → struct-access `.` identifier  
+
+**GRAMMAR OF AN ASSIGN EXPRESSION**     
+assign-expression → lvalue `=` rvalue  
   
 ## Statements  
 statement → expression `;`  

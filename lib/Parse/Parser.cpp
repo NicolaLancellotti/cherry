@@ -270,8 +270,12 @@ auto Parser::parseBinaryExpRHS(int exprPrec, std::unique_ptr<Expr> &expr) -> Che
       return emitError(diag::expected_expr);
 
     int nextPrec = getTokenPrecedence();
+    bool rightAssociative = isTokenRightAssociative();
     if (tokPrec < nextPrec) {
       if (parseBinaryExpRHS(tokPrec + 1, rhs))
+        return failure();
+    } else if ((tokPrec == nextPrec) && rightAssociative) {
+      if (parseBinaryExpRHS(tokPrec, rhs))
         return failure();
     }
 
@@ -282,9 +286,22 @@ auto Parser::parseBinaryExpRHS(int exprPrec, std::unique_ptr<Expr> &expr) -> Che
 
 auto Parser::getTokenPrecedence() -> int {
   switch (tokenKind()) {
+  case Token::assign:
+    return 2;
   case Token::dot:
     return 10;
   default:
     return -1;
+  }
+}
+
+auto Parser::isTokenRightAssociative() -> bool {
+  switch (tokenKind()) {
+  case Token::assign:
+    return true;
+  case Token::dot:
+    return false;
+  default:
+    return false;
   }
 }

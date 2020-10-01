@@ -32,6 +32,8 @@ public:
 
   auto getKind() const -> ExpressionKind { return _kind; }
 
+  virtual auto isLvalue() -> bool { return false; }
+
 private:
   const ExpressionKind _kind;
 };
@@ -51,6 +53,10 @@ public:
 
   auto name() const -> llvm::StringRef {
     return _name;
+  }
+
+  auto isLvalue() -> bool {
+    return true;
   }
 
 private:
@@ -168,6 +174,10 @@ public:
 
   auto op() const -> llvm::StringRef {
     return _op;
+  }
+
+  auto isLvalue() -> bool {
+    return _op == ".";
   }
 
 private:
