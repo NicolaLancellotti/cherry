@@ -54,7 +54,8 @@ fn baz(x: B) { }
 fn bar(x: UInt64, y: UInt64) {
   print(x);
   print(18446744073709551615);
-  x = y;
+  var k: UInt64 = y;
+  x = k;
 }
 
 fn main() {
