@@ -5,6 +5,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "KaleidoscopeJIT.h"
 #include "cherry/Driver/Compilation.h"
 #include "cherry/LLVMGen/LLVMGen.h"
 #include "cherry/MLIRGen/CherryDialect.h"
@@ -101,14 +102,12 @@ auto Compilation::genLLVM(std::unique_ptr<llvm::Module> &llvmModule) -> CherryRe
     if (!llvmModule)
       return failure();
 
-    llvm::InitializeNativeTarget();
-    llvm::InitializeNativeTargetAsmPrinter();
     mlir::ExecutionEngine::setupTargetTriple(llvmModule.get());
 
     auto optPipeline =
         mlir::makeOptimizingTransformer(_enableOpt ? 3 : 0,
-                                        /*sizeLevel=*/0,
-                                        /*targetMachine=*/nullptr);
+            /*sizeLevel=*/0,
+            /*targetMachine=*/nullptr);
 
     if (auto err = optPipeline(llvmModule.get())) {
       llvm::errs() << "Failed to optimize LLVM IR " << err << "\n";
@@ -128,30 +127,45 @@ auto Compilation::typecheck() -> int {
 }
 
 auto Compilation::jit() -> int {
-  mlir::OwningModuleRef module;
-  if (genMLIR(module, Lowering::LLVM))
-    return EXIT_FAILURE;
-
   llvm::InitializeNativeTarget();
   llvm::InitializeNativeTargetAsmPrinter();
 
-  auto optPipeline = mlir::makeOptimizingTransformer(
-      _enableOpt ? 3 : 0,
-      /*sizeLevel=*/0,
-      /*targetMachine=*/nullptr);
+  if (_backendLLVM) {
+    llvm::orc::KaleidoscopeJIT jit;
+    std::unique_ptr<llvm::Module> llvmModule;
+    if (genLLVM(llvmModule))
+      return EXIT_FAILURE;
 
-  auto maybeEngine = mlir::ExecutionEngine::create(*module, optPipeline);
-  assert(maybeEngine && "failed to construct an execution engine");
-  auto &engine = maybeEngine.get();
-
-  if (auto fun = engine->lookup("main")) {
-    int result;
-    void *pResult = (void*)&result;
-    fun.get()(&pResult);
+    llvmModule->setDataLayout(jit.getTargetMachine().createDataLayout());
+    auto moduleHandle = jit.addModule(std::move(llvmModule));
+    auto symbol = jit.findSymbol("main");
+    uint64_t (*fp)() = (uint64_t (*)())(intptr_t)cantFail(symbol.getAddress());
+    auto result = fp();
+    assert(result == 0);
     return EXIT_SUCCESS;
-  }
+  } else {
+    mlir::OwningModuleRef module;
+    if (genMLIR(module, Lowering::LLVM))
+      return EXIT_FAILURE;
 
-  return EXIT_SUCCESS;
+    auto optPipeline = mlir::makeOptimizingTransformer(
+        _enableOpt ? 3 : 0,
+        /*sizeLevel=*/0,
+        /*targetMachine=*/nullptr);
+
+    auto maybeEngine = mlir::ExecutionEngine::create(*module, optPipeline);
+    assert(maybeEngine && "failed to construct an execution engine");
+    auto &engine = maybeEngine.get();
+
+    if (auto fun = engine->lookup("main")) {
+      int result;
+      void *pResult = (void*)&result;
+      fun.get()(&pResult);
+      assert(result == 0);
+      return EXIT_SUCCESS;
+    }
+    return EXIT_FAILURE;
+  }
 }
 
 auto Compilation::genObjectFile(const char *outputFileName) -> int {

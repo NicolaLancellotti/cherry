@@ -87,4 +87,3 @@ cherry-opt -lower-cherry-to-std -lower-cherry-std-to-llvm -print-ir-after-all ma
 - Struct constructors and struct access expressions 
 can be parsed and type-checked but the lowering 
 to MLIR or LLVM is not implemented yet.
-- JIT is available only with the MLIR backend
