@@ -68,7 +68,7 @@ declarations → declaration declarations<sub>opt</sub>
 top-level-declaration → declarations  
 
 **GRAMMAR OF A FUNCTION DECLARATION**  
-function-declaration → `fun` function-name function-signature  function-body  
+function-declaration → `fn` function-name function-signature  function-body  
 function-name → identifier  
 function-signature → `(` parameter-list<sub>opt</sub>  `)`  
 parameter-list → parameter `,`<sub>opt</sub>  

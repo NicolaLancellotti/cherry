@@ -1,7 +1,7 @@
 # RUN: cherry-driver -dump=mlir %s 2>&1| FileCheck %s
 
 # CHECK-LABEL: func @main()
-fun main () {
+fn main () {
 	1;
 	# CHECK: cherry.constant
 	print(2);

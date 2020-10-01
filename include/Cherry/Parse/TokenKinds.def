@@ -50,7 +50,7 @@ TOK_PUNCTUATION(assign, "=")
 
 // Keywords
 
-TOK_KEYWORD(fun)
+TOK_KEYWORD(fn)
 TOK_KEYWORD(struct)
 
 #undef TOK_MARKER

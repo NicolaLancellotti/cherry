@@ -49,15 +49,15 @@ struct B {
   y: A
 }
 
-fun baz(x: B) { }
+fn baz(x: B) { }
 
-fun bar(x: UInt64, y: UInt64) {
+fn bar(x: UInt64, y: UInt64) {
   print(x);
   print(18446744073709551615);
   x = y;
 }
 
-fun main() {
+fn main() {
   bar(0, 1);
 }
 ```

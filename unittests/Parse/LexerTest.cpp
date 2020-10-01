@@ -6,14 +6,14 @@
 using namespace cherry;
 
 TEST(LexerTest, firstTest) {
-  auto input =  R"(fun ; , { } ( ) & 01 a0 a0a)";
+  auto input =  R"(fn ; , { } ( ) & 01 a0 a0a)";
   auto inputBuffer = llvm::MemoryBuffer::getMemBuffer(input, "main.cherry");
 
   llvm::SourceMgr sourceManager;
   sourceManager.AddNewSourceBuffer(std::move(inputBuffer), /*IncludeLoc*/llvm::SMLoc());
 
   auto lexer = std::make_unique<Lexer>(sourceManager);
-  ASSERT_TRUE(lexer->lexToken().is(Token::kw_fun));
+  ASSERT_TRUE(lexer->lexToken().is(Token::kw_fn));
   ASSERT_TRUE(lexer->lexToken().is(Token::semi));
   ASSERT_TRUE(lexer->lexToken().is(Token::comma));
   ASSERT_TRUE(lexer->lexToken().is(Token::l_brace));

@@ -54,7 +54,7 @@ auto Parser::parseList(Token::Kind separator,
 
 auto Parser::parseDeclaration(unique_ptr<Decl> &decl) -> CherryResult {
   switch (tokenKind()) {
-  case Token::kw_fun:
+  case Token::kw_fn:
     return parseFunctionDecl_c(decl);
   case Token::kw_struct:
     return parseStructDecl_c(decl);
@@ -79,7 +79,7 @@ auto Parser::parseFunctionDecl_c(unique_ptr<Decl> &decl) -> CherryResult {
 
 auto Parser::parsePrototype_c(unique_ptr<Prototype> &proto) -> CherryResult {
   auto location = tokenLoc();
-  consume(Token::kw_fun);
+  consume(Token::kw_fn);
 
   // Parse name
   unique_ptr<Identifier> name;

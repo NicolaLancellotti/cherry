@@ -1,6 +1,6 @@
 # RUN: cherry-driver -dump=tokens %s 2>&1| FileCheck %s
 
-# CHECK: kw_fun 'fun'
+# CHECK: kw_fn 'fn'
 # CHECK: identifier 'foo'
 # CHECK: l_paren '('
 # CHECK: r_paren ')'
@@ -14,6 +14,6 @@
 # CHECK: semi ';'
 # CHECK: r_brace '}'
 
-fun foo() {
+fn foo() {
   bar(1, 2);
 }
