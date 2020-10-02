@@ -336,7 +336,7 @@ auto LLVMGenImpl::gen(const CallExpr *node, llvm::Value *&value) -> CherryResult
     operands.push_back(value);
   }
   auto functionName = node->name();
-  if (functionName == builtins::UInt64ToBool) {
+  if (functionName == builtins::boolToUInt64) {
     value = _builder.CreateIntCast(operands.front(),
                                    getType(builtins::UInt64Type), false);
   } else {

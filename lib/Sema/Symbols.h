@@ -28,7 +28,7 @@ public:
                     llvm::SmallVector<llvm::StringRef, 1>{builtins::UInt64Type},
                     builtins::UInt64Type);
 
-    declareFunction(builtins::UInt64ToBool,
+    declareFunction(builtins::boolToUInt64,
                     llvm::SmallVector<llvm::StringRef, 1>{builtins::BoolType},
                     builtins::UInt64Type);
   }

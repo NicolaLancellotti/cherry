@@ -214,7 +214,7 @@ auto MLIRGenImpl::gen(const CallExpr *node, mlir::Value &value) -> CherryResult 
       return failure();
     operands.push_back(value);
   }
-  if (functionName == builtins::UInt64ToBool)
+  if (functionName == builtins::boolToUInt64)
     value = _builder.create<CastOp>(loc(node),  operands.front());
   else
     value = _builder.create<CallOp>(loc(node), node->name(), operands,

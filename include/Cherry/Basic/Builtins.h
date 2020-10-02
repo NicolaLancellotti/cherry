@@ -16,7 +16,7 @@ namespace cherry::builtins {
 
 // Functions
 const llvm::StringRef print = "print";
-const llvm::StringRef UInt64ToBool = "UInt64ToBool";
+const llvm::StringRef boolToUInt64 = "boolToUInt64";
 
 // Types
 const llvm::StringRef UInt64Type = "UInt64";

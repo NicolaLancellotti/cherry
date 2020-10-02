@@ -8,4 +8,4 @@
 ## Functions
 
 - print(UInt64) -> UInt64
-- UInt64ToBool(Bool) -> UInt64
+- boolToUInt64(Bool) -> UInt64

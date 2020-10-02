@@ -60,7 +60,7 @@ fn bar(x: UInt64, y: Bool): Bool {
 
 fn main(): UInt64 {
   var x: Bool = bar(18446744073709551615, true);
-  print(UInt64ToBool(x));
+  print(boolToUInt64(x));
   1
 }
 ```
