@@ -91,6 +91,7 @@ auto Compilation::genLLVM(std::unique_ptr<llvm::Module> &llvmModule) -> CherryRe
   if (_backendLLVM) {
     std::unique_ptr<Module> module;
     if (parse(module) ||
+        cherry::sema(_sourceManager, *module.get()) ||
         llvmGen(_sourceManager, _llvmContext, *module, llvmModule, _enableOpt))
       return failure();
   } else {
