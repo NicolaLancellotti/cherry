@@ -17,6 +17,30 @@
 using namespace mlir;
 
 namespace {
+class CastOpLowering : public ConversionPattern {
+public:
+  explicit CastOpLowering(MLIRContext *context)
+      : ConversionPattern(cherry::CastOp::getOperationName(), 1, context) {}
+
+  auto matchAndRewrite(Operation *op, ArrayRef<Value> operands,
+                       ConversionPatternRewriter &rewriter) const
+      -> LogicalResult final {
+    auto loc = op->getLoc();
+
+    auto *llvmDialect =
+        op->getContext()->getRegisteredDialect<LLVM::LLVMDialect>();
+    Type llvmI64Ty = LLVM::LLVMType::getInt64Ty(llvmDialect);
+
+    auto castOp = cast<cherry::CastOp>(op);
+    auto input = castOp.input();
+    Value newInput = input.getType().isInteger(1)
+                     ? input : rewriter.create<LoadOp>(loc, input);
+
+    auto cast = rewriter.create<LLVM::ZExtOp>(loc, llvmI64Ty, newInput);
+    rewriter.replaceOp(op, cast.res());
+    return success();
+  }
+};
 
 class PrintOpLowering : public ConversionPattern {
 public:
@@ -113,6 +137,7 @@ struct CherryToLLVMLoweringPass
     // Patterns
     OwningRewritePatternList patterns;
     patterns.insert<PrintOpLowering>(&getContext());
+    patterns.insert<CastOpLowering>(&getContext());
 
     // Types conversions
     LLVMTypeConverter typeConverter(&getContext());

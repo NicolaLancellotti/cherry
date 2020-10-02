@@ -6,21 +6,21 @@
 //===----------------------------------------------------------------------===//
 
 #include "LLVMGen.h"
-#include "cherry/Basic/CherryTypes.h"
-#include "cherry/Basic/CherryResult.h"
 #include "cherry/AST/AST.h"
+#include "cherry/Basic/Builtins.h"
+#include "cherry/Basic/CherryResult.h"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Constants.h"
-#include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/DIBuilder.h"
+#include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/IRBuilder.h"
-#include "llvm/IR/LegacyPassManager.h"
+#include "llvm/IR/Instructions.h"
 #include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Type.h"
 #include "llvm/IR/Verifier.h"
-#include "llvm/IR/Instructions.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Transforms/InstCombine/InstCombine.h"
 #include "llvm/Transforms/Scalar.h"
@@ -72,14 +72,17 @@ private:
   auto gen(const CallExpr *node, llvm::Value *&value) -> CherryResult;
   auto gen(const VariableDeclExpr *node, llvm::Value *&value) -> CherryResult;
   auto gen(const VariableExpr *node, llvm::Value *&value) -> CherryResult;
-  auto gen(const DecimalExpr *node, llvm::Value *&value) -> CherryResult;
+  auto gen(const DecimalLiteralExpr *node, llvm::Value *&value) -> CherryResult;
+  auto gen(const BoolLiteralExpr *node, llvm::Value *&value) -> CherryResult;
   auto gen(const BinaryExpr *node, llvm::Value *&value) -> CherryResult;
   auto genAssign(const BinaryExpr *node, llvm::Value *&value) -> CherryResult;
 
   // Utility
   auto getType(llvm::StringRef name) -> llvm::Type* {
-    if (name == types::UInt64Type) {
+    if (name == builtins::UInt64Type) {
       return llvm::Type::getInt64Ty(_context);
+    } else if (name == builtins::BoolType) {
+      return llvm::Type::getInt1Ty(_context);
     } else {
       return _typeSymbols[name];
     }
@@ -91,9 +94,12 @@ private:
 
   auto addBuiltins() -> void {
     if (_debugInfo) {
-      auto dUInt64Ty = _dBuilder->createBasicType(types::UInt64Type, 64,
+      auto dUInt64Ty = _dBuilder->createBasicType(builtins::UInt64Type, 64,
                                                   llvm::dwarf::DW_ATE_unsigned);
-      _dTypeSymbols[types::UInt64Type] = dUInt64Ty;
+      auto dUInt1Ty = _dBuilder->createBasicType(builtins::BoolType, 1,
+                                                 llvm::dwarf::DW_ATE_unsigned);
+      _dTypeSymbols[builtins::UInt64Type] = dUInt64Ty;
+      _dTypeSymbols[builtins::BoolType] = dUInt1Ty;
     }
 
     auto llvmI64Ty = llvm::IntegerType::get(_context, 64);
@@ -112,7 +118,7 @@ private:
     {
       auto funcType = llvm::FunctionType::get(llvmI64Ty, {llvmI64Ty}, false);
       auto printFunc = llvm::Function::Create(funcType,llvm::Function::ExternalLinkage,
-                                              "print",module.get());
+                                              builtins::print,module.get());
 
       llvm::BasicBlock *bb = llvm::BasicBlock::Create(_context, "entry", printFunc);
       _builder.SetInsertPoint(bb);
@@ -214,7 +220,7 @@ auto LLVMGenImpl::gen(const Prototype *node, llvm::Function *&func) -> CherryRes
 
   llvm::SmallVector<llvm::Metadata *, 8> debugTypes;
   if (_debugInfo) {
-    debugTypes.push_back(getDebugType(types::UInt64Type)); // result
+    debugTypes.push_back(getDebugType(builtins::UInt64Type)); // result
   }
 
   for (auto &param : node->parameters()) {
@@ -225,7 +231,7 @@ auto LLVMGenImpl::gen(const Prototype *node, llvm::Function *&func) -> CherryRes
     }
   }
 
-  auto resultType = getType(types::UInt64Type);
+  auto resultType = getType(builtins::UInt64Type);
   auto funcType = llvm::FunctionType::get(resultType, argTypes, false);
   func = llvm::Function::Create(funcType,
                                 llvm::Function::ExternalLinkage,
@@ -290,7 +296,7 @@ auto LLVMGenImpl::gen(const FunctionDecl *node) -> CherryResult {
     }
   }
 
-  auto constant0 = llvm::ConstantInt::get(getType(types::UInt64Type), 0);
+  auto constant0 = llvm::ConstantInt::get(getType(builtins::UInt64Type), 0);
   _builder.CreateRet(constant0);
 
   _pass->run(*func);
@@ -304,8 +310,10 @@ auto LLVMGenImpl::gen(const FunctionDecl *node) -> CherryResult {
 
 auto LLVMGenImpl::gen(const Expr *node, llvm::Value *&value) -> CherryResult {
   switch (node->getKind()) {
-  case Expr::Expr_Decimal:
-    return gen(cast<DecimalExpr>(node), value);
+  case Expr::Expr_DecimalLiteral:
+    return gen(cast<DecimalLiteralExpr>(node), value);
+  case Expr::Expr_BoolLiteral:
+    return gen(cast<BoolLiteralExpr>(node), value);
   case Expr::Expr_Call:
     return gen(cast<CallExpr>(node), value);
   case Expr::Expr_VariableDecl:
@@ -328,10 +336,15 @@ auto LLVMGenImpl::gen(const CallExpr *node, llvm::Value *&value) -> CherryResult
       return failure();
     operands.push_back(value);
   }
-
   auto functionName = node->name();
-  llvm::Function *callee = module->getFunction(functionName);
-  value = _builder.CreateCall(callee, operands, functionName);
+  if (functionName == builtins::UInt64ToBool) {
+    value = _builder.CreateIntCast(operands.front(),
+                                   getType(builtins::UInt64Type), false);
+  } else {
+    llvm::Function *callee = module->getFunction(functionName);
+    value = _builder.CreateCall(callee, operands, functionName);
+  }
+
   return success();
 }
 
@@ -351,7 +364,7 @@ auto LLVMGenImpl::gen(const VariableDeclExpr *node,
   emitLocation(node);
   _builder.CreateStore(initValue, alloca);
 
-  auto constant0 = llvm::ConstantInt::get(getType(types::UInt64Type), 0);
+  auto constant0 = llvm::ConstantInt::get(getType(builtins::UInt64Type), 0);
   value = constant0;
   return success();
 }
@@ -364,9 +377,15 @@ auto LLVMGenImpl::gen(const VariableExpr *node, llvm::Value *&value) -> CherryRe
   return success();
 }
 
-auto LLVMGenImpl::gen(const DecimalExpr *node, llvm::Value *&value) -> CherryResult {
+auto LLVMGenImpl::gen(const DecimalLiteralExpr *node, llvm::Value *&value) -> CherryResult {
   emitLocation(node);
-  value = llvm::ConstantInt::get(getType(types::UInt64Type), node->value());
+  value = llvm::ConstantInt::get(getType(builtins::UInt64Type), node->value());
+  return success();
+}
+
+auto LLVMGenImpl::gen(const BoolLiteralExpr *node, llvm::Value *&value) -> CherryResult {
+  emitLocation(node);
+  value = llvm::ConstantInt::get(getType(builtins::BoolType), node->value());
   return success();
 }
 

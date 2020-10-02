@@ -20,7 +20,8 @@ class Expr : public Node {
 public:
   enum ExpressionKind {
     Expr_Call,
-    Expr_Decimal,
+    Expr_DecimalLiteral,
+    Expr_BoolLiteral,
     Expr_Variable,
     Expr_Struct,
     Expr_Binary,
@@ -100,13 +101,13 @@ public:
 // _____________________________________________________________________________
 // Decimal expression
 
-class DecimalExpr final : public Expr {
+class DecimalLiteralExpr final : public Expr {
 public:
-  explicit DecimalExpr(llvm::SMLoc location, uint64_t value)
-      : Expr{Expr_Decimal, location}, _value(value) {};
+  explicit DecimalLiteralExpr(llvm::SMLoc location, uint64_t value)
+      : Expr{Expr_DecimalLiteral, location}, _value(value) {};
 
   static auto classof(const Expr *node) -> bool {
-    return node->getKind() == Expr_Decimal;
+    return node->getKind() == Expr_DecimalLiteral;
   }
 
   auto value() const -> uint64_t {
@@ -115,6 +116,26 @@ public:
 
 private:
   uint64_t _value;
+};
+
+// _____________________________________________________________________________
+// Boolean expression
+
+class BoolLiteralExpr final : public Expr {
+public:
+  explicit BoolLiteralExpr(llvm::SMLoc location, bool value)
+      : Expr{Expr_BoolLiteral, location}, _value(value) {};
+
+  static auto classof(const Expr *node) -> bool {
+    return node->getKind() == Expr_BoolLiteral;
+  }
+
+  auto value() const -> bool {
+    return _value;
+  }
+
+private:
+  bool _value;
 };
 
 // _____________________________________________________________________________

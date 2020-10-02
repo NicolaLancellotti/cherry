@@ -203,6 +203,14 @@ auto Parser::parsePrimaryExpression(unique_ptr<Expr> &expr) -> CherryResult {
     return parseFuncStructVar_c(expr);
   case Token::kw_var:
     return parseVarDeclExpr_c(expr);
+  case Token::kw_true:
+    consume(Token::kw_true);
+    expr = make_unique<BoolLiteralExpr>(tokenLoc(), true);
+    return success();
+  case Token::kw_false:
+    consume(Token::kw_false);
+    expr = make_unique<BoolLiteralExpr>(tokenLoc(), false);
+    return success();
   default:
     return emitError(diag::expected_expr);
   }
@@ -228,7 +236,7 @@ auto Parser::parseDecimal_c(unique_ptr<Expr> &expr) -> CherryResult {
   auto loc = tokenLoc();
   if (auto value = token().getUInt64IntegerValue()) {
     consume(Token::decimal);
-    expr = make_unique<DecimalExpr>(loc, move(*value));
+    expr = make_unique<DecimalLiteralExpr>(loc, move(*value));
     return success();
   }
   return emitError(diag::integer_literal_overflows);

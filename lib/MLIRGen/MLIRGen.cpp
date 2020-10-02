@@ -5,11 +5,12 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "StructType.h"
-#include "cherry/MLIRGen/CherryOps.h"
 #include "cherry/MLIRGen/MLIRGen.h"
+#include "StructType.h"
 #include "cherry/AST/AST.h"
+#include "cherry/Basic/Builtins.h"
 #include "cherry/Basic/CherryResult.h"
+#include "cherry/MLIRGen/CherryOps.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/Function.h"
 #include "mlir/IR/Module.h"
@@ -56,7 +57,8 @@ private:
   auto gen(const CallExpr *node, mlir::Value &value) -> CherryResult;
   auto gen(const VariableDeclExpr *node, mlir::Value &value) -> CherryResult;
   auto gen(const VariableExpr *node, mlir::Value &value) -> CherryResult;
-  auto gen(const DecimalExpr *node, mlir::Value &value) -> CherryResult;
+  auto gen(const DecimalLiteralExpr *node, mlir::Value &value) -> CherryResult;
+  auto gen(const BoolLiteralExpr *node, mlir::Value &value) -> CherryResult;
   auto gen(const BinaryExpr *node, mlir::Value &value) -> CherryResult;
   auto genAssign(const BinaryExpr *node, mlir::Value &value) -> CherryResult;
 
@@ -67,8 +69,10 @@ private:
   }
 
   auto getType(llvm::StringRef name) -> mlir::Type {
-    if (name == "UInt64") {
+    if (name == builtins::UInt64Type) {
       return _builder.getI64Type();
+    } else if (name == builtins::BoolType) {
+      return _builder.getI1Type();
     } else {
       return _typeSymbols[name];
     }
@@ -156,7 +160,7 @@ auto MLIRGenImpl::gen(const FunctionDecl *node,
   }
 
   auto location = loc(node->proto().get());
-  ConstantOp constant0 = _builder.create<ConstantOp>(location, 0);
+  ConstantOp constant0 = _builder.create<ConstantOp>(location, uint64_t(0));
   _builder.create<ReturnOp>(location, constant0);
   return success();
 }
@@ -181,8 +185,10 @@ auto MLIRGenImpl::gen(const StructDecl *node) -> CherryResult {
 
 auto MLIRGenImpl::gen(const Expr *node, mlir::Value &value) -> CherryResult {
   switch (node->getKind()) {
-  case Expr::Expr_Decimal:
-    return gen(cast<DecimalExpr>(node), value);
+  case Expr::Expr_DecimalLiteral:
+    return gen(cast<DecimalLiteralExpr>(node), value);
+  case Expr::Expr_BoolLiteral:
+    return gen(cast<BoolLiteralExpr>(node), value);
   case Expr::Expr_Call:
     return gen(cast<CallExpr>(node), value);
   case Expr::Expr_VariableDecl:
@@ -197,7 +203,8 @@ auto MLIRGenImpl::gen(const Expr *node, mlir::Value &value) -> CherryResult {
 }
 
 auto MLIRGenImpl::gen(const CallExpr *node, mlir::Value &value) -> CherryResult {
-  if (node->name() == "print")
+  auto functionName = node->name();
+  if (node->name() == builtins::print)
     return genPrint(node, value);
 
   llvm::SmallVector<mlir::Value, 4> operands;
@@ -207,7 +214,10 @@ auto MLIRGenImpl::gen(const CallExpr *node, mlir::Value &value) -> CherryResult 
       return failure();
     operands.push_back(value);
   }
-  value = _builder.create<CallOp>(loc(node), node->name(), operands);
+  if (functionName == builtins::UInt64ToBool)
+    value = _builder.create<CastOp>(loc(node),  operands.front());
+  else
+    value = _builder.create<CallOp>(loc(node), node->name(), operands);
   return success();
 }
 
@@ -229,7 +239,7 @@ auto MLIRGenImpl::gen(const VariableDeclExpr *node,
     return failure();
   _variableSymbols[name] = initValue;
 
-  auto constant0 = _builder.create<ConstantOp>(loc(node), 0);
+  auto constant0 = _builder.create<ConstantOp>(loc(node), uint64_t(0));
   value = constant0;
   return success();
 }
@@ -239,7 +249,12 @@ auto MLIRGenImpl::gen(const VariableExpr *node, mlir::Value &value) -> CherryRes
   return success();
 }
 
-auto MLIRGenImpl::gen(const DecimalExpr *node, mlir::Value &value) -> CherryResult {
+auto MLIRGenImpl::gen(const DecimalLiteralExpr *node, mlir::Value &value) -> CherryResult {
+  value = _builder.create<ConstantOp>(loc(node), node->value());
+  return success();
+}
+
+auto MLIRGenImpl::gen(const BoolLiteralExpr *node, mlir::Value &value) -> CherryResult {
   value = _builder.create<ConstantOp>(loc(node), node->value());
   return success();
 }

@@ -11,6 +11,8 @@
 include "CherryDialect.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
 
+def Cherry_Type : AnyTypeOf<[I64, I1]>;
+
 def ConstantOp : Cherry_Op<"constant", [NoSideEffect]> {
   let summary = "constant operation";
   let description = [{
@@ -21,11 +23,12 @@ def ConstantOp : Cherry_Op<"constant", [NoSideEffect]> {
     ```
   }];
 
-  let arguments = (ins I64Attr:$value);
-  let results = (outs I64);
+  let arguments = (ins AnyAttr:$value);
+  let results = (outs Cherry_Type);
 
   let builders = [
-   OpBuilder<"OpBuilder &builder, OperationState &state, uint64_t value">
+    OpBuilder<"OpBuilder &builder, OperationState &state, uint64_t value">,
+    OpBuilder<"OpBuilder &builder, OperationState &state, bool value">
   ];
 }
 
@@ -43,7 +46,7 @@ def ReturnOp : Cherry_Op<"return", [NoSideEffect, Terminator]> {
     ```
   }];
 
-  let arguments = (ins I64:$input);
+  let arguments = (ins Cherry_Type:$input);
 }
 
 def CallOp : Cherry_Op<"call"> {
@@ -59,8 +62,8 @@ def CallOp : Cherry_Op<"call"> {
     arguments.
   }];
 
-  let arguments = (ins FlatSymbolRefAttr:$callee,  Variadic<I64>:$inputs);
-  let results = (outs I64);
+  let arguments = (ins FlatSymbolRefAttr:$callee,  Variadic<Cherry_Type>:$inputs);
+  let results = (outs Cherry_Type);
 
   let builders = [
     OpBuilder<"OpBuilder &builder, OperationState &state, "
@@ -75,6 +78,21 @@ def PrintOp : Cherry_Op<"print"> {
   }];
 
   let arguments = (ins AnyTypeOf<[I64, I64MemRef]>:$input);
+  let results = (outs I64);
+
+  let builders = [
+      OpBuilder<"OpBuilder &builder, OperationState &state, "
+                "Value arguments">
+  ];
+}
+
+def CastOp : Cherry_Op<"cast"> {
+  let summary = "cast operation";
+  let description = [{
+    Casts from I64 to I1
+  }];
+
+  let arguments = (ins AnyTypeOf<[I1, I1MemRef]>:$input);
   let results = (outs I64);
 
   let builders = [

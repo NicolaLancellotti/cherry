@@ -42,24 +42,24 @@ Generate a target ".o" object file  | -c[=\<filename>]
 ```
 # This is a comment
 
-struct A { }
+# struct A { }
 
-struct B {
-  x: UInt64,
-  y: A
-}
+# struct B {
+#   x: UInt64,
+#   y: A
+# }
 
-fn baz(x: B) { }
+# fn baz(x: B) { }
 
-fn bar(x: UInt64, y: UInt64) {
+fn bar(x: UInt64, y: Bool) {
+  var k: Bool = false;
+  k = y;
+  print(UInt64ToBool(k));
   print(x);
-  print(18446744073709551615);
-  var k: UInt64 = y;
-  x = k;
 }
 
 fn main() {
-  bar(0, 1);
+  bar(18446744073709551615, true);
 }
 ```
 

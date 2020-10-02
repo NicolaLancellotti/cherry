@@ -50,7 +50,8 @@ private:
   auto sema(const CallExpr *node, llvm::StringRef &type) -> CherryResult;
   auto sema(const VariableDeclExpr *node, llvm::StringRef &type) -> CherryResult;
   auto sema(const VariableExpr *node, llvm::StringRef &type) -> CherryResult;
-  auto sema(const DecimalExpr *node, llvm::StringRef &type) -> CherryResult;
+  auto sema(const DecimalLiteralExpr *node, llvm::StringRef &type) -> CherryResult;
+  auto sema(const BoolLiteralExpr *node, llvm::StringRef &type) -> CherryResult;
   auto sema(const StructExpr *node, llvm::StringRef &type) -> CherryResult;
   auto sema(const BinaryExpr *node, llvm::StringRef &type) -> CherryResult;
   auto semaAssign(const BinaryExpr *node, llvm::StringRef &type) -> CherryResult;
@@ -145,8 +146,10 @@ auto SemaImpl::sema(const StructDecl *node) -> CherryResult {
 
 auto SemaImpl::sema(const Expr *node, llvm::StringRef &type) -> CherryResult {
   switch (node->getKind()) {
-  case Expr::Expr_Decimal:
-    return sema(cast<DecimalExpr>(node), type);
+  case Expr::Expr_DecimalLiteral:
+    return sema(cast<DecimalLiteralExpr>(node), type);
+  case Expr::Expr_BoolLiteral:
+    return sema(cast<BoolLiteralExpr>(node), type);
   case Expr::Expr_Call:
     return sema(cast<CallExpr>(node), type);
   case Expr::Expr_VariableDecl:
@@ -190,7 +193,7 @@ auto SemaImpl::sema(const CallExpr *node, llvm::StringRef &type) -> CherryResult
       return emitError(expr.get(), diag::type_mismatch);
   }
 
-  type = types::UInt64Type;
+  type = builtins::UInt64Type;
   return success();
 }
 
@@ -220,8 +223,13 @@ auto SemaImpl::sema(const VariableExpr *node, llvm::StringRef &type) -> CherryRe
   return success();
 }
 
-auto SemaImpl::sema(const DecimalExpr *node, llvm::StringRef &type) -> CherryResult {
-  type = types::UInt64Type;
+auto SemaImpl::sema(const DecimalLiteralExpr *node, llvm::StringRef &type) -> CherryResult {
+  type = builtins::UInt64Type;
+  return success();
+}
+
+auto SemaImpl::sema(const BoolLiteralExpr *node, llvm::StringRef &type) -> CherryResult {
+  type = builtins::BoolType;
   return success();
 }
 

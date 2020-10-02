@@ -100,6 +100,7 @@ struct CherryToStandardLoweringPass
     target.addLegalDialect<StandardOpsDialect>();
     target.addIllegalDialect<cherry::CherryDialect>();
     target.addLegalOp<cherry::PrintOp>();
+    target.addLegalOp<cherry::CastOp>();
 
     OwningRewritePatternList patterns;
     patterns.insert<ReturnOpLowering>(&getContext());
