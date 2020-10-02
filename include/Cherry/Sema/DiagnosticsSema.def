@@ -13,6 +13,7 @@ ERROR(func_undefined, "cannot find function `%s`")
 ERROR(func_param, "function `%s` takes %d parameters")
 ERROR(type_mismatch, "type mismatch")
 ERROR(type_undefined, "undefined type")
+ERROR(wrong_return_type, "wrong return type")
 
 ERROR(wrong_num_arg, "wrong number of arguments")
 

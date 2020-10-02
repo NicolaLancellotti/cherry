@@ -102,11 +102,7 @@ private:
 
   auto parsePrototype_c(std::unique_ptr<Prototype> &proto) -> CherryResult;
 
-  auto parseStatements(VectorUniquePtr<Expr> &expressions,
-                       Token::Kind separator,
-                       Token::Kind end,
-                       const char * const separator_error,
-                       const char * const end_error) -> CherryResult;
+  auto parseBlockExpr(VectorUniquePtr<Expr> &expressions) -> CherryResult;
 
   auto parseStructDecl_c(std::unique_ptr<Decl>&elem) -> CherryResult;
 

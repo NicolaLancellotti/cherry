@@ -69,8 +69,7 @@ auto Parser::parseFunctionDecl_c(unique_ptr<Decl> &decl) -> CherryResult {
   VectorUniquePtr<Expr> body;
   if (parsePrototype_c(proto),
       parseToken(Token::l_brace, diag::expected_l_brace),
-      parseStatements(body, Token::semi, Token::r_brace,
-                      diag::expected_semi, diag::expected_r_brace))
+      parseBlockExpr(body))
     return failure();
 
   decl = make_unique<FunctionDecl>(loc, move(proto), move(body));
@@ -112,18 +111,20 @@ auto Parser::parsePrototype_c(unique_ptr<Prototype> &proto) -> CherryResult {
   return success();
 }
 
-auto Parser::parseStatements(VectorUniquePtr<Expr> &expressions,
-                             Token::Kind separator,
-                             Token::Kind end,
-                             const char * const separator_error,
-                             const char * const end_error) -> CherryResult {
-  while (!tokenIs(end) && !tokenIs(Token::eof)) {
+auto Parser::parseBlockExpr(VectorUniquePtr<Expr> &expressions) -> CherryResult {
+  while (true) {
     unique_ptr<Expr> expr;
-    if (parseExpression(expr) || parseToken(separator, separator_error))
+    if (parseExpression(expr))
       return failure();
     expressions.push_back(move(expr));
+
+    if (consumeIf(Token::semi))
+      continue;
+
+    if (mlir::succeeded(parseToken(Token::r_brace,
+                                   diag::expected_r_brace)))
+      break;
   }
-  return parseToken(end, end_error);
 }
 
 auto Parser::parseStructDecl_c(unique_ptr<Decl> &decl) -> CherryResult {
@@ -203,14 +204,18 @@ auto Parser::parsePrimaryExpression(unique_ptr<Expr> &expr) -> CherryResult {
     return parseFuncStructVar_c(expr);
   case Token::kw_var:
     return parseVarDeclExpr_c(expr);
-  case Token::kw_true:
+  case Token::kw_true: {
+    auto loc = tokenLoc();
     consume(Token::kw_true);
-    expr = make_unique<BoolLiteralExpr>(tokenLoc(), true);
+    expr = make_unique<BoolLiteralExpr>(loc, true);
     return success();
-  case Token::kw_false:
+  }
+  case Token::kw_false: {
+    auto loc = tokenLoc();
     consume(Token::kw_false);
-    expr = make_unique<BoolLiteralExpr>(tokenLoc(), false);
+    expr = make_unique<BoolLiteralExpr>(loc, false);
     return success();
+  }
   default:
     return emitError(diag::expected_expr);
   }

@@ -117,11 +117,14 @@ auto SemaImpl::sema(const FunctionDecl *node) -> CherryResult {
   if (sema(node->proto().get()))
     return failure();
 
-  for (auto &expr : *node) {
-    llvm::StringRef type;
+  llvm::StringRef type;
+  for (auto &expr : *node)
     if (sema(expr.get(), type))
       return failure();
-  }
+
+  if (type != builtins::UInt64Type)
+    return emitError(node->body().back().get(), diag::wrong_return_type);
+
   return success();
 }
 

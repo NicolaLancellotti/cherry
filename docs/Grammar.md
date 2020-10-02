@@ -59,10 +59,6 @@ struct-access → struct-access `.` identifier
 **GRAMMAR OF AN ASSIGN EXPRESSION**     
 assign-expression → lvalue `=` rvalue  
   
-## Statements  
-statement → expression `;`  
-statements → statement statements<sub>opt</sub>  
-
 ## Declarations  
 declaration → function-declaration  
 declaration → struct-declaration  
@@ -80,7 +76,9 @@ parameter-list → parameter `,` parameter-list
 parameter → parameter-name type-annotation  
 parameter-name → identifier  
 type-annotation → `:` type  
-function-body → `{` statements<sub>opt</sub> `}`  
+function-body → `{` block-expression `}`    
+block-expression → expression
+block-expression → block-expression `;` expression
 
 **GRAMMAR OF A STRUCT DECLARATION**    
 type → identifier  

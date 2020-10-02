@@ -56,10 +56,12 @@ fn bar(x: UInt64, y: Bool) {
   k = y;
   print(UInt64ToBool(k));
   print(x);
+  1
 }
 
 fn main() {
   bar(18446744073709551615, true);
+  1
 }
 ```
 
