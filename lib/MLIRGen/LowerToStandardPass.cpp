@@ -58,10 +58,14 @@ struct ReturnOpLowering : public ConversionPattern {
                        ArrayRef<Value> operands,
                        ConversionPatternRewriter &rewriter)
   const -> LogicalResult final {
-    Value operand = rewriter.create<LoadOp>(op->getLoc(), operands.front());
+    Value operand = operands.front();
+    Value newOperand = operand.getType().isa<MemRefType>()
+        ? rewriter.create<LoadOp>(op->getLoc(), operands.front())
+        : operand;
+
     rewriter.replaceOpWithNewOp<ReturnOp>(op,
                                           llvm::ArrayRef<Type>(),
-                                          operand);
+                                          newOperand);
     return success();
   }
 };
@@ -78,10 +82,10 @@ struct CallOpLowering : public ConversionPattern {
 
     SmallVector<Value, 3> loads;
     for (auto operand : operands) {
-      if (operand.getType().isInteger(64)) {
-        loads.push_back(operand);
-      } else {
+      if (operand.getType().isa<MemRefType>()) {
         loads.push_back(rewriter.create<LoadOp>(op->getLoc(), operand));
+      } else {
+        loads.push_back(operand);
       }
     }
 

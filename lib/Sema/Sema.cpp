@@ -28,7 +28,9 @@ public:
         return failure();
 
     llvm::ArrayRef<llvm::StringRef> types;
-    if (_symbols.getFunction("main", types) || types.size() != 0)
+    llvm::StringRef returnType;
+    if (_symbols.getFunction("main", types, returnType) ||
+        types.size() != 0 || returnType != builtins::UInt64Type)
       return emitError(llvm::SMLoc{}, diag::main_undefined);
     return success();
   }
@@ -102,8 +104,12 @@ auto SemaImpl::sema(const Prototype *node) -> CherryResult {
     types.push_back(typeName);
   }
 
+  auto returnType = node->type()->name();
+  if (_symbols.checkType(returnType))
+    return emitError(node->type().get(), diag::type_undefined);
+
   auto name = node->id()->name();
-  if (_symbols.declareFunction(name, std::move(types))) {
+  if (_symbols.declareFunction(name, std::move(types), returnType)) {
     const char *diagnostic = diag::func_redefinition;
     char buffer[50];
     sprintf(buffer, diagnostic, name.str().c_str());
@@ -122,7 +128,7 @@ auto SemaImpl::sema(const FunctionDecl *node) -> CherryResult {
     if (sema(expr.get(), type))
       return failure();
 
-  if (type != builtins::UInt64Type)
+  if (type != node->proto()->type()->name())
     return emitError(node->body().back().get(), diag::wrong_return_type);
 
   return success();
@@ -171,7 +177,8 @@ auto SemaImpl::sema(const Expr *node, llvm::StringRef &type) -> CherryResult {
 auto SemaImpl::sema(const CallExpr *node, llvm::StringRef &type) -> CherryResult {
   auto name = node->name();
   llvm::ArrayRef<llvm::StringRef> parametersTypes;
-  if (_symbols.getFunction(name, parametersTypes)) {
+  llvm::StringRef returnType;
+  if (_symbols.getFunction(name, parametersTypes, returnType)) {
     const char *diagnostic = diag::func_undefined;
     char buffer [50];
     sprintf(buffer, diagnostic, name.str().c_str());
@@ -196,7 +203,7 @@ auto SemaImpl::sema(const CallExpr *node, llvm::StringRef &type) -> CherryResult
       return emitError(expr.get(), diag::type_mismatch);
   }
 
-  type = builtins::UInt64Type;
+  type = returnType;
   return success();
 }
 

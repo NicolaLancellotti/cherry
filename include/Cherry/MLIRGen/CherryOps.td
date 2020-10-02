@@ -67,7 +67,8 @@ def CallOp : Cherry_Op<"call"> {
 
   let builders = [
     OpBuilder<"OpBuilder &builder, OperationState &state, "
-              "StringRef callee, ArrayRef<Value> arguments">
+              "StringRef callee, ArrayRef<Value> arguments, "
+              "mlir::Type resultType">
   ];
 }
 

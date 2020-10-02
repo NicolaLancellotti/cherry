@@ -142,7 +142,6 @@ auto Compilation::jit() -> int {
     auto symbol = jit.findSymbol("main");
     uint64_t (*fp)() = (uint64_t (*)())(intptr_t)cantFail(symbol.getAddress());
     auto result = fp();
-    assert(result == 0);
     return EXIT_SUCCESS;
   } else {
     mlir::OwningModuleRef module;
@@ -162,7 +161,6 @@ auto Compilation::jit() -> int {
       int result;
       void *pResult = (void*)&result;
       fun.get()(&pResult);
-      assert(result == 0);
       return EXIT_SUCCESS;
     }
     return EXIT_FAILURE;

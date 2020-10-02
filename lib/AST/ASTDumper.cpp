@@ -83,9 +83,11 @@ auto Dumper::dump(const Decl *node) -> void {
 
 auto Dumper::dump(const Prototype *node) -> void {
   auto id = node->id().get();
+  auto type = node->type().get();
   INDENT();
   errs() << "Prototype " << loc(node)
-         << " (name="<< id->name() << " " << loc(id) << ")\n";
+         << " (name="<< id->name() << " " << loc(id)
+         << " (type="<< type->name() << " " << loc(type) << ")\n";
   for (auto &parameter : node->parameters())
     dump(parameter.get());
 }

@@ -51,16 +51,16 @@ Generate a target ".o" object file  | -c[=\<filename>]
 
 # fn baz(x: B) { }
 
-fn bar(x: UInt64, y: Bool) {
+fn bar(x: UInt64, y: Bool): Bool {
+  print(x);
   var k: Bool = false;
   k = y;
-  print(UInt64ToBool(k));
-  print(x);
-  1
+  k
 }
 
-fn main() {
-  bar(18446744073709551615, true);
+fn main(): UInt64 {
+  var x: Bool = bar(18446744073709551615, true);
+  print(UInt64ToBool(x));
   1
 }
 ```

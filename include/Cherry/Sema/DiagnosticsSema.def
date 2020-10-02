@@ -5,7 +5,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-ERROR(main_undefined, "undefined symbol `main` : () -> UINT64")
+ERROR(main_undefined, "undefined symbol `main` : () -> UInt64")
 
 ERROR(func_redefinition, "redefinition of `%s`")
 ERROR(func_undefined, "cannot find function `%s`")

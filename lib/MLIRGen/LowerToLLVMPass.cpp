@@ -24,7 +24,7 @@ public:
 
   auto matchAndRewrite(Operation *op, ArrayRef<Value> operands,
                        ConversionPatternRewriter &rewriter) const
-      -> LogicalResult final {
+  -> LogicalResult final {
     auto loc = op->getLoc();
 
     auto *llvmDialect =
@@ -32,11 +32,12 @@ public:
     Type llvmI64Ty = LLVM::LLVMType::getInt64Ty(llvmDialect);
 
     auto castOp = cast<cherry::CastOp>(op);
-    auto input = castOp.input();
-    Value newInput = input.getType().isInteger(1)
-                     ? input : rewriter.create<LoadOp>(loc, input);
+    auto operand = castOp.input();
+    Value newOperand = operand.getType().isa<MemRefType>()
+                       ? rewriter.create<LoadOp>(loc, operand)
+                       : operand;
 
-    auto cast = rewriter.create<LLVM::ZExtOp>(loc, llvmI64Ty, newInput);
+    auto cast = rewriter.create<LLVM::ZExtOp>(loc, llvmI64Ty, newOperand);
     rewriter.replaceOp(op, cast.res());
     return success();
   }
@@ -62,13 +63,14 @@ public:
         llvmDialect);
 
     auto printOp = cast<cherry::PrintOp>(op);
-    auto input = printOp.input();
-    Value newInput = input.getType().isInteger(64)
-                     ? input : rewriter.create<LoadOp>(loc, input);
+    auto operand = printOp.input();
+    Value newOperand = operand.getType().isa<MemRefType>()
+                     ? rewriter.create<LoadOp>(loc, operand)
+                     : operand;
 
     rewriter.replaceOpWithNewOp<CallOp>(op, printfRef,
                                         rewriter.getI64Type(),
-                                        ArrayRef<Value>({formatSpecifierCst, newInput}));
+                                        ArrayRef<Value>({formatSpecifierCst, newOperand}));
     return success();
   }
 

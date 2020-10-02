@@ -70,7 +70,7 @@ top-level-declaration → declarations
 **GRAMMAR OF A FUNCTION DECLARATION**  
 function-declaration → `fn` function-name function-signature  function-body  
 function-name → identifier  
-function-signature → `(` parameter-list<sub>opt</sub>  `)`  
+function-signature → `(` parameter-list<sub>opt</sub>  `)` `:` type  
 parameter-list → parameter `,`<sub>opt</sub>  
 parameter-list → parameter `,` parameter-list  
 parameter → parameter-name type-annotation  

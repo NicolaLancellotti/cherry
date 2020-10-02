@@ -43,6 +43,7 @@ private:
   mlir::OpBuilder _builder;
   std::map<llvm::StringRef, mlir::Value> _variableSymbols;
   std::map<llvm::StringRef, mlir::Type> _typeSymbols;
+  std::map<llvm::StringRef, mlir::Type> _functionSymbols;
   mlir::Identifier _fileNameIdentifier;
 
   // Declarations
@@ -121,17 +122,16 @@ auto MLIRGenImpl::gen(const Decl *node, mlir::Operation *&op) -> CherryResult {
 }
 
 auto MLIRGenImpl::gen(const Prototype *node, mlir::FuncOp &func) -> CherryResult {
-  mlir::Type i64Type = _builder.getI64Type();
-
   llvm::SmallVector<mlir::Type, 3> arg_types;
   arg_types.reserve(node->parameters().size());
   for (auto &param : node->parameters())
     arg_types.push_back(getType(param->type()->name()));
 
-  llvm::SmallVector<mlir::Type, 1> result_types(1, i64Type);
+  llvm::SmallVector<mlir::Type, 1> result_types(1, getType(node->type()->name()));
 
+  auto funcName = node->id()->name();
   auto funcType = _builder.getFunctionType(arg_types, result_types);
-  func = mlir::FuncOp::create(loc(node), node->id()->name(), funcType);
+  func = mlir::FuncOp::create(loc(node), funcName, funcType);
 
   auto &entryBlock = *func.addEntryBlock();
   for (const auto &var_value : llvm::zip(node->parameters(),
@@ -142,6 +142,7 @@ auto MLIRGenImpl::gen(const Prototype *node, mlir::FuncOp &func) -> CherryResult
   }
 
   _builder.setInsertionPointToStart(&entryBlock);
+  _functionSymbols[funcName] = getType(node->type()->name());
   return success();
 }
 
@@ -151,17 +152,16 @@ auto MLIRGenImpl::gen(const FunctionDecl *node,
   if (gen(node->proto().get(), func))
     return failure();
 
+  mlir::Value value;
   for (auto &expr : *node) {
-    mlir::Value value;
     if (gen(expr.get(), value)) {
       func.erase();
       return failure();
     }
   }
 
-  auto location = loc(node->proto().get());
-  ConstantOp constant0 = _builder.create<ConstantOp>(location, uint64_t(0));
-  _builder.create<ReturnOp>(location, constant0);
+  auto location = loc(node->body().back().get());
+  _builder.create<ReturnOp>(location, value);
   return success();
 }
 
@@ -217,7 +217,8 @@ auto MLIRGenImpl::gen(const CallExpr *node, mlir::Value &value) -> CherryResult 
   if (functionName == builtins::UInt64ToBool)
     value = _builder.create<CastOp>(loc(node),  operands.front());
   else
-    value = _builder.create<CallOp>(loc(node), node->name(), operands);
+    value = _builder.create<CallOp>(loc(node), node->name(), operands,
+                                    _functionSymbols[functionName]);
   return success();
 }
 

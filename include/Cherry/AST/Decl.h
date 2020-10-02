@@ -62,10 +62,12 @@ class Prototype final : public Node {
 public:
   explicit Prototype(llvm::SMLoc location,
                      std::unique_ptr<Identifier> id,
-                     VectorUniquePtr<VariableDeclExpr> parameters)
+                     VectorUniquePtr<VariableDeclExpr> parameters,
+                     std::unique_ptr<Identifier> type)
       : Node{location},
         _id(std::move(id)),
-        _parameters{std::move(parameters)} {};
+        _parameters{std::move(parameters)},
+        _type{std::move(type)} {};
 
   auto id() const -> const std::unique_ptr<Identifier>& {
     return _id;
@@ -75,9 +77,14 @@ public:
     return _parameters;
   }
 
+  auto type() const -> const std::unique_ptr<Identifier>& {
+    return _type;
+  }
+
 private:
   std::unique_ptr<Identifier> _id;
   VectorUniquePtr<VariableDeclExpr> _parameters;
+  std::unique_ptr<Identifier> _type;
 };
 
 class FunctionDecl final : public Decl {

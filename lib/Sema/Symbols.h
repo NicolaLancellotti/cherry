@@ -23,26 +23,35 @@ public:
   auto addBuiltins() -> void {
     for (auto type : builtins::primitiveTypes())
       _typeSymbols.insert(std::make_pair(type, &emptyVector));
-    _functionSymbols.insert(std::make_pair(builtins::print,
-                                           llvm::SmallVector<llvm::StringRef, 2>{builtins::UInt64Type}));
-    _functionSymbols.insert(std::make_pair(builtins::UInt64ToBool,
-                                           llvm::SmallVector<llvm::StringRef, 2>{builtins::BoolType}));
+
+    declareFunction(builtins::print,
+                    llvm::SmallVector<llvm::StringRef, 1>{builtins::UInt64Type},
+                    builtins::UInt64Type);
+
+    declareFunction(builtins::UInt64ToBool,
+                    llvm::SmallVector<llvm::StringRef, 1>{builtins::BoolType},
+                    builtins::UInt64Type);
   }
 
   auto declareFunction(llvm::StringRef name,
-                       llvm::SmallVector<llvm::StringRef, 2> types) -> CherryResult {
+                       llvm::SmallVector<llvm::StringRef, 2> types,
+                       llvm::StringRef returnType) -> CherryResult {
     if (_functionSymbols.find(name) != _functionSymbols.end())
       return failure();
-    _functionSymbols.insert(std::make_pair(name, std::move(types)));
+    auto value = std::make_pair(std::move(types), returnType);
+    _functionSymbols.insert(std::make_pair(name, std::move(value)));
     return success();
   }
 
   auto getFunction(llvm::StringRef name,
-                   llvm::ArrayRef<llvm::StringRef> &types)  -> CherryResult {
+                   llvm::ArrayRef<llvm::StringRef> &types,
+                   llvm::StringRef &returnType)  -> CherryResult {
     auto symbol = _functionSymbols.find(name);
     if (symbol == _functionSymbols.end())
       return failure();
-    types = symbol->second;
+
+    types = symbol->second.first;
+    returnType = symbol->second.second;
     return success();
   }
 
@@ -93,7 +102,10 @@ public:
 
   VectorUniquePtr<VariableDeclExpr> emptyVector;
 private:
-  std::map</*name*/ llvm::StringRef, /*types*/ llvm::SmallVector<llvm::StringRef, 2>> _functionSymbols;
+  std::map</*name*/ llvm::StringRef,
+      std::pair<
+          /*_functionSymbolstypes*/ llvm::SmallVector<llvm::StringRef, 2>,
+          /*return type*/ llvm::StringRef>> _functionSymbols;
   std::map</*name*/ llvm::StringRef, /*types*/ const VectorUniquePtr<VariableDeclExpr>*> _typeSymbols;
   std::map</*name*/llvm::StringRef, /*type*/ llvm::StringRef> _variableSymbols;
 };

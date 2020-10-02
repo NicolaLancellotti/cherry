@@ -101,13 +101,16 @@ auto Parser::parsePrototype_c(unique_ptr<Prototype> &proto) -> CherryResult {
 
   // Parse List
   VectorUniquePtr<VariableDeclExpr> parameters;
+  unique_ptr<Identifier> type;
   if (parseList(Token::comma, Token::r_paren,
                 diag::expected_comma_or_r_paren,
-                diag::expected_r_paren, parameters, parseParam))
+                diag::expected_r_paren, parameters, parseParam) ||
+      parseToken(Token::colon, diag::expected_colon) ||
+      parseIdentifier(type, diag::expected_type))
     return failure();
 
   // Make Proto
-  proto = make_unique<Prototype>(location, move(name), move(parameters));
+  proto = make_unique<Prototype>(location, move(name), move(parameters), move(type));
   return success();
 }
 
@@ -121,9 +124,7 @@ auto Parser::parseBlockExpr(VectorUniquePtr<Expr> &expressions) -> CherryResult 
     if (consumeIf(Token::semi))
       continue;
 
-    if (mlir::succeeded(parseToken(Token::r_brace,
-                                   diag::expected_r_brace)))
-      break;
+    return parseToken(Token::r_brace, diag::expected_r_brace);
   }
 }
 

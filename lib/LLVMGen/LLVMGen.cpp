@@ -215,12 +215,13 @@ auto LLVMGenImpl::gen(const Decl *node) -> CherryResult {
 
 auto LLVMGenImpl::gen(const Prototype *node, llvm::Function *&func) -> CherryResult {
   auto name = node->id()->name();
+  auto resultType = node->type()->name();
   llvm::SmallVector<llvm::Type*, 3> argTypes;
   argTypes.reserve(node->parameters().size());
 
   llvm::SmallVector<llvm::Metadata *, 8> debugTypes;
   if (_debugInfo) {
-    debugTypes.push_back(getDebugType(builtins::UInt64Type)); // result
+    debugTypes.push_back(getDebugType(resultType)); // result
   }
 
   for (auto &param : node->parameters()) {
@@ -231,8 +232,8 @@ auto LLVMGenImpl::gen(const Prototype *node, llvm::Function *&func) -> CherryRes
     }
   }
 
-  auto resultType = getType(builtins::UInt64Type);
-  auto funcType = llvm::FunctionType::get(resultType, argTypes, false);
+  auto llvmResultType = getType(resultType);
+  auto funcType = llvm::FunctionType::get(llvmResultType, argTypes, false);
   func = llvm::Function::Create(funcType,
                                 llvm::Function::ExternalLinkage,
                                 name,
@@ -288,16 +289,14 @@ auto LLVMGenImpl::gen(const FunctionDecl *node) -> CherryResult {
   if (gen(node->proto().get(), func))
     return failure();
 
+  llvm::Value *value;
   for (auto &expr : *node) {
-    llvm::Value *value;
     if (gen(expr.get(), value)) {
       func->eraseFromParent();
       return failure();
     }
   }
-
-  auto constant0 = llvm::ConstantInt::get(getType(builtins::UInt64Type), 0);
-  _builder.CreateRet(constant0);
+  _builder.CreateRet(value);
 
   _pass->run(*func);
 
