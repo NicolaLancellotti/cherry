@@ -37,7 +37,6 @@ private:
   auto dump(const VariableExpr *node) -> void;
   auto dump(const DecimalLiteralExpr *node) -> void;
   auto dump(const BoolLiteralExpr *node) -> void;
-  auto dump(const StructExpr *node) -> void;
   auto dump(const BinaryExpr *node) -> void;
 
   // Utility
@@ -113,7 +112,7 @@ auto Dumper::dump(const Expr *node) -> void {
   llvm::TypeSwitch<const Expr *>(node)
       .Case<CallExpr, DecimalLiteralExpr, BoolLiteralExpr,
           VariableDeclExpr, VariableExpr,
-          StructExpr, BinaryExpr>([&](auto *node) {
+          BinaryExpr>([&](auto *node) {
         this->dump(node);
       })
       .Default([&](const Expr *) {
@@ -151,13 +150,6 @@ auto Dumper::dump(const DecimalLiteralExpr *node) -> void {
 auto Dumper::dump(const BoolLiteralExpr *node) -> void {
   INDENT();
   errs() << "BoolLiteralExpr " << loc(node) << " value=" << node->value() << "\n";
-}
-
-auto Dumper::dump(const StructExpr *node) -> void {
-  INDENT();
-  errs() << "StructExpr " << loc(node) << " type=" << node->type() << "\n";
-  for (auto &expr : *node)
-    dump(expr.get());
 }
 
 auto Dumper::dump(const BinaryExpr *node) -> void {

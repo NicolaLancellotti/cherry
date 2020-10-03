@@ -133,10 +133,6 @@ private:
                            llvm::StringRef name,
                            std::unique_ptr<Expr> &expr) -> CherryResult;
 
-  auto parseStructExpr_c(llvm::SMLoc location,
-                         llvm::StringRef name,
-                         std::unique_ptr<Expr> &expr) -> CherryResult;
-
   auto parseBinaryExpRHS(int exprPrec, std::unique_ptr<Expr> &expr) -> CherryResult;
   auto getTokenPrecedence() -> int;
   auto isTokenRightAssociative() -> bool;

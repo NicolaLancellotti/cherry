@@ -49,7 +49,9 @@ Generate a target ".o" object file  | -c[=\<filename>]
 #   y: A
 # }
 
-# fn baz(x: B) { }
+# fn baz(x: B): B {
+#   B(1, A())
+# }
 
 fn bar(x: UInt64, y: Bool): Bool {
   print(x);

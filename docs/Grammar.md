@@ -30,7 +30,6 @@ lvalue → struct-access
 **GRAMMAR OF A RVALUE EXPRESSION**  
 rvalue → literal-expression  
 rvalue → function-call-expression  
-rvalue → struct-expression  
 rvalue → assign-expression  
 
 **GRAMMAR OF A LITERAL EXPRESSION**  
@@ -46,11 +45,6 @@ function-call-argument → expression
 
 **GRAMMAR OF A VARIABLE EXPRESSION**  
 variable-expression → identifier  
-
-**GRAMMAR OF A STRUCT EXPRESSION**  
-struct-expression → type `{` struct-expression-argument-list<sub>opt</sub> `}`  
-struct-expression-argument-list → expression `,`<sub>opt</sub>  
-struct-expression-argument-list → expression `,` function-call-argument-list  
 
 **GRAMMAR OF A STRUCT ACCESS EXPRESSION**   
 struct-access → lvalue `.` identifier    

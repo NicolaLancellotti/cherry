@@ -255,8 +255,6 @@ auto Parser::parseFuncStructVar_c(unique_ptr<Expr> &expr) -> CherryResult {
   switch (tokenKind()) {
   case Token::l_paren:
     return parseFunctionCall_c(location, name, expr);
-  case Token::l_brace:
-    return parseStructExpr_c(location, name, expr);
   default:
     expr = make_unique<VariableExpr>(location, name);
     return success();
@@ -273,19 +271,6 @@ auto Parser::parseFunctionCall_c(llvm::SMLoc location,
                        diag::expected_r_paren))
     return failure();
   expr = make_unique<CallExpr>(location, name, move(expressions));
-  return success();
-}
-
-auto Parser::parseStructExpr_c(llvm::SMLoc location,
-                               llvm::StringRef name,
-                               unique_ptr<Expr> &expr) -> CherryResult {
-  consume(Token::l_brace);
-  auto expressions = VectorUniquePtr<Expr>();
-  if (parseExpressions(expressions, Token::comma, Token::r_brace,
-                       diag::expected_comma_or_r_brace,
-                       diag::expected_r_brace))
-    return failure();
-  expr = make_unique<StructExpr>(location, name, move(expressions));
   return success();
 }
 

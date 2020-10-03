@@ -139,38 +139,6 @@ private:
 };
 
 // _____________________________________________________________________________
-// Struct expression
-
-class StructExpr final : public Expr {
-public:
-  explicit StructExpr(llvm::SMLoc location,
-                      llvm::StringRef type,
-                      VectorUniquePtr<Expr> expressions)
-      : Expr{Expr_Struct, location}, _type(type.str()),
-        _expressions(std::move(expressions)) {};
-
-  static auto classof(const Expr *node) -> bool {
-    return node->getKind() == Expr_Struct;
-  }
-
-  auto type() const -> llvm::StringRef {
-    return _type;
-  }
-
-  auto expressions() const -> const VectorUniquePtr<Expr>& {
-    return _expressions;
-  }
-
-private:
-  std::string _type;
-  VectorUniquePtr<Expr> _expressions;
-
-public:
-  auto begin() const -> decltype(_expressions.begin()) { return _expressions.begin(); }
-  auto end() const -> decltype(_expressions.end()) { return _expressions.end(); }
-};
-
-// _____________________________________________________________________________
 // Binary expression
 
 class BinaryExpr final : public Expr {
