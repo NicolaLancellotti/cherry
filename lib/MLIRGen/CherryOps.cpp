@@ -43,16 +43,16 @@ auto CallOp::build(mlir::OpBuilder &builder,
 }
 
 auto PrintOp::build(mlir::OpBuilder &builder,
-                   mlir::OperationState &state,
-                   mlir::Value argument) -> void {
+                    mlir::OperationState &state,
+                    mlir::Value argument) -> void {
   auto dataType = builder.getI64Type();
   state.addTypes(dataType);
   state.addOperands({argument});
 }
 
 auto CastOp::build(mlir::OpBuilder &builder,
-                    mlir::OperationState &state,
-                    mlir::Value argument) -> void {
+                   mlir::OperationState &state,
+                   mlir::Value argument) -> void {
   auto dataType = builder.getI64Type();
   state.addTypes(dataType);
   state.addOperands({argument});

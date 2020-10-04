@@ -37,7 +37,6 @@ struct ConstantOpLowering : public OpRewritePattern<cherry::ConstantOp> {
 
   auto matchAndRewrite(cherry::ConstantOp op,
                        PatternRewriter &rewriter) const -> LogicalResult final {
-
     Location loc = op.getLoc();
     mlir::Type argType = op.getResult().getType();
     MemRefType memRefType = MemRefType::get({}, argType);
@@ -61,8 +60,8 @@ struct ReturnOpLowering : public ConversionPattern {
   const -> LogicalResult final {
     Value operand = operands.front();
     Value newOperand = operand.getType().isa<MemRefType>()
-        ? rewriter.create<LoadOp>(op->getLoc(), operands.front())
-        : operand;
+                       ? rewriter.create<LoadOp>(op->getLoc(), operands.front())
+                       : operand;
 
     rewriter.replaceOpWithNewOp<ReturnOp>(op,
                                           llvm::ArrayRef<Type>(),
@@ -80,7 +79,6 @@ struct CallOpLowering : public ConversionPattern {
                        ArrayRef<Value> operands,
                        ConversionPatternRewriter &rewriter) const -> LogicalResult final {
     auto callOp = dyn_cast<cherry::CallOp>(op);
-
     SmallVector<Value, 3> loads;
     for (auto operand : operands) {
       if (operand.getType().isa<MemRefType>()) {

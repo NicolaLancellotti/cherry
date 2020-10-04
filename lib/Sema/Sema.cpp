@@ -31,7 +31,7 @@ public:
     llvm::StringRef returnType;
     if (_symbols.getFunction("main", types, returnType) ||
         types.size() != 0 || returnType != builtins::UInt64Type)
-      return emitError(llvm::SMLoc{}, diag::main_undefined);
+      return emitError(llvm::SMLoc{}, diag::undefined_main);
     return success();
   }
 
@@ -97,19 +97,19 @@ auto SemaImpl::sema(Prototype *node) -> CherryResult {
     auto type = par->varType().get();
     auto typeName = type->name();
     if (_symbols.checkType(typeName))
-      return emitError(type, diag::type_undefined);
+      return emitError(type, diag::undefined_type);
     if (_symbols.declareVariable(par->variable().get(), typeName))
-      return emitError(par->variable().get(), diag::var_redefinition);
+      return emitError(par->variable().get(), diag::redefinition_var);
     types.push_back(typeName);
   }
 
   auto returnType = node->type()->name();
   if (_symbols.checkType(returnType))
-    return emitError(node->type().get(), diag::type_undefined);
+    return emitError(node->type().get(), diag::undefined_type);
 
   auto name = node->id()->name();
   if (_symbols.declareFunction(name, std::move(types), returnType)) {
-    const char *diagnostic = diag::func_redefinition;
+    const char *diagnostic = diag::redefinition_func;
     char buffer[50];
     sprintf(buffer, diagnostic, name.str().c_str());
     return emitError(node->id().get(), buffer);
@@ -136,15 +136,15 @@ auto SemaImpl::sema(StructDecl *node) -> CherryResult {
     auto type = varDecl->varType().get();
     auto var = varDecl->variable().get();
     if (_symbols.checkType(type->name()))
-      return emitError(type, diag::type_undefined);
+      return emitError(type, diag::undefined_type);
     if (variables.count(var->name()) > 0)
-      return emitError(var, diag::var_redefinition);
+      return emitError(var, diag::redefinition_var);
     variables.insert(var->name());
     types.push_back(type->name());
   }
   auto id = node->id().get();
   if (_symbols.declareType(node))
-    return emitError(id, diag::type_redefinition);
+    return emitError(id, diag::redefinition_type);
   return success();
 }
 
@@ -185,7 +185,7 @@ auto SemaImpl::sema(CallExpr *node) -> CherryResult {
   llvm::ArrayRef<llvm::StringRef> parametersTypes;
   llvm::StringRef returnType;
   if (_symbols.getFunction(name, parametersTypes, returnType)) {
-    const char *diagnostic = diag::func_undefined;
+    const char *diagnostic = diag::undefined_func;
     char buffer [50];
     sprintf(buffer, diagnostic, name.str().c_str());
     return emitError(node, buffer);
@@ -205,7 +205,7 @@ auto SemaImpl::sema(CallExpr *node) -> CherryResult {
     if (sema(expr.get()))
       return failure();
     if (expr->type() != type)
-      return emitError(expr.get(), diag::type_mismatch);
+      return emitError(expr.get(), diag::mismatch_type);
   }
 
   node->setType(returnType);
@@ -216,7 +216,7 @@ auto SemaImpl::semaStructConstructor(CallExpr *node) -> CherryResult {
   auto type = node->name();
   const VectorUniquePtr<VariableDeclExpr> *fieldsTypes;
   if (_symbols.getType(type, fieldsTypes))
-    return emitError(node, diag::type_undefined);
+    return emitError(node, diag::undefined_type);
 
   if (node->expressions().size() != fieldsTypes->size())
     return emitError(node, diag::wrong_num_arg);
@@ -227,7 +227,7 @@ auto SemaImpl::semaStructConstructor(CallExpr *node) -> CherryResult {
     if (sema(expr.get()))
       return failure();
     if (expr->type() != fieldType)
-      return emitError(expr.get(), diag::type_mismatch);
+      return emitError(expr.get(), diag::mismatch_type);
   }
 
   node->setType(type);
@@ -239,15 +239,15 @@ auto SemaImpl::sema(VariableDeclExpr *node) -> CherryResult {
   auto varType = node->varType().get();
   auto varTypeName = varType->name();
   if (_symbols.checkType(varTypeName))
-    return emitError(varType, diag::type_undefined);
+    return emitError(varType, diag::undefined_type);
   if (_symbols.declareVariable(var, varTypeName))
-    return emitError(var, diag::var_redefinition);
+    return emitError(var, diag::redefinition_var);
 
   auto initExpr = node->init().get();
   if (sema(initExpr))
     return failure();
   if (varTypeName != initExpr->type())
-    return emitError(initExpr, diag::type_mismatch);
+    return emitError(initExpr, diag::mismatch_type);
 
   node->setType(builtins::UInt64Type);
   return success();
@@ -256,7 +256,7 @@ auto SemaImpl::sema(VariableDeclExpr *node) -> CherryResult {
 auto SemaImpl::sema(VariableExpr *node) -> CherryResult {
   llvm::StringRef type;
   if (_symbols.getVariableType(node, type))
-    return emitError(node, diag::var_undefined);
+    return emitError(node, diag::undefined_var);
   node->setType(type);
   return success();
 }
@@ -291,7 +291,7 @@ auto SemaImpl::semaAssign(BinaryExpr *node) -> CherryResult {
   auto lhsType = node->lhs()->type();
   auto rhsType = node->rhs()->type();
   if (lhsType != rhsType)
-    return emitError(node->rhs().get(), diag::type_mismatch);
+    return emitError(node->rhs().get(), diag::mismatch_type);
 
   node->setType(lhsType);
   return success();
@@ -316,7 +316,7 @@ auto SemaImpl::semaStructAccess(BinaryExpr *node) -> CherryResult {
     }
   }
 
-  return emitError(node->rhs().get(), diag::field_undefined);
+  return emitError(node->rhs().get(), diag::undefined_field);
 }
 
 auto SemaImpl::sema(IfExpr *node) -> CherryResult {
@@ -335,7 +335,7 @@ auto SemaImpl::sema(IfExpr *node) -> CherryResult {
   auto elseType = elseLastExpr->type();
   auto thenType = thenExpr.back()->type();
   if (thenType != elseType)
-    return emitError(elseLastExpr, diag::type_mismatch_then_else);
+    return emitError(elseLastExpr, diag::mismatch_type_then_else);
 
   node->setType(elseType);
   return success();
