@@ -223,9 +223,18 @@ auto Compilation::dumpTokens() -> int {
   return EXIT_SUCCESS;
 }
 
-auto Compilation::dumpAST() -> int {
+auto Compilation::dumpParse() -> int {
   std::unique_ptr<Module> module;
   if (parse(module))
+    return EXIT_FAILURE;
+
+  cherry::dumpAST(_sourceManager, *module);
+  return EXIT_SUCCESS;
+}
+
+auto Compilation::dumpAST() -> int {
+  std::unique_ptr<Module> module;
+  if (parse(module) || cherry::sema(_sourceManager, *module.get()))
     return EXIT_FAILURE;
 
   cherry::dumpAST(_sourceManager, *module);

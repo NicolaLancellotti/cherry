@@ -225,7 +225,7 @@ auto LLVMGenImpl::gen(const Prototype *node, llvm::Function *&func) -> CherryRes
   }
 
   for (auto &param : node->parameters()) {
-    auto typeName = param->type()->name();
+    auto typeName = param->varType()->name();
     argTypes.push_back(getType(typeName));
     if (_debugInfo) {
       debugTypes.push_back(getDebugType(typeName));
@@ -268,7 +268,7 @@ auto LLVMGenImpl::gen(const Prototype *node, llvm::Function *&func) -> CherryRes
     auto alloca = createEntryBlockAlloca(func, name, arg.getType());
     if (_debugInfo) {
       auto dparm = _dBuilder->createParameterVariable(
-          sp, name, ++index, unit, line, getDebugType(param->type()->name()),
+          sp, name, ++index, unit, line, getDebugType(param->varType()->name()),
           true);
 
       _dBuilder->insertDeclare(alloca, dparm, _dBuilder->createExpression(),
@@ -350,7 +350,7 @@ auto LLVMGenImpl::gen(const CallExpr *node, llvm::Value *&value) -> CherryResult
 auto LLVMGenImpl::gen(const VariableDeclExpr *node,
                       llvm::Value *&value) -> CherryResult {
   auto name = node->variable()->name();
-  auto typeName = node->type()->name();
+  auto typeName = node->varType()->name();
   auto llvmType = getType(typeName);
 
   llvm::Value *initValue;

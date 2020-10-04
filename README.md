@@ -25,8 +25,9 @@ cmake --build . --target mlir-doc
 ### Driver Flags
 Meaning                             |  Flag
 |-----------------------------------|-------------------|
-Dump tokens 			                  | -dump=tokens
-Dump the AST                        | -dump=ast
+Dump tokens 			            | -dump=tokens
+Parse and dump the AST              | -dump=parse
+Parse, type-check and dump the AST  | -dump=ast
 Dump the MLIR (cherry)              | -dump=mlir
 Dump the MLIR (standard)            | -dump=mlir-std
 Dump the MLIR (LLVM)                | -dump=mlir-llvm

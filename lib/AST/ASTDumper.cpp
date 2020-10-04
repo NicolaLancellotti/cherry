@@ -122,39 +122,45 @@ auto Dumper::dump(const Expr *node) -> void {
 
 auto Dumper::dump(const CallExpr *node) -> void {
   INDENT();
-  errs() << "CallExpr " << loc(node) << " callee=" << node->name() << "\n";
+  errs() << "CallExpr " << loc(node) << " type=" << node->type()
+         << " callee=" << node->name() << "\n";
   for (auto &expr : *node)
     dump(expr.get());
 }
 
 auto Dumper::dump(const VariableDeclExpr *node) -> void {
   auto id = node->variable().get();
-  auto type = node->type().get();
+  auto varType = node->varType().get();
   INDENT();
-  errs() << "Variable (id=" << id->name() << " " << loc(id)
-         << ") (type=" << type->name() << " " << loc(type) << ")\n";
+  errs() << "Variable " << "type=" << node->type()
+         << " (id=" << id->name() << " " << loc(id)
+         << ") (type=" << varType->name() << " " << loc(varType) << ")\n";
   if (node->init())
     dump(node->init().get());
 }
 
 auto Dumper::dump(const VariableExpr *node) -> void {
   INDENT();
-  errs() << "VariableExpr " << loc(node) << " name=" << node->name() << "\n";
+  errs() << "VariableExpr " << loc(node) << " type=" << node->type()
+         << " name=" << node->name() << "\n";
 }
 
 auto Dumper::dump(const DecimalLiteralExpr *node) -> void {
   INDENT();
-  errs() << "DecimalExpr " << loc(node) << " value=" << node->value() << "\n";
+  errs() << "DecimalExpr " << loc(node) << " type=" << node->type()
+         << " value=" << node->value() << "\n";
 }
 
 auto Dumper::dump(const BoolLiteralExpr *node) -> void {
   INDENT();
-  errs() << "BoolLiteralExpr " << loc(node) << " value=" << node->value() << "\n";
+  errs() << "BoolLiteralExpr " << loc(node) << " type=" << node->type()
+         << " value=" << node->value() << "\n";
 }
 
 auto Dumper::dump(const BinaryExpr *node) -> void {
   INDENT();
-  errs() << "BinaryExpr " << loc(node) << " op=`" << node->op() << "`\n";
+  errs() << "BinaryExpr " << loc(node) << " type=" << node->type()
+         <<" op=`" << node->op() << "`\n";
   dump(node->lhs().get());
   dump(node->rhs().get());
 }

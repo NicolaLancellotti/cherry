@@ -17,7 +17,7 @@ class Module;
 class CherryResult;
 
 auto sema(const llvm::SourceMgr &sourceManager,
-          const Module &moduleAST) -> CherryResult;
+          Module &moduleAST) -> CherryResult;
 
 } // end namespace cherry
 

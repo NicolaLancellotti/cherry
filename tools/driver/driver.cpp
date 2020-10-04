@@ -10,6 +10,7 @@ namespace {
 enum Action {
   None,
   DumpTokens,
+  DumpParse,
   DumpAST,
   DumpMLIR,
   DumpMLIRStandard,
@@ -42,9 +43,12 @@ static cl::opt<enum Action>
                cl::values(clEnumValN(DumpTokens,
                                      "tokens",
                                      "dump internal rep of tokens")),
+               cl::values(clEnumValN(DumpParse,
+                                     "parse",
+                                     "parse and output the AST dump")),
                cl::values(clEnumValN(DumpAST,
                                      "ast",
-                                     "output the AST dump")),
+                                     "parse, type-check and output the AST dump")),
                cl::values(clEnumValN(DumpMLIR,
                                      "mlir",
                                      "output the MLIR dump")),
@@ -89,6 +93,8 @@ auto main(int argc, const char **argv) -> int {
   switch (dumpAction) {
   case Action::DumpTokens:
     return compilation->dumpTokens();
+  case Action::DumpParse:
+    return compilation->dumpParse();
   case Action::DumpAST:
     return compilation->dumpAST();
   case Action::DumpMLIR:

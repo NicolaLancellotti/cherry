@@ -38,6 +38,7 @@ public:
                    bool backendLLVM) -> std::unique_ptr<Compilation>;
 
   auto dumpTokens() -> int;
+  auto dumpParse() -> int;
   auto dumpAST() -> int;
   auto dumpMLIR(Lowering lowering) -> int;
   auto dumpLLVM() -> int;

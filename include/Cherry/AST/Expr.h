@@ -36,8 +36,17 @@ public:
 
   virtual auto isLvalue() -> bool { return false; }
 
+  virtual auto type() const -> llvm::StringRef final {
+    return _type == "" ? llvm::StringRef("NULL") : _type;
+  }
+
+  auto setType(llvm::StringRef type) -> void {
+    _type = type.str();
+  }
+
 private:
   const ExpressionKind _kind;
+  std::string _type;
 };
 
 // _____________________________________________________________________________
@@ -183,10 +192,10 @@ class VariableDeclExpr final : public Expr {
 public:
   explicit VariableDeclExpr(llvm::SMLoc location,
                             std::unique_ptr<VariableExpr> variable,
-                            std::unique_ptr<Identifier> type,
+                            std::unique_ptr<Identifier> varType,
                             std::unique_ptr<Expr> init)
       : Expr{Expr_VariableDecl, location}, _variable(std::move(variable)),
-        _type(std::move(type)), _init{std::move(init)} {};
+        _varType(std::move(varType)), _init{std::move(init)} {};
 
   static auto classof(const Expr *node) -> bool {
     return node->getKind() == Expr_VariableDecl;
@@ -196,8 +205,8 @@ public:
     return _variable;
   }
 
-  auto type() const -> const std::unique_ptr<Identifier>& {
-    return _type;
+  auto varType() const -> const std::unique_ptr<Identifier>& {
+    return _varType;
   }
   auto init() const -> const std::unique_ptr<Expr>& {
     return _init;
@@ -205,7 +214,7 @@ public:
 
 private:
   std::unique_ptr<VariableExpr> _variable;
-  std::unique_ptr<Identifier> _type;
+  std::unique_ptr<Identifier> _varType;
   std::unique_ptr<Expr> _init;
 };
 

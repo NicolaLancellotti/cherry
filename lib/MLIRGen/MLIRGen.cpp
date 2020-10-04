@@ -125,7 +125,7 @@ auto MLIRGenImpl::gen(const Prototype *node, mlir::FuncOp &func) -> CherryResult
   llvm::SmallVector<mlir::Type, 3> arg_types;
   arg_types.reserve(node->parameters().size());
   for (auto &param : node->parameters())
-    arg_types.push_back(getType(param->type()->name()));
+    arg_types.push_back(getType(param->varType()->name()));
 
   llvm::SmallVector<mlir::Type, 1> result_types(1, getType(node->type()->name()));
 
@@ -175,7 +175,7 @@ auto MLIRGenImpl::gen(const StructDecl *node) -> CherryResult {
   llvm::SmallVector<mlir::Type, 2> elementTypes;
   elementTypes.reserve(variables.size());
   for (auto &variable : variables) {
-    mlir::Type type = getType(variable->type()->name());
+    mlir::Type type = getType(variable->varType()->name());
     elementTypes.push_back(type);
   }
 
