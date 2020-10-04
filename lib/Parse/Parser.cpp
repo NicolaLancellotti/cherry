@@ -67,8 +67,8 @@ auto Parser::parseFunctionDecl_c(unique_ptr<Decl> &decl) -> CherryResult {
   auto loc = tokenLoc();
   unique_ptr<Prototype> proto;
   VectorUniquePtr<Expr> body;
-  if (parsePrototype_c(proto),
-      parseToken(Token::l_brace, diag::expected_l_brace),
+  if (parsePrototype_c(proto) ||
+      parseToken(Token::l_brace, diag::expected_l_brace)  ||
       parseBlockExpr(body))
     return failure();
 
