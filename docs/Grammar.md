@@ -31,6 +31,7 @@ lvalue → struct-access
 rvalue → literal-expression  
 rvalue → function-call-expression  
 rvalue → assign-expression  
+rvalue → var-declaration-expression  
 
 **GRAMMAR OF A LITERAL EXPRESSION**  
 literal-expression → literal  
@@ -53,6 +54,9 @@ struct-access → struct-access `.` identifier
 **GRAMMAR OF AN ASSIGN EXPRESSION**     
 assign-expression → lvalue `=` rvalue  
   
+**GRAMMAR OF A VARIABLE DECLARATION EXPRESSION**  
+var-declaration-expression → `var` variable-expression type-annotation `=` rvalue
+
 ## Declarations  
 declaration → function-declaration  
 declaration → struct-declaration  
@@ -73,7 +77,7 @@ type-annotation → `:` type
 function-body → `{` block-expression `}`    
 block-expression → expression
 block-expression → block-expression `;` expression
-
+  
 **GRAMMAR OF A STRUCT DECLARATION**    
 type → identifier  
 struct-declaration → `struct` type `{`  struct-members<sub>opt</sub> `}`  
