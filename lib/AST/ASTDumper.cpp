@@ -32,12 +32,14 @@ private:
 
   // Expressions
   auto dump(const Expr *node) -> void;
+  auto dump(const VectorUniquePtr<Expr> &node, llvm::StringRef string) -> void;
   auto dump(const CallExpr *node) -> void;
   auto dump(const VariableDeclExpr *node) -> void;
   auto dump(const VariableExpr *node) -> void;
   auto dump(const DecimalLiteralExpr *node) -> void;
   auto dump(const BoolLiteralExpr *node) -> void;
   auto dump(const BinaryExpr *node) -> void;
+  auto dump(const IfExpr *node) -> void;
 
   // Utility
   auto indent() -> void {
@@ -95,8 +97,7 @@ auto Dumper::dump(const FunctionDecl *node) -> void {
   INDENT();
   errs() << "FunctionDecl " << loc(node) << "\n";
   dump(node->proto().get());
-  for (auto &expr : *node)
-    dump(expr.get());
+  dump(node->body(), "Body:");
 }
 
 auto Dumper::dump(const StructDecl *node) -> void {
@@ -111,13 +112,21 @@ auto Dumper::dump(const StructDecl *node) -> void {
 auto Dumper::dump(const Expr *node) -> void {
   llvm::TypeSwitch<const Expr *>(node)
       .Case<CallExpr, DecimalLiteralExpr, BoolLiteralExpr,
-          VariableDeclExpr, VariableExpr,
+          VariableDeclExpr, VariableExpr, IfExpr,
           BinaryExpr>([&](auto *node) {
         this->dump(node);
       })
       .Default([&](const Expr *) {
         llvm_unreachable("Unexpected expression");
       });
+}
+
+auto Dumper::dump(const VectorUniquePtr<Expr> &node,
+                  llvm::StringRef string) -> void {
+  INDENT();
+  errs() << string << "\n";
+  for (auto &expr : node)
+    dump(expr.get());
 }
 
 auto Dumper::dump(const CallExpr *node) -> void {
@@ -163,6 +172,14 @@ auto Dumper::dump(const BinaryExpr *node) -> void {
          <<" op=`" << node->op() << "`\n";
   dump(node->lhs().get());
   dump(node->rhs().get());
+}
+
+auto Dumper::dump(const IfExpr *node) -> void {
+  INDENT();
+  errs() << "IfExpr " << loc(node) << " type=" << node->type() << "`\n";
+  dump(node->conditionExpr().get());
+  dump(node->thenExpr(), "thenExpr:");
+  dump(node->elseExpr(), "elseExpr:");
 }
 
 namespace cherry {

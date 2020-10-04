@@ -26,6 +26,7 @@ public:
     Expr_Struct,
     Expr_Binary,
     Expr_VariableDecl,
+    Expr_If,
   };
 
   explicit Expr(ExpressionKind kind,
@@ -186,7 +187,7 @@ private:
 };
 
 // _____________________________________________________________________________
-// VariableDecl
+// Variable declaration expression
 
 class VariableDeclExpr final : public Expr {
 public:
@@ -218,6 +219,39 @@ private:
   std::unique_ptr<Expr> _init;
 };
 
+// _____________________________________________________________________________
+// If expression
+
+class IfExpr final : public Expr {
+public:
+  explicit IfExpr(llvm::SMLoc location,
+                  std::unique_ptr<Expr> condition,
+                  VectorUniquePtr<Expr> thenExpr,
+                  VectorUniquePtr<Expr> elseExpr)
+      : Expr{Expr_If, location}, _condition(std::move(condition)),
+        _thenExpr(std::move(thenExpr)), _elseExpr(std::move(elseExpr)) {};
+
+  static auto classof(const Expr *node) -> bool {
+    return node->getKind() == Expr_If;
+  }
+
+  auto conditionExpr() const -> const std::unique_ptr<Expr>& {
+    return _condition;
+  }
+
+  auto thenExpr() const -> const VectorUniquePtr<Expr>& {
+    return _thenExpr;
+  }
+
+  auto elseExpr() const -> const VectorUniquePtr<Expr>& {
+    return _elseExpr;
+  }
+
+private:
+  std::unique_ptr<Expr> _condition;
+  VectorUniquePtr<Expr> _thenExpr;
+  VectorUniquePtr<Expr> _elseExpr;
+};
 
 } // end namespace cherry
 

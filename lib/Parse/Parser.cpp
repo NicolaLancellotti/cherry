@@ -205,6 +205,8 @@ auto Parser::parsePrimaryExpression(unique_ptr<Expr> &expr) -> CherryResult {
     return parseFuncStructVar_c(expr);
   case Token::kw_var:
     return parseVarDeclExpr_c(expr);
+  case Token::kw_if:
+    return parseIfExpr_c(expr);
   case Token::kw_true: {
     auto loc = tokenLoc();
     consume(Token::kw_true);
@@ -220,6 +222,24 @@ auto Parser::parsePrimaryExpression(unique_ptr<Expr> &expr) -> CherryResult {
   default:
     return emitError(diag::expected_expr);
   }
+}
+
+auto Parser::parseIfExpr_c(std::unique_ptr<Expr> &expr) -> CherryResult {
+  auto loc = tokenLoc();
+  consume(Token::kw_if);
+  unique_ptr<Expr> condition;
+  VectorUniquePtr<Expr> thenExpr;
+  VectorUniquePtr<Expr> elseExpr;
+  if (parseExpression(condition) ||
+      parseToken(Token::l_brace, diag::expected_l_brace) ||
+      parseBlockExpr(thenExpr) ||
+      parseToken(Token::kw_else, diag::expected_else) ||
+      parseToken(Token::l_brace, diag::expected_l_brace) ||
+      parseBlockExpr(elseExpr))
+    return failure();
+
+  expr = make_unique<IfExpr>(loc, move(condition), move(thenExpr), std::move(elseExpr));
+  return success();
 }
 
 auto Parser::parseVarDeclExpr_c(unique_ptr<Expr> &expr) -> CherryResult {

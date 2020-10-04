@@ -25,6 +25,8 @@ ERROR(type_redefinition, "redefinition of type")
 ERROR(expected_field, "expected struct field")
 ERROR(field_undefined, "undefined field")
 ERROR(expected_lvalue, "expected lvalue")
+ERROR(expected_bool, "expected Bool")
+ERROR(type_mismatch_then_else, "`then` and `else` expressions must have the same type")
 
 // ___________________________________________________________________________
 #undef ERROR

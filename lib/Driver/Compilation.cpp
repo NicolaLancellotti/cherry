@@ -16,6 +16,7 @@
 #include "cherry/Sema/Sema.h"
 #include "mlir/Dialect/StandardOps/IR/Ops.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
+#include "mlir/Dialect/SCF/SCF.h"
 #include "mlir/ExecutionEngine/ExecutionEngine.h"
 #include "mlir/ExecutionEngine/OptUtils.h"
 #include "mlir/IR/Dialect.h"
@@ -41,6 +42,7 @@ auto Compilation::make(llvm::StringRef filename,
   mlir::registerDialect<mlir::cherry::CherryDialect>();
   mlir::registerDialect<mlir::StandardOpsDialect>();
   mlir::registerDialect<mlir::LLVM::LLVMDialect>();
+  mlir::registerDialect<mlir::scf::SCFDialect>();
 
   auto fileOrErr = llvm::MemoryBuffer::getFileOrSTDIN(filename);
 

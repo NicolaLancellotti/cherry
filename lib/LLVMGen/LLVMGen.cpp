@@ -69,6 +69,7 @@ private:
 
   // Expressions
   auto gen(const Expr *node, llvm::Value *&value) -> CherryResult;
+  auto gen(const VectorUniquePtr<Expr> &node, llvm::Value *&value) -> CherryResult;
   auto gen(const CallExpr *node, llvm::Value *&value) -> CherryResult;
   auto gen(const VariableDeclExpr *node, llvm::Value *&value) -> CherryResult;
   auto gen(const VariableExpr *node, llvm::Value *&value) -> CherryResult;
@@ -76,6 +77,7 @@ private:
   auto gen(const BoolLiteralExpr *node, llvm::Value *&value) -> CherryResult;
   auto gen(const BinaryExpr *node, llvm::Value *&value) -> CherryResult;
   auto genAssign(const BinaryExpr *node, llvm::Value *&value) -> CherryResult;
+  auto gen(const IfExpr *node, llvm::Value *&value) -> CherryResult;
 
   // Utility
   auto getType(llvm::StringRef name) -> llvm::Type* {
@@ -290,12 +292,11 @@ auto LLVMGenImpl::gen(const FunctionDecl *node) -> CherryResult {
     return failure();
 
   llvm::Value *value;
-  for (auto &expr : *node) {
-    if (gen(expr.get(), value)) {
-      func->eraseFromParent();
-      return failure();
-    }
+  if (gen(node->body(), value)) {
+    func->eraseFromParent();
+    return failure();
   }
+
   _builder.CreateRet(value);
 
   _pass->run(*func);
@@ -321,9 +322,19 @@ auto LLVMGenImpl::gen(const Expr *node, llvm::Value *&value) -> CherryResult {
     return gen(cast<VariableExpr>(node), value);
   case Expr::Expr_Binary:
     return gen(cast<BinaryExpr>(node), value);
+  case Expr::Expr_If:
+    return gen(cast<IfExpr>(node), value);
   default:
     llvm_unreachable("Unexpected expression");
   }
+}
+
+auto LLVMGenImpl::gen(const VectorUniquePtr<Expr> &node,
+                      llvm::Value *&value) -> CherryResult {
+  for (auto &expr : node)
+    if (gen(expr.get(), value))
+      return failure();
+  return success();
 }
 
 auto LLVMGenImpl::gen(const CallExpr *node, llvm::Value *&value) -> CherryResult {
@@ -410,6 +421,47 @@ auto LLVMGenImpl::genAssign(const BinaryExpr *node,
   _builder.CreateStore(rhsValue, alloca);
   value = rhsValue;
   return success();
+}
+
+auto LLVMGenImpl::gen(const IfExpr *node, llvm::Value *&value) -> CherryResult {
+  llvm::Function *func = _builder.GetInsertBlock()->getParent();
+
+  llvm::BasicBlock *thenBB = llvm::BasicBlock::Create(_context, "then");
+  llvm::BasicBlock *elseBB = llvm::BasicBlock::Create(_context, "else");
+  llvm::BasicBlock *mergeBB = llvm::BasicBlock::Create(_context, "ifcont");
+
+  // Condition
+  llvm::Value *conditionValue;
+  if (gen(node->conditionExpr().get(), conditionValue))
+    return failure();
+  _builder.CreateCondBr(conditionValue, thenBB, elseBB);
+
+  // Emit then block
+  func->getBasicBlockList().push_back(thenBB);
+  _builder.SetInsertPoint(thenBB);
+  llvm::Value *thenValue;
+  if (gen(node->thenExpr(), thenValue))
+    return failure();
+  _builder.CreateBr(mergeBB);
+  thenBB = _builder.GetInsertBlock();
+
+  // Emit else block
+  func->getBasicBlockList().push_back(elseBB);
+  _builder.SetInsertPoint(elseBB);
+  llvm::Value *elseValue;
+  if (gen(node->elseExpr(), elseValue))
+    return failure();
+  _builder.CreateBr(mergeBB);
+  elseBB = _builder.GetInsertBlock();
+
+  // Emit merge block
+  func->getBasicBlockList().push_back(mergeBB);
+  _builder.SetInsertPoint(mergeBB);
+
+  llvm::PHINode *pn = _builder.CreatePHI(getType(node->type()), 2, "iftmp");
+  pn->addIncoming(thenValue, thenBB);
+  pn->addIncoming(elseValue, elseBB);
+  value = pn;
 }
 
 namespace cherry {

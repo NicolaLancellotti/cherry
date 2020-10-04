@@ -54,6 +54,8 @@ private:
 
   // Expressions
   auto gen(const Expr *node, mlir::Value &value) -> CherryResult;
+  auto gen(const VectorUniquePtr<Expr> &node, mlir::Value &value) -> CherryResult;
+  auto gen(const IfExpr *node, mlir::Value &value) -> CherryResult;
   auto genPrint(const CallExpr *node, mlir::Value &value) -> CherryResult;
   auto gen(const CallExpr *node, mlir::Value &value) -> CherryResult;
   auto gen(const VariableDeclExpr *node, mlir::Value &value) -> CherryResult;
@@ -153,11 +155,9 @@ auto MLIRGenImpl::gen(const FunctionDecl *node,
     return failure();
 
   mlir::Value value;
-  for (auto &expr : *node) {
-    if (gen(expr.get(), value)) {
-      func.erase();
-      return failure();
-    }
+  if (gen(node->body(), value)) {
+    func.erase();
+    return failure();
   }
 
   auto location = loc(node->body().back().get());
@@ -197,9 +197,52 @@ auto MLIRGenImpl::gen(const Expr *node, mlir::Value &value) -> CherryResult {
     return gen(cast<VariableExpr>(node), value);
   case Expr::Expr_Binary:
     return gen(cast<BinaryExpr>(node), value);
+  case Expr::Expr_If:
+    return gen(cast<IfExpr>(node), value);
   default:
     llvm_unreachable("Unexpected expression");
   }
+}
+
+auto MLIRGenImpl::gen(const VectorUniquePtr<Expr> &node, mlir::Value &value) -> CherryResult {
+  for (auto &expr : node)
+    if (gen(expr.get(), value))
+      return failure();
+  return success();
+}
+
+auto MLIRGenImpl::gen(const IfExpr *node, mlir::Value &value) -> CherryResult {
+  mlir::Value cond;
+  if (gen(node->conditionExpr().get(), cond))
+    return failure();
+
+  bool error = false;
+
+  auto &thenExpr = node->thenExpr();
+  auto thenExprBuilder = [&](mlir::OpBuilder &builder, mlir::Location) {
+    mlir::Value value;
+    if (gen(thenExpr, value))
+      error = true;
+    builder.create<YieldOp>(loc(thenExpr.back().get()), value);
+  };
+
+  auto &elseExpr = node->elseExpr();
+  auto elseExprBuilder = [&](mlir::OpBuilder &builder, mlir::Location) {
+    mlir::Value value;
+    if (gen(elseExpr, value))
+      error = true;
+    builder.create<YieldOp>(loc(elseExpr.back().get()), value);
+  };
+  auto ifOp = _builder.create<IfOp>(loc(node),
+                                               getType(node->type()),
+                                               cond,
+                                               thenExprBuilder,
+                                               elseExprBuilder);
+  if (error)
+    return failure();
+
+  value = ifOp.getResult();
+  return success();
 }
 
 auto MLIRGenImpl::gen(const CallExpr *node, mlir::Value &value) -> CherryResult {

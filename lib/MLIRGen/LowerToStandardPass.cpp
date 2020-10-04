@@ -11,6 +11,7 @@
 #include "cherry/MLIRGen/CherryDialect.h"
 #include "cherry/MLIRGen/CherryOps.h"
 #include "cherry/MLIRGen/Passes.h"
+#include "mlir/Dialect/SCF/SCF.h"
 #include "mlir/Dialect/StandardOps/IR/Ops.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Transforms/DialectConversion.h"
@@ -96,6 +97,50 @@ struct CallOpLowering : public ConversionPattern {
   }
 };
 
+struct IfOpLowering : public ConversionPattern {
+  IfOpLowering(MLIRContext *ctx)
+      : ConversionPattern(cherry::IfOp::getOperationName(), 1, ctx) {}
+
+  auto matchAndRewrite(Operation *op,
+                       ArrayRef<Value> operands,
+                       ConversionPatternRewriter &rewriter)
+  const -> LogicalResult final {
+    Location loc = op->getLoc();
+    Value operand = operands.front();
+    Value newOperand = operand.getType().isa<MemRefType>()
+                       ? rewriter.create<LoadOp>(op->getLoc(), operands.front())
+                       : operand;
+    auto ifOp = dyn_cast<cherry::IfOp>(op);
+
+    auto scfIfOp = rewriter.create<mlir::scf::IfOp>(loc, ifOp.getResult().getType(),  newOperand, true);
+    rewriter.inlineRegionBefore(ifOp.thenRegion(), &scfIfOp.thenRegion().back());
+    rewriter.eraseBlock(&scfIfOp.thenRegion().back());
+
+    rewriter.inlineRegionBefore(ifOp.elseRegion(), &scfIfOp.elseRegion().back());
+    rewriter.eraseBlock(&scfIfOp.elseRegion().back());
+
+    rewriter.replaceOp(op, scfIfOp.getResult(0));
+    return success();
+  }
+};
+
+struct YieldOpLowering : public ConversionPattern {
+  YieldOpLowering(MLIRContext *ctx)
+      : ConversionPattern(cherry::YieldOp::getOperationName(), 1, ctx) {}
+
+  auto matchAndRewrite(Operation *op,
+                       ArrayRef<Value> operands,
+                       ConversionPatternRewriter &rewriter)
+  const -> LogicalResult final {
+    Value operand = operands.front();
+    Value newOperand = operand.getType().isa<MemRefType>()
+                       ? rewriter.create<LoadOp>(op->getLoc(), operands.front())
+                       : operand;
+    rewriter.replaceOpWithNewOp<mlir::scf::YieldOp>(op, newOperand);
+    return success();
+  }
+};
+
 struct CherryToStandardLoweringPass
     : public PassWrapper<CherryToStandardLoweringPass, FunctionPass> {
 
@@ -103,6 +148,7 @@ struct CherryToStandardLoweringPass
     ConversionTarget target(getContext());
     target.addLegalDialect<StandardOpsDialect>();
     target.addIllegalDialect<cherry::CherryDialect>();
+    target.addLegalDialect<mlir::scf::SCFDialect>();
     target.addLegalOp<cherry::PrintOp>();
     target.addLegalOp<cherry::CastOp>();
 
@@ -110,6 +156,8 @@ struct CherryToStandardLoweringPass
     patterns.insert<ReturnOpLowering>(&getContext());
     patterns.insert<ConstantOpLowering>(&getContext());
     patterns.insert<CallOpLowering>(&getContext());
+    patterns.insert<YieldOpLowering>(&getContext());
+    patterns.insert<IfOpLowering>(&getContext());
 
     auto f = getFunction();
     if (failed(applyPartialConversion(f,target, patterns)))

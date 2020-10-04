@@ -32,6 +32,9 @@ ERROR(expected_comma_or_r_brace,
 ERROR(expected_comma_or_r_paren,
   "expected `,` or `)`")
 
+ERROR(expected_else,
+  "expected `else`")
+
 ERROR(expected_fun_struct,
   "expected `fun` or `struct`")
 

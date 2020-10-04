@@ -102,4 +102,27 @@ def CastOp : Cherry_Op<"cast"> {
   ];
 }
 
+def IfOp : Cherry_Op<"if"> {
+  let summary = "if-then-else operation";
+  let arguments = (ins I1:$condition);
+  let results = (outs Cherry_Type);
+  let regions = (region SizedRegion<1>:$thenRegion, SizedRegion<1>:$elseRegion);
+
+  let builders = [
+      OpBuilder<"OpBuilder &builder, OperationState &state, "
+                "Type resultType, Value cond, "
+                "function_ref<void(OpBuilder &, Location)> thenBuilder, "
+                "function_ref<void(OpBuilder &, Location)> elseBuilder">
+  ];
+}
+
+def YieldOp : Cherry_Op<"yield", [NoSideEffect, Terminator]> {
+  let summary = "loop yield and termination operation";
+  let arguments = (ins Cherry_Type:$result);
+  let builders = [
+      OpBuilder<"OpBuilder &builder, OperationState &result",
+          [{ /* nothing to do */ }]>
+  ];
+}
+
 #endif // CHERRY_OPS

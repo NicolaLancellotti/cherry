@@ -8,6 +8,7 @@
 #include "StructType.h"
 #include "cherry/MLIRGen/CherryOps.h"
 #include "cherry/MLIRGen/Passes.h"
+#include "mlir/Conversion/SCFToStandard/SCFToStandard.h"
 #include "mlir/Conversion/StandardToLLVM/ConvertStandardToLLVM.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/StandardOps/IR/Ops.h"
@@ -143,6 +144,7 @@ struct CherryToLLVMLoweringPass
 
     // Types conversions
     LLVMTypeConverter typeConverter(&getContext());
+    populateLoopToStdConversionPatterns(patterns, &getContext());
     populateStdToLLVMConversionPatterns(typeConverter, patterns);
     typeConverter.addConversion([&](mlir::cherry::StructType type) {
       SmallVector<LLVM::LLVMType, 2> types;

@@ -55,9 +55,15 @@ Generate a target ".o" object file  | -c[=\<filename>]
 # }
 
 fn bar(x: UInt64, y: Bool): Bool {
-  print(x);
-  var k: Bool = false;
-  k = y;
+  var k: Bool = y;
+  
+  k = if k {
+    print(18446744073709551615);
+    false
+  } else {
+    print(0);
+    true
+  };
   k
 }
 

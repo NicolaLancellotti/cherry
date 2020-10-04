@@ -49,6 +49,7 @@ private:
 
   // Expressions
   auto sema(Expr *node) -> CherryResult;
+  auto sema(const VectorUniquePtr<Expr> &node) -> CherryResult;
   auto sema(CallExpr *node) -> CherryResult;
   auto semaStructConstructor(CallExpr *node) -> CherryResult;
   auto sema(VariableDeclExpr *node) -> CherryResult;
@@ -58,6 +59,7 @@ private:
   auto sema(BinaryExpr *node) -> CherryResult;
   auto semaAssign(BinaryExpr *node) -> CherryResult;
   auto semaStructAccess(BinaryExpr *node) -> CherryResult;
+  auto sema(IfExpr *node) -> CherryResult;
 
   // Errors
   auto emitError(Node *node, const llvm::Twine &msg) -> CherryResult {
@@ -117,12 +119,8 @@ auto SemaImpl::sema(Prototype *node) -> CherryResult {
 
 auto SemaImpl::sema(FunctionDecl *node) -> CherryResult {
   _symbols.resetVariables();
-  if (sema(node->proto().get()))
+  if (sema(node->proto().get()) || sema(node->body()))
     return failure();
-
-  for (auto &expr : *node)
-    if (sema(expr.get()))
-      return failure();
 
   auto returnType = node->body().back()->type();
   if (returnType != node->proto()->type()->name())
@@ -164,9 +162,18 @@ auto SemaImpl::sema(Expr *node) -> CherryResult {
     return sema(cast<VariableExpr>(node));
   case Expr::Expr_Binary:
     return sema(cast<BinaryExpr>(node));
+  case Expr::Expr_If:
+    return sema(cast<IfExpr>(node));
   default:
     llvm_unreachable("Unexpected expression");
   }
+}
+
+auto SemaImpl::sema(const VectorUniquePtr<Expr> &node) -> CherryResult {
+  for (auto &expr : node)
+    if (sema(expr.get()))
+      return failure();
+  return success();
 }
 
 auto SemaImpl::sema(CallExpr *node) -> CherryResult {
@@ -310,6 +317,28 @@ auto SemaImpl::semaStructAccess(BinaryExpr *node) -> CherryResult {
   }
 
   return emitError(node->rhs().get(), diag::field_undefined);
+}
+
+auto SemaImpl::sema(IfExpr *node) -> CherryResult {
+  auto conditionExpr = node->conditionExpr().get();
+  if (sema(conditionExpr))
+    return failure();
+  if (conditionExpr->type() != builtins::BoolType)
+    return emitError(conditionExpr, diag::expected_bool);
+
+  auto &thenExpr = node->thenExpr();
+  auto &elseExpr = node->elseExpr();
+  if (sema(thenExpr) || sema(elseExpr))
+    return failure();
+
+  auto elseLastExpr = elseExpr.back().get();
+  auto elseType = elseLastExpr->type();
+  auto thenType = thenExpr.back()->type();
+  if (thenType != elseType)
+    return emitError(elseLastExpr, diag::type_mismatch_then_else);
+
+  node->setType(elseType);
+  return success();
 }
 
 namespace cherry {
