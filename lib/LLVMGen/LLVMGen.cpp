@@ -292,7 +292,7 @@ auto LLVMGenImpl::gen(const FunctionDecl *node) -> CherryResult {
     return failure();
 
   llvm::Value *value;
-  if (gen(node->body(), value)) {
+  if (gen(node->body().get(), value)) {
     func->eraseFromParent();
     return failure();
   }
@@ -438,7 +438,7 @@ auto LLVMGenImpl::gen(const IfExpr *node, llvm::Value *&value) -> CherryResult {
   func->getBasicBlockList().push_back(thenBB);
   _builder.SetInsertPoint(thenBB);
   llvm::Value *thenValue;
-  if (gen(node->thenExpr(), thenValue))
+  if (gen(node->thenBlock().get(), thenValue))
     return failure();
   _builder.CreateBr(mergeBB);
   thenBB = _builder.GetInsertBlock();
@@ -447,7 +447,7 @@ auto LLVMGenImpl::gen(const IfExpr *node, llvm::Value *&value) -> CherryResult {
   func->getBasicBlockList().push_back(elseBB);
   _builder.SetInsertPoint(elseBB);
   llvm::Value *elseValue;
-  if (gen(node->elseExpr(), elseValue))
+  if (gen(node->elseBlock().get(), elseValue))
     return failure();
   _builder.CreateBr(mergeBB);
   elseBB = _builder.GetInsertBlock();

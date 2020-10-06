@@ -26,6 +26,7 @@ public:
     Expr_Struct,
     Expr_Binary,
     Expr_VariableDecl,
+    Expr_Block,
     Expr_If,
   };
 
@@ -188,14 +189,42 @@ private:
 };
 
 // _____________________________________________________________________________
+// Block expression
+
+class BlockExpr final : public Expr {
+public:
+  explicit BlockExpr(llvm::SMLoc location,
+                     VectorUniquePtr<Expr> statements)
+      : Expr{Expr_Block, location}, _statements(std::move(statements)){};
+
+  static auto classof(const Expr *node) -> bool {
+    return node->getKind() == Expr_Block;
+  }
+
+  auto statements() const -> const VectorUniquePtr<Expr>& {
+    return _statements;
+  }
+
+  auto expression() const -> const std::unique_ptr<Expr>& {
+    return _statements.back();
+  }
+
+private:
+  VectorUniquePtr<Expr> _statements;
+public:
+  auto begin() const -> decltype(_statements.begin()) { return _statements.begin(); }
+  auto end() const -> decltype(_statements.end()) { return _statements.end(); }
+};
+
+// _____________________________________________________________________________
 // If expression
 
 class IfExpr final : public Expr {
 public:
   explicit IfExpr(llvm::SMLoc location,
                   std::unique_ptr<Expr> condition,
-                  VectorUniquePtr<Expr> thenExpr,
-                  VectorUniquePtr<Expr> elseExpr)
+                  std::unique_ptr<BlockExpr> thenExpr,
+                  std::unique_ptr<BlockExpr>  elseExpr)
       : Expr{Expr_If, location}, _condition(std::move(condition)),
         _thenExpr(std::move(thenExpr)), _elseExpr(std::move(elseExpr)) {};
 
@@ -207,18 +236,18 @@ public:
     return _condition;
   }
 
-  auto thenExpr() const -> const VectorUniquePtr<Expr>& {
+  auto thenBlock() const -> const std::unique_ptr<BlockExpr> & {
     return _thenExpr;
   }
 
-  auto elseExpr() const -> const VectorUniquePtr<Expr>& {
+  auto elseBlock() const -> const std::unique_ptr<BlockExpr> & {
     return _elseExpr;
   }
 
 private:
   std::unique_ptr<Expr> _condition;
-  VectorUniquePtr<Expr> _thenExpr;
-  VectorUniquePtr<Expr> _elseExpr;
+  std::unique_ptr<BlockExpr>  _thenExpr;
+  std::unique_ptr<BlockExpr>  _elseExpr;
 };
 
 // _____________________________________________________________________________
@@ -227,9 +256,9 @@ private:
 class VariableDeclExpr final : public Expr {
 public:
   explicit VariableDeclExpr(llvm::SMLoc location,
-                        std::unique_ptr<VariableExpr> variable,
-                        std::unique_ptr<Identifier> varType,
-                        std::unique_ptr<Expr> init)
+                            std::unique_ptr<VariableExpr> variable,
+                            std::unique_ptr<Identifier> varType,
+                            std::unique_ptr<Expr> init)
       : Expr{Expr_VariableDecl, location}, _variable(std::move(variable)),
         _varType(std::move(varType)), _init{std::move(init)} {};
 

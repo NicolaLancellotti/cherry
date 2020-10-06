@@ -66,7 +66,7 @@ auto Parser::parseDeclaration(unique_ptr<Decl> &decl) -> CherryResult {
 auto Parser::parseFunctionDecl_c(unique_ptr<Decl> &decl) -> CherryResult {
   auto loc = tokenLoc();
   unique_ptr<Prototype> proto;
-  VectorUniquePtr<Expr> body;
+  unique_ptr<BlockExpr> body;
   if (parsePrototype_c(proto) ||
       parseToken(Token::l_brace, diag::expected_l_brace)  ||
       parseBlockExpr(body))
@@ -114,7 +114,9 @@ auto Parser::parsePrototype_c(unique_ptr<Prototype> &proto) -> CherryResult {
   return success();
 }
 
-auto Parser::parseBlockExpr(VectorUniquePtr<Expr> &expressions) -> CherryResult {
+auto Parser::parseBlockExpr(unique_ptr<BlockExpr> &block) -> CherryResult {
+  auto loc = tokenLoc();
+  VectorUniquePtr<Expr> expressions;
   while (true) {
     unique_ptr<Expr> expr;
     if (parseStatementWithoutSemi(expr))
@@ -131,7 +133,11 @@ auto Parser::parseBlockExpr(VectorUniquePtr<Expr> &expressions) -> CherryResult 
     if (consumeIf(Token::semi))
       continue;
 
-    return parseToken(Token::r_brace, diag::expected_r_brace);
+    if (parseToken(Token::r_brace, diag::expected_r_brace))
+      return failure();
+
+    block = make_unique<BlockExpr>(loc, std::move(expressions));
+    return success();
   }
 }
 
@@ -233,17 +239,17 @@ auto Parser::parseIfExpr_c(std::unique_ptr<Expr> &expr) -> CherryResult {
   auto loc = tokenLoc();
   consume(Token::kw_if);
   unique_ptr<Expr> condition;
-  VectorUniquePtr<Expr> thenExpr;
-  VectorUniquePtr<Expr> elseExpr;
+  unique_ptr<BlockExpr> thenBlock;
+  unique_ptr<BlockExpr> elseBlock;
   if (parseExpression(condition) ||
       parseToken(Token::l_brace, diag::expected_l_brace) ||
-      parseBlockExpr(thenExpr) ||
+      parseBlockExpr(thenBlock) ||
       parseToken(Token::kw_else, diag::expected_else) ||
       parseToken(Token::l_brace, diag::expected_l_brace) ||
-      parseBlockExpr(elseExpr))
+      parseBlockExpr(elseBlock))
     return failure();
 
-  expr = make_unique<IfExpr>(loc, move(condition), move(thenExpr), std::move(elseExpr));
+  expr = make_unique<IfExpr>(loc, move(condition), move(thenBlock), std::move(elseBlock));
   return success();
 }
 

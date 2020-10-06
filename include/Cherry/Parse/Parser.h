@@ -102,7 +102,7 @@ private:
 
   auto parsePrototype_c(std::unique_ptr<Prototype> &proto) -> CherryResult;
 
-  auto parseBlockExpr(VectorUniquePtr<Expr> &expressions) -> CherryResult;
+  auto parseBlockExpr(std::unique_ptr<BlockExpr> &block) -> CherryResult;
 
   auto parseStructDecl_c(std::unique_ptr<Decl>&elem) -> CherryResult;
 

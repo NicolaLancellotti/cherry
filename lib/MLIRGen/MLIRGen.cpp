@@ -155,12 +155,12 @@ auto MLIRGenImpl::gen(const FunctionDecl *node,
     return failure();
 
   mlir::Value value;
-  if (gen(node->body(), value)) {
+  if (gen(node->body().get(), value)) {
     func.erase();
     return failure();
   }
 
-  auto location = loc(node->body().back().get());
+  auto location = loc(node->body()->expression().get());
   _builder.create<ReturnOp>(location, value);
   return success();
 }
@@ -218,20 +218,20 @@ auto MLIRGenImpl::gen(const IfExpr *node, mlir::Value &value) -> CherryResult {
 
   bool error = false;
 
-  auto &thenExpr = node->thenExpr();
+  auto thenBlock = node->thenBlock().get();
   auto thenExprBuilder = [&](mlir::OpBuilder &builder, mlir::Location) {
     mlir::Value value;
-    if (gen(thenExpr, value))
+    if (gen(thenBlock, value))
       error = true;
-    builder.create<YieldOp>(loc(thenExpr.back().get()), value);
+    builder.create<YieldOp>(loc(thenBlock->expression().get()), value);
   };
 
-  auto &elseExpr = node->elseExpr();
+  auto elseBlock = node->elseBlock().get();
   auto elseExprBuilder = [&](mlir::OpBuilder &builder, mlir::Location) {
     mlir::Value value;
-    if (gen(elseExpr, value))
+    if (gen(elseBlock, value))
       error = true;
-    builder.create<YieldOp>(loc(elseExpr.back().get()), value);
+    builder.create<YieldOp>(loc(elseBlock->expression().get()), value);
   };
   auto ifOp = _builder.create<IfOp>(loc(node),
                                                getType(node->type()),

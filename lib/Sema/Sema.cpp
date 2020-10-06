@@ -49,7 +49,7 @@ private:
 
   // Expressions
   auto sema(Expr *node) -> CherryResult;
-  auto sema(const VectorUniquePtr<Expr> &node) -> CherryResult;
+  auto sema(BlockExpr *node) -> CherryResult;
   auto sema(CallExpr *node) -> CherryResult;
   auto semaStructConstructor(CallExpr *node) -> CherryResult;
   auto sema(VariableDeclExpr *node) -> CherryResult;
@@ -119,12 +119,13 @@ auto SemaImpl::sema(Prototype *node) -> CherryResult {
 
 auto SemaImpl::sema(FunctionDecl *node) -> CherryResult {
   _symbols.resetVariables();
-  if (sema(node->proto().get()) || sema(node->body()))
+  if (sema(node->proto().get()) || sema(node->body().get()))
     return failure();
 
-  auto returnType = node->body().back()->type();
+  auto expression = node->body()->expression().get();
+  auto returnType = expression->type();
   if (returnType != node->proto()->type()->name())
-    return emitError(node->body().back().get(), diag::wrong_return_type);
+    return emitError(expression, diag::wrong_return_type);
 
   return success();
 }
@@ -169,8 +170,8 @@ auto SemaImpl::sema(Expr *node) -> CherryResult {
   }
 }
 
-auto SemaImpl::sema(const VectorUniquePtr<Expr> &node) -> CherryResult {
-  for (auto &expr : node)
+auto SemaImpl::sema(BlockExpr *node) -> CherryResult {
+  for (auto &expr : *node)
     if (sema(expr.get()))
       return failure();
   return success();
@@ -324,16 +325,16 @@ auto SemaImpl::sema(IfExpr *node) -> CherryResult {
   if (conditionExpr->type() != builtins::BoolType)
     return emitError(conditionExpr, diag::expected_bool);
 
-  auto &thenExpr = node->thenExpr();
-  auto &elseExpr = node->elseExpr();
-  if (sema(thenExpr) || sema(elseExpr))
+  auto thenBlock = node->thenBlock().get();
+  auto elseBlock = node->elseBlock().get();
+  if (sema(thenBlock) || sema(elseBlock))
     return failure();
 
-  auto elseLastExpr = elseExpr.back().get();
-  auto elseType = elseLastExpr->type();
-  auto thenType = thenExpr.back()->type();
+  auto elseExpr = elseBlock->expression().get();
+  auto elseType = elseExpr->type();
+  auto thenType = thenBlock->expression()->type();
   if (thenType != elseType)
-    return emitError(elseLastExpr, diag::mismatch_type_then_else);
+    return emitError(elseExpr, diag::mismatch_type_then_else);
 
   node->setType(elseType);
   return success();

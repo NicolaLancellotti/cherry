@@ -32,7 +32,7 @@ private:
 
   // Expressions
   auto dump(const Expr *node) -> void;
-  auto dump(const VectorUniquePtr<Expr> &node, llvm::StringRef string) -> void;
+  auto dump(const BlockExpr *node, llvm::StringRef string) -> void;
   auto dump(const CallExpr *node) -> void;
   auto dump(const VariableDeclExpr *node) -> void;
   auto dump(const VariableExpr *node) -> void;
@@ -97,7 +97,7 @@ auto Dumper::dump(const FunctionDecl *node) -> void {
   INDENT();
   errs() << "FunctionDecl " << loc(node) << "\n";
   dump(node->proto().get());
-  dump(node->body(), "Body:");
+  dump(node->body().get(), "Body:");
 }
 
 auto Dumper::dump(const StructDecl *node) -> void {
@@ -120,11 +120,11 @@ auto Dumper::dump(const Expr *node) -> void {
       });
 }
 
-auto Dumper::dump(const VectorUniquePtr<Expr> &node,
+auto Dumper::dump(const BlockExpr *node,
                   llvm::StringRef string) -> void {
   INDENT();
   errs() << string << "\n";
-  for (auto &expr : node)
+  for (auto &expr : *node)
     dump(expr.get());
 }
 
@@ -176,8 +176,8 @@ auto Dumper::dump(const IfExpr *node) -> void {
   INDENT();
   errs() << "IfExpr " << loc(node) << " type=" << node->type() << "`\n";
   dump(node->conditionExpr().get());
-  dump(node->thenExpr(), "thenExpr:");
-  dump(node->elseExpr(), "elseExpr:");
+  dump(node->thenBlock().get(), "thenBlock:");
+  dump(node->elseBlock().get(), "elseBlock:");
 }
 
 namespace cherry {

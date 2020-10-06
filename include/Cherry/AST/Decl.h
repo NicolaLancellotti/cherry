@@ -16,6 +16,7 @@ namespace cherry {
 class Expr;
 class VariableExpr;
 class VariableDeclExpr;
+class BlockExpr;
 
 // _____________________________________________________________________________
 // Declaration
@@ -91,7 +92,7 @@ class FunctionDecl final : public Decl {
 public:
   explicit FunctionDecl(llvm::SMLoc location,
                         std::unique_ptr<Prototype> proto,
-                        VectorUniquePtr<Expr> body)
+                        std::unique_ptr<BlockExpr> body)
       : Decl{Decl_Function, location}, _proto(std::move(proto)),
         _body(std::move(body)) {};
 
@@ -103,17 +104,13 @@ public:
     return _proto;
   }
 
-  auto body() const -> const VectorUniquePtr<Expr>& {
+  auto body() const -> const std::unique_ptr<BlockExpr>& {
     return _body;
   }
 
 private:
   std::unique_ptr<Prototype> _proto;
-  VectorUniquePtr<Expr> _body;
-
-public:
-  auto begin() const -> decltype(_body.begin()) { return _body.begin(); }
-  auto end() const -> decltype(_body.end()) { return _body.end(); }
+  std::unique_ptr<BlockExpr> _body;
 };
 
 // _____________________________________________________________________________
