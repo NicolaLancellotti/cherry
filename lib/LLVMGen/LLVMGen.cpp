@@ -373,9 +373,7 @@ auto LLVMGenImpl::gen(const VariableDeclExpr *node,
   _variableSymbols[name] = alloca;
   emitLocation(node);
   _builder.CreateStore(initValue, alloca);
-
-  auto constant0 = llvm::ConstantInt::get(getType(builtins::UInt64Type), 0);
-  value = constant0;
+  value = nullptr;
   return success();
 }
 

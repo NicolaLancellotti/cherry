@@ -111,9 +111,8 @@ auto Dumper::dump(const StructDecl *node) -> void {
 
 auto Dumper::dump(const Expr *node) -> void {
   llvm::TypeSwitch<const Expr *>(node)
-      .Case<CallExpr, DecimalLiteralExpr, BoolLiteralExpr,
-          VariableDeclExpr, VariableExpr, IfExpr,
-          BinaryExpr>([&](auto *node) {
+      .Case<CallExpr, DecimalLiteralExpr, BoolLiteralExpr, VariableExpr, IfExpr,
+          BinaryExpr, VariableDeclExpr>([&](auto *node) {
         this->dump(node);
       })
       .Default([&](const Expr *) {
@@ -141,8 +140,7 @@ auto Dumper::dump(const VariableDeclExpr *node) -> void {
   auto id = node->variable().get();
   auto varType = node->varType().get();
   INDENT();
-  errs() << "Variable " << "type=" << node->type()
-         << " (id=" << id->name() << " " << loc(id)
+  errs() << "VariableDeclExpr (id=" << id->name() << " " << loc(id)
          << ") (type=" << varType->name() << " " << loc(varType) << ")\n";
   if (node->init())
     dump(node->init().get());

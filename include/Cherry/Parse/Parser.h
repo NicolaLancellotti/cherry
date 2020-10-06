@@ -125,8 +125,6 @@ private:
 
   auto parseIfExpr_c(std::unique_ptr<Expr> &expr) -> CherryResult;
 
-  auto parseVarDeclExpr_c(std::unique_ptr<Expr> &expr) -> CherryResult;
-
   auto parseDecimal_c(std::unique_ptr<Expr> &expr) -> CherryResult;
 
   auto parseFuncStructVar_c(std::unique_ptr<Expr> &expr) -> CherryResult;
@@ -138,6 +136,13 @@ private:
   auto parseBinaryExpRHS(int exprPrec, std::unique_ptr<Expr> &expr) -> CherryResult;
   auto getTokenPrecedence() -> int;
   auto isTokenRightAssociative() -> bool;
+
+  // ___________________________________________________________________________
+  // Parse Statements
+
+  auto parseStatementWithoutSemi(std::unique_ptr<Expr> &expr) -> CherryResult;
+
+  auto parseVarDecl_c(std::unique_ptr<Expr> &expr) -> CherryResult;
 
 };
 

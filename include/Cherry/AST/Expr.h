@@ -36,6 +36,7 @@ public:
   auto getKind() const -> ExpressionKind { return _kind; }
 
   virtual auto isLvalue() -> bool { return false; }
+  virtual auto isStatement() -> bool { return false; };
 
   virtual auto type() const -> llvm::StringRef final {
     return _type == "" ? llvm::StringRef("NULL") : _type;
@@ -187,39 +188,6 @@ private:
 };
 
 // _____________________________________________________________________________
-// Variable declaration expression
-
-class VariableDeclExpr final : public Expr {
-public:
-  explicit VariableDeclExpr(llvm::SMLoc location,
-                            std::unique_ptr<VariableExpr> variable,
-                            std::unique_ptr<Identifier> varType,
-                            std::unique_ptr<Expr> init)
-      : Expr{Expr_VariableDecl, location}, _variable(std::move(variable)),
-        _varType(std::move(varType)), _init{std::move(init)} {};
-
-  static auto classof(const Expr *node) -> bool {
-    return node->getKind() == Expr_VariableDecl;
-  }
-
-  auto variable() const -> const std::unique_ptr<VariableExpr>& {
-    return _variable;
-  }
-
-  auto varType() const -> const std::unique_ptr<Identifier>& {
-    return _varType;
-  }
-  auto init() const -> const std::unique_ptr<Expr>& {
-    return _init;
-  }
-
-private:
-  std::unique_ptr<VariableExpr> _variable;
-  std::unique_ptr<Identifier> _varType;
-  std::unique_ptr<Expr> _init;
-};
-
-// _____________________________________________________________________________
 // If expression
 
 class IfExpr final : public Expr {
@@ -251,6 +219,43 @@ private:
   std::unique_ptr<Expr> _condition;
   VectorUniquePtr<Expr> _thenExpr;
   VectorUniquePtr<Expr> _elseExpr;
+};
+
+// _____________________________________________________________________________
+// Variable declaration
+
+class VariableDeclExpr final : public Expr {
+public:
+  explicit VariableDeclExpr(llvm::SMLoc location,
+                        std::unique_ptr<VariableExpr> variable,
+                        std::unique_ptr<Identifier> varType,
+                        std::unique_ptr<Expr> init)
+      : Expr{Expr_VariableDecl, location}, _variable(std::move(variable)),
+        _varType(std::move(varType)), _init{std::move(init)} {};
+
+  static auto classof(const Expr *node) -> bool {
+    return node->getKind() == Expr_VariableDecl;
+  }
+
+  auto isStatement() -> bool override {
+    return true;
+  };
+
+  auto variable() const -> const std::unique_ptr<VariableExpr>& {
+    return _variable;
+  }
+
+  auto varType() const -> const std::unique_ptr<Identifier>& {
+    return _varType;
+  }
+  auto init() const -> const std::unique_ptr<Expr>& {
+    return _init;
+  }
+
+private:
+  std::unique_ptr<VariableExpr> _variable;
+  std::unique_ptr<Identifier> _varType;
+  std::unique_ptr<Expr> _init;
 };
 
 } // end namespace cherry

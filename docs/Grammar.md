@@ -31,7 +31,6 @@ lvalue → struct-access
 rvalue → literal-expression  
 rvalue → function-call-expression  
 rvalue → assign-expression  
-rvalue → var-declaration-expression  
 rvalue → if-expression    
 
 **GRAMMAR OF A LITERAL EXPRESSION**  
@@ -55,16 +54,11 @@ struct-access → struct-access `.` identifier
 **GRAMMAR OF AN ASSIGN EXPRESSION**     
 assign-expression → lvalue `=` rvalue  
   
-**GRAMMAR OF A VARIABLE DECLARATION EXPRESSION**  
-var-declaration-expression → `var` variable-expression type-annotation `=` rvalue
-
 **GRAMMAR OF A IF EXPRESSION**    
 if-expression → `if` expression block-expression `else` block-expression
 
 **GRAMMAR OF A BLOCK EXPRESSION**    
-block-expression → `{` block-expression-list `}`    
-block-expression-list → expression
-block-expression-list → block-expression `;` expression  
+block-expression → `{` statement-list<sub>opt</sub> expression `}`    
 
 ## Declarations  
 declaration → function-declaration  
@@ -91,3 +85,14 @@ struct-declaration → `struct` type `{`  struct-members<sub>opt</sub> `}`
 struct-members → struct-member `,`<sub>opt</sub>  
 struct-members → struct-member `,` struct-members  
 struct-member → identifier type-annotation  
+
+**GRAMMAR OF A VARIABLE DECLARATION**  
+var-declaration → `var` variable-expression type-annotation `=` rvalue  
+
+## Statements  
+statement-list → statement  
+statement-list → statement-list statement  
+
+**GRAMMAR OF A STATEMENT**  
+statement = expression `;`  
+statement = var-declaration `;`  

@@ -248,8 +248,6 @@ auto SemaImpl::sema(VariableDeclExpr *node) -> CherryResult {
     return failure();
   if (varTypeName != initExpr->type())
     return emitError(initExpr, diag::mismatch_type);
-
-  node->setType(builtins::UInt64Type);
   return success();
 }
 

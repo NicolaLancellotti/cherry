@@ -282,9 +282,7 @@ auto MLIRGenImpl::gen(const VariableDeclExpr *node,
   if (gen(node->init().get(), initValue))
     return failure();
   _variableSymbols[name] = initValue;
-
-  auto constant0 = _builder.create<ConstantOp>(loc(node), uint64_t(0));
-  value = constant0;
+  value = nullptr;
   return success();
 }
 
