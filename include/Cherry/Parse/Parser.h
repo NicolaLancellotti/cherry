@@ -140,9 +140,9 @@ private:
   // ___________________________________________________________________________
   // Parse Statements
 
-  auto parseStatementWithoutSemi(std::unique_ptr<Expr> &expr) -> CherryResult;
+  auto parseStatementWithoutSemi(std::unique_ptr<Stat> &stat) -> CherryResult;
 
-  auto parseVarDecl_c(std::unique_ptr<Expr> &expr) -> CherryResult;
+  auto parseVarDecl_c(std::unique_ptr<Stat> &stat) -> CherryResult;
 
 };
 

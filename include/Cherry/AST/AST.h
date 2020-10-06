@@ -10,6 +10,7 @@
 
 #include "Decl.h"
 #include "Expr.h"
+#include "Stat.h"
 #include "Module.h"
 #include "llvm/Support/SourceMgr.h"
 

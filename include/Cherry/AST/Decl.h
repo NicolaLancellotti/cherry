@@ -15,7 +15,7 @@ namespace cherry {
 
 class Expr;
 class VariableExpr;
-class VariableDeclExpr;
+class VariableStat;
 class BlockExpr;
 
 // _____________________________________________________________________________
@@ -63,7 +63,7 @@ class Prototype final : public Node {
 public:
   explicit Prototype(llvm::SMLoc location,
                      std::unique_ptr<Identifier> id,
-                     VectorUniquePtr<VariableDeclExpr> parameters,
+                     VectorUniquePtr<VariableStat> parameters,
                      std::unique_ptr<Identifier> type)
       : Node{location},
         _id(std::move(id)),
@@ -74,7 +74,7 @@ public:
     return _id;
   }
 
-  auto parameters() const -> const VectorUniquePtr<VariableDeclExpr>& {
+  auto parameters() const -> const VectorUniquePtr<VariableStat>& {
     return _parameters;
   }
 
@@ -84,7 +84,7 @@ public:
 
 private:
   std::unique_ptr<Identifier> _id;
-  VectorUniquePtr<VariableDeclExpr> _parameters;
+  VectorUniquePtr<VariableStat> _parameters;
   std::unique_ptr<Identifier> _type;
 };
 
@@ -120,7 +120,7 @@ class StructDecl final : public Decl {
 public:
   explicit StructDecl(llvm::SMLoc location,
                       std::unique_ptr<Identifier> id,
-                      VectorUniquePtr<VariableDeclExpr> variables)
+                      VectorUniquePtr<VariableStat> variables)
       : Decl{Decl_Struct, location}, _id(std::move(id)),
         _variables(std::move(variables)) {};
 
@@ -132,13 +132,13 @@ public:
     return _id;
   }
 
-  auto variables() const -> const VectorUniquePtr<VariableDeclExpr>& {
+  auto variables() const -> const VectorUniquePtr<VariableStat>& {
     return _variables;
   }
 
 private:
   std::unique_ptr<Identifier> _id;
-  VectorUniquePtr<VariableDeclExpr> _variables;
+  VectorUniquePtr<VariableStat> _variables;
 
 public:
   auto begin() const -> decltype(_variables.begin()) { return _variables.begin(); }

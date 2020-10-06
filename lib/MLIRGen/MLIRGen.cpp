@@ -58,12 +58,16 @@ private:
   auto gen(const IfExpr *node, mlir::Value &value) -> CherryResult;
   auto genPrint(const CallExpr *node, mlir::Value &value) -> CherryResult;
   auto gen(const CallExpr *node, mlir::Value &value) -> CherryResult;
-  auto gen(const VariableDeclExpr *node, mlir::Value &value) -> CherryResult;
   auto gen(const VariableExpr *node, mlir::Value &value) -> CherryResult;
   auto gen(const DecimalLiteralExpr *node, mlir::Value &value) -> CherryResult;
   auto gen(const BoolLiteralExpr *node, mlir::Value &value) -> CherryResult;
   auto gen(const BinaryExpr *node, mlir::Value &value) -> CherryResult;
   auto genAssign(const BinaryExpr *node, mlir::Value &value) -> CherryResult;
+
+  // Statements
+  auto gen(const Stat *node) -> CherryResult;
+  auto gen(const VariableStat *node) -> CherryResult;
+  auto gen(const ExprStat *node) -> CherryResult;
 
   // Utility
   auto loc(const Node *node) -> mlir::Location {
@@ -191,8 +195,6 @@ auto MLIRGenImpl::gen(const Expr *node, mlir::Value &value) -> CherryResult {
     return gen(cast<BoolLiteralExpr>(node), value);
   case Expr::Expr_Call:
     return gen(cast<CallExpr>(node), value);
-  case Expr::Expr_VariableDecl:
-    return gen(cast<VariableDeclExpr>(node), value);
   case Expr::Expr_Variable:
     return gen(cast<VariableExpr>(node), value);
   case Expr::Expr_Binary:
@@ -206,7 +208,7 @@ auto MLIRGenImpl::gen(const Expr *node, mlir::Value &value) -> CherryResult {
 
 auto MLIRGenImpl::gen(const BlockExpr *node, mlir::Value &value) -> CherryResult {
   for (auto &expr : *node)
-    if (gen(expr.get(), value))
+    if (gen(expr.get()))
       return failure();
   return gen(node->expression().get(), value);
 }
@@ -275,17 +277,6 @@ auto MLIRGenImpl::genPrint(const CallExpr *node, mlir::Value &value) -> CherryRe
   return success();
 }
 
-auto MLIRGenImpl::gen(const VariableDeclExpr *node,
-                      mlir::Value &value) -> CherryResult {
-  auto name = node->variable()->name();
-  mlir::Value initValue;
-  if (gen(node->init().get(), initValue))
-    return failure();
-  _variableSymbols[name] = initValue;
-  value = nullptr;
-  return success();
-}
-
 auto MLIRGenImpl::gen(const VariableExpr *node, mlir::Value &value) -> CherryResult {
   value = _variableSymbols[node->name()];
   return success();
@@ -321,6 +312,31 @@ auto MLIRGenImpl::genAssign(const BinaryExpr *node, mlir::Value &value) -> Cherr
   _variableSymbols[name] =  rhsValue;
   value = rhsValue;
   return success();
+}
+
+auto MLIRGenImpl::gen(const Stat *node) -> CherryResult {
+  switch (node->getKind()) {
+  case Stat::Stat_VariableDecl:
+    return gen(cast<VariableStat>(node));
+  case Stat::Stat_Expression:
+    return gen(cast<ExprStat>(node));
+  default:
+    llvm_unreachable("Unexpected statement");
+  }
+}
+
+auto MLIRGenImpl::gen(const VariableStat *node) -> CherryResult {
+  auto name = node->variable()->name();
+  mlir::Value initValue;
+  if (gen(node->init().get(), initValue))
+    return failure();
+  _variableSymbols[name] = initValue;
+  return success();
+}
+
+auto MLIRGenImpl::gen(const ExprStat *node) -> CherryResult {
+  mlir::Value value;
+  return gen(node->expression().get(), value);
 }
 
 namespace cherry {

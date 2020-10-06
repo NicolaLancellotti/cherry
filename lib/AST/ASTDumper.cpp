@@ -34,12 +34,16 @@ private:
   auto dump(const Expr *node) -> void;
   auto dump(const BlockExpr *node, llvm::StringRef string) -> void;
   auto dump(const CallExpr *node) -> void;
-  auto dump(const VariableDeclExpr *node) -> void;
   auto dump(const VariableExpr *node) -> void;
   auto dump(const DecimalLiteralExpr *node) -> void;
   auto dump(const BoolLiteralExpr *node) -> void;
   auto dump(const BinaryExpr *node) -> void;
   auto dump(const IfExpr *node) -> void;
+
+  // Statements
+  auto dump(const Stat *node) -> void;
+  auto dump(const VariableStat *node) -> void;
+  auto dump(const ExprStat *node) -> void;
 
   // Utility
   auto indent() -> void {
@@ -112,7 +116,7 @@ auto Dumper::dump(const StructDecl *node) -> void {
 auto Dumper::dump(const Expr *node) -> void {
   llvm::TypeSwitch<const Expr *>(node)
       .Case<CallExpr, DecimalLiteralExpr, BoolLiteralExpr, VariableExpr, IfExpr,
-          BinaryExpr, VariableDeclExpr>([&](auto *node) {
+          BinaryExpr>([&](auto *node) {
         this->dump(node);
       })
       .Default([&](const Expr *) {
@@ -134,16 +138,6 @@ auto Dumper::dump(const CallExpr *node) -> void {
          << " callee=" << node->name() << "\n";
   for (auto &expr : *node)
     dump(expr.get());
-}
-
-auto Dumper::dump(const VariableDeclExpr *node) -> void {
-  auto id = node->variable().get();
-  auto varType = node->varType().get();
-  INDENT();
-  errs() << "VariableDeclExpr (id=" << id->name() << " " << loc(id)
-         << ") (type=" << varType->name() << " " << loc(varType) << ")\n";
-  if (node->init())
-    dump(node->init().get());
 }
 
 auto Dumper::dump(const VariableExpr *node) -> void {
@@ -178,6 +172,30 @@ auto Dumper::dump(const IfExpr *node) -> void {
   dump(node->conditionExpr().get());
   dump(node->thenBlock().get(), "thenBlock:");
   dump(node->elseBlock().get(), "elseBlock:");
+}
+
+auto Dumper::dump(const Stat *node) -> void {
+  llvm::TypeSwitch<const Stat *>(node)
+      .Case<VariableStat, ExprStat>([&](auto *node) {
+        this->dump(node);
+      })
+      .Default([&](const Stat *) {
+        llvm_unreachable("Unexpected statement");
+      });
+}
+
+auto Dumper::dump(const VariableStat *node) -> void {
+  auto id = node->variable().get();
+  auto varType = node->varType().get();
+  INDENT();
+  errs() << "VariableStat (id=" << id->name() << " " << loc(id)
+         << ") (type=" << varType->name() << " " << loc(varType) << ")\n";
+  if (node->init())
+    dump(node->init().get());
+}
+
+auto Dumper::dump(const ExprStat *node) -> void {
+  dump(node->expression().get());
 }
 
 namespace cherry {

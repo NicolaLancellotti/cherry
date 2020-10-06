@@ -6,6 +6,7 @@ add_library(cherryAST STATIC
         ${LIB_HEADERS}/Module.h
         ${LIB_HEADERS}/Decl.h
         ${LIB_HEADERS}/Expr.h
+        ${LIB_HEADERS}/Stat.h
         ASTDumper.cpp
 )
 

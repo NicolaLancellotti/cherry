@@ -87,20 +87,20 @@ auto Parser::parsePrototype_c(unique_ptr<Prototype> &proto) -> CherryResult {
     return failure();
 
   // Parse Element
-  PE<VariableDeclExpr> parseParam = [this] (unique_ptr<VariableDeclExpr> &elem) -> CherryResult {
+  PE<VariableStat> parseParam = [this] (unique_ptr<VariableStat> &elem) -> CherryResult {
     unique_ptr<VariableExpr> param;
     unique_ptr<Identifier> type;
     if (parseIdentifier(param, diag::expected_id) ||
         parseToken(Token::colon, diag::expected_colon) ||
         parseIdentifier(type, diag::expected_type))
       return failure();
-    elem = make_unique<VariableDeclExpr>(param->location(), move(param),
-                                         move(type), nullptr);
+    elem = make_unique<VariableStat>(param->location(), move(param),
+                                     move(type), nullptr);
     return success();
   };
 
   // Parse List
-  VectorUniquePtr<VariableDeclExpr> parameters;
+  VectorUniquePtr<VariableStat> parameters;
   unique_ptr<Identifier> type;
   if (parseList(Token::comma, Token::r_paren,
                 diag::expected_comma_or_r_paren,
@@ -116,29 +116,31 @@ auto Parser::parsePrototype_c(unique_ptr<Prototype> &proto) -> CherryResult {
 
 auto Parser::parseBlockExpr(unique_ptr<BlockExpr> &block) -> CherryResult {
   auto loc = tokenLoc();
-  VectorUniquePtr<Expr> statements;
+  VectorUniquePtr<Stat> statements;
   while (true) {
-    unique_ptr<Expr> expr;
-    if (parseStatementWithoutSemi(expr))
+    unique_ptr<Stat> stat;
+    if (parseStatementWithoutSemi(stat))
       return failure();
-    auto isStatement = expr->isStatement();
+
+    auto isStatement = stat->getKind() != Stat::Stat_Expression;
     if (isStatement) {
       if (parseToken(Token::semi, diag::expected_semi))
         return failure();
-      statements.push_back(move(expr));
+      statements.push_back(move(stat));
       continue;
     }
 
     if (consumeIf(Token::semi)) {
-      statements.push_back(move(expr));
+      statements.push_back(move(stat));
       continue;
     }
 
     if (parseToken(Token::r_brace, diag::expected_r_brace))
       return failure();
 
+    unique_ptr<ExprStat> exprStat(static_cast<ExprStat*>(stat.release()));
     block = make_unique<BlockExpr>(loc, std::move(statements),
-                                   std::move(expr));
+                                   std::move(exprStat->expression()));
     return success();
   }
 }
@@ -154,20 +156,20 @@ auto Parser::parseStructDecl_c(unique_ptr<Decl> &decl) -> CherryResult {
     return failure();
 
   // Parse Element
-  PE<VariableDeclExpr> parseField = [this] (unique_ptr<VariableDeclExpr> &elem) -> CherryResult {
+  PE<VariableStat> parseField = [this] (unique_ptr<VariableStat> &elem) -> CherryResult {
     unique_ptr<VariableExpr> var;
     unique_ptr<Identifier> type;
     if (parseIdentifier(var, diag::expected_id) ||
         parseToken(Token::colon, diag::expected_colon) ||
         parseIdentifier(type, diag::expected_type))
       return failure();
-    elem = make_unique<VariableDeclExpr>(var->location(), move(var), move(type),
-                                         nullptr);
+    elem = make_unique<VariableStat>(var->location(), move(var), move(type),
+                                     nullptr);
     return success();
   };
 
   // Parse List
-  VectorUniquePtr<VariableDeclExpr> fields;
+  VectorUniquePtr<VariableStat> fields;
   if (parseList(Token::comma, Token::r_brace,
                 diag::expected_comma_or_r_brace,
                 diag::expected_r_brace, fields, parseField))
@@ -345,16 +347,22 @@ auto Parser::isTokenRightAssociative() -> bool {
 // _____________________________________________________________________________
 // Parse Statements
 
-auto Parser::parseStatementWithoutSemi(unique_ptr<Expr> &expr) -> CherryResult {
+auto Parser::parseStatementWithoutSemi(unique_ptr<Stat> &stat) -> CherryResult {
   switch (tokenKind()) {
   case Token::kw_var:
-    return parseVarDecl_c(expr);
-  default:
-    return parseExpression(expr);
+    return parseVarDecl_c(stat);
+  default: {
+    auto loc = tokenLoc();
+    unique_ptr<Expr> expr;
+    if (parseExpression(expr))
+      return failure();
+    stat = make_unique<ExprStat>(loc, std::move(expr));
+    return success();
+  }
   }
 }
 
-auto Parser::parseVarDecl_c(unique_ptr<Expr> &expr) -> CherryResult {
+auto Parser::parseVarDecl_c(unique_ptr<Stat> &stat) -> CherryResult {
   auto loc = tokenLoc();
   consume(Token::kw_var);
   unique_ptr<VariableExpr> var;
@@ -366,6 +374,6 @@ auto Parser::parseVarDecl_c(unique_ptr<Expr> &expr) -> CherryResult {
       parseToken(Token::assign, diag::expected_assign) ||
       parseExpression(e))
     return failure();
-  expr = make_unique<VariableDeclExpr>(loc, move(var), move(type), std::move(e));
+  stat = make_unique<VariableStat>(loc, move(var), move(type), std::move(e));
   return success();
 }

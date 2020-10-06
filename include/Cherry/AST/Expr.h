@@ -12,7 +12,7 @@
 #include "llvm/ADT/StringRef.h"
 
 namespace cherry {
-
+class Stat;
 // _____________________________________________________________________________
 // Expression
 
@@ -25,7 +25,6 @@ public:
     Expr_Variable,
     Expr_Struct,
     Expr_Binary,
-    Expr_VariableDecl,
     Expr_Block,
     Expr_If,
   };
@@ -194,7 +193,7 @@ private:
 class BlockExpr final : public Expr {
 public:
   explicit BlockExpr(llvm::SMLoc location,
-                     VectorUniquePtr<Expr> statements,
+                     VectorUniquePtr<Stat> statements,
                      std::unique_ptr<Expr> expression)
       : Expr{Expr_Block, location},
         _statements(std::move(statements)),
@@ -204,7 +203,7 @@ public:
     return node->getKind() == Expr_Block;
   }
 
-  auto statements() const -> const VectorUniquePtr<Expr>& {
+  auto statements() const -> const VectorUniquePtr<Stat>& {
     return _statements;
   }
 
@@ -213,7 +212,7 @@ public:
   }
 
 private:
-  VectorUniquePtr<Expr> _statements;
+  VectorUniquePtr<Stat> _statements;
   std::unique_ptr<Expr> _expression;
 public:
   auto begin() const -> decltype(_statements.begin()) { return _statements.begin(); }
@@ -252,43 +251,6 @@ private:
   std::unique_ptr<Expr> _condition;
   std::unique_ptr<BlockExpr>  _thenExpr;
   std::unique_ptr<BlockExpr>  _elseExpr;
-};
-
-// _____________________________________________________________________________
-// Variable declaration
-
-class VariableDeclExpr final : public Expr {
-public:
-  explicit VariableDeclExpr(llvm::SMLoc location,
-                            std::unique_ptr<VariableExpr> variable,
-                            std::unique_ptr<Identifier> varType,
-                            std::unique_ptr<Expr> init)
-      : Expr{Expr_VariableDecl, location}, _variable(std::move(variable)),
-        _varType(std::move(varType)), _init{std::move(init)} {};
-
-  static auto classof(const Expr *node) -> bool {
-    return node->getKind() == Expr_VariableDecl;
-  }
-
-  auto isStatement() -> bool override {
-    return true;
-  };
-
-  auto variable() const -> const std::unique_ptr<VariableExpr>& {
-    return _variable;
-  }
-
-  auto varType() const -> const std::unique_ptr<Identifier>& {
-    return _varType;
-  }
-  auto init() const -> const std::unique_ptr<Expr>& {
-    return _init;
-  }
-
-private:
-  std::unique_ptr<VariableExpr> _variable;
-  std::unique_ptr<Identifier> _varType;
-  std::unique_ptr<Expr> _init;
 };
 
 } // end namespace cherry

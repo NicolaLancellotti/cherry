@@ -71,13 +71,17 @@ private:
   auto gen(const Expr *node, llvm::Value *&value) -> CherryResult;
   auto gen(const BlockExpr *node, llvm::Value *&value) -> CherryResult;
   auto gen(const CallExpr *node, llvm::Value *&value) -> CherryResult;
-  auto gen(const VariableDeclExpr *node, llvm::Value *&value) -> CherryResult;
   auto gen(const VariableExpr *node, llvm::Value *&value) -> CherryResult;
   auto gen(const DecimalLiteralExpr *node, llvm::Value *&value) -> CherryResult;
   auto gen(const BoolLiteralExpr *node, llvm::Value *&value) -> CherryResult;
   auto gen(const BinaryExpr *node, llvm::Value *&value) -> CherryResult;
   auto genAssign(const BinaryExpr *node, llvm::Value *&value) -> CherryResult;
   auto gen(const IfExpr *node, llvm::Value *&value) -> CherryResult;
+
+  // Statements
+  auto gen(const Stat *node) -> CherryResult;
+  auto gen(const VariableStat *node) -> CherryResult;
+  auto gen(const ExprStat *node) -> CherryResult;
 
   // Utility
   auto getType(llvm::StringRef name) -> llvm::Type* {
@@ -316,8 +320,6 @@ auto LLVMGenImpl::gen(const Expr *node, llvm::Value *&value) -> CherryResult {
     return gen(cast<BoolLiteralExpr>(node), value);
   case Expr::Expr_Call:
     return gen(cast<CallExpr>(node), value);
-  case Expr::Expr_VariableDecl:
-    return gen(cast<VariableDeclExpr>(node), value);
   case Expr::Expr_Variable:
     return gen(cast<VariableExpr>(node), value);
   case Expr::Expr_Binary:
@@ -332,7 +334,7 @@ auto LLVMGenImpl::gen(const Expr *node, llvm::Value *&value) -> CherryResult {
 auto LLVMGenImpl::gen(const BlockExpr *node,
                       llvm::Value *&value) -> CherryResult {
   for (auto &expr : *node)
-    if (gen(expr.get(), value))
+    if (gen(expr.get()))
       return failure();
   return gen(node->expression().get(), value);
 }
@@ -355,25 +357,6 @@ auto LLVMGenImpl::gen(const CallExpr *node, llvm::Value *&value) -> CherryResult
     value = _builder.CreateCall(callee, operands, functionName);
   }
 
-  return success();
-}
-
-auto LLVMGenImpl::gen(const VariableDeclExpr *node,
-                      llvm::Value *&value) -> CherryResult {
-  auto name = node->variable()->name();
-  auto typeName = node->varType()->name();
-  auto llvmType = getType(typeName);
-
-  llvm::Value *initValue;
-  if (gen(node->init().get(), initValue))
-    return failure();
-
-  auto func = _builder.GetInsertBlock()->getParent();
-  auto alloca = createEntryBlockAlloca(func, name, llvmType);
-  _variableSymbols[name] = alloca;
-  emitLocation(node);
-  _builder.CreateStore(initValue, alloca);
-  value = nullptr;
   return success();
 }
 
@@ -460,6 +443,39 @@ auto LLVMGenImpl::gen(const IfExpr *node, llvm::Value *&value) -> CherryResult {
   pn->addIncoming(thenValue, thenBB);
   pn->addIncoming(elseValue, elseBB);
   value = pn;
+}
+
+auto LLVMGenImpl::gen(const Stat *node) -> CherryResult {
+  switch (node->getKind()) {
+  case Stat::Stat_VariableDecl:
+    return gen(cast<VariableStat>(node));
+  case Stat::Stat_Expression:
+    return gen(cast<ExprStat>(node));
+  default:
+    llvm_unreachable("Unexpected statement");
+  }
+}
+
+auto LLVMGenImpl::gen(const VariableStat *node) -> CherryResult {
+  auto name = node->variable()->name();
+  auto typeName = node->varType()->name();
+  auto llvmType = getType(typeName);
+
+  llvm::Value *initValue;
+  if (gen(node->init().get(), initValue))
+    return failure();
+
+  auto func = _builder.GetInsertBlock()->getParent();
+  auto alloca = createEntryBlockAlloca(func, name, llvmType);
+  _variableSymbols[name] = alloca;
+  emitLocation(node);
+  _builder.CreateStore(initValue, alloca);
+  return success();
+}
+
+auto LLVMGenImpl::gen(const ExprStat *node) -> CherryResult {
+  llvm::Value *value;
+  return gen(node->expression().get(), value);
 }
 
 namespace cherry {

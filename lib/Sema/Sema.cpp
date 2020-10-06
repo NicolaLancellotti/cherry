@@ -52,7 +52,6 @@ private:
   auto sema(BlockExpr *node) -> CherryResult;
   auto sema(CallExpr *node) -> CherryResult;
   auto semaStructConstructor(CallExpr *node) -> CherryResult;
-  auto sema(VariableDeclExpr *node) -> CherryResult;
   auto sema(VariableExpr *node) -> CherryResult;
   auto sema(DecimalLiteralExpr *node) -> CherryResult;
   auto sema(BoolLiteralExpr *node) -> CherryResult;
@@ -60,6 +59,11 @@ private:
   auto semaAssign(BinaryExpr *node) -> CherryResult;
   auto semaStructAccess(BinaryExpr *node) -> CherryResult;
   auto sema(IfExpr *node) -> CherryResult;
+
+  // Statements
+  auto sema(Stat *node) -> CherryResult;
+  auto sema(VariableStat *node) -> CherryResult;
+  auto sema(ExprStat *node) -> CherryResult;
 
   // Errors
   auto emitError(Node *node, const llvm::Twine &msg) -> CherryResult {
@@ -157,8 +161,6 @@ auto SemaImpl::sema(Expr *node) -> CherryResult {
     return sema(cast<BoolLiteralExpr>(node));
   case Expr::Expr_Call:
     return sema(cast<CallExpr>(node));
-  case Expr::Expr_VariableDecl:
-    return sema(cast<VariableDeclExpr>(node));
   case Expr::Expr_Variable:
     return sema(cast<VariableExpr>(node));
   case Expr::Expr_Binary:
@@ -216,7 +218,7 @@ auto SemaImpl::sema(CallExpr *node) -> CherryResult {
 
 auto SemaImpl::semaStructConstructor(CallExpr *node) -> CherryResult {
   auto type = node->name();
-  const VectorUniquePtr<VariableDeclExpr> *fieldsTypes;
+  const VectorUniquePtr<VariableStat> *fieldsTypes;
   if (_symbols.getType(type, fieldsTypes))
     return emitError(node, diag::undefined_type);
 
@@ -233,23 +235,6 @@ auto SemaImpl::semaStructConstructor(CallExpr *node) -> CherryResult {
   }
 
   node->setType(type);
-  return success();
-}
-
-auto SemaImpl::sema(VariableDeclExpr *node) -> CherryResult {
-  auto var = node->variable().get();
-  auto varType = node->varType().get();
-  auto varTypeName = varType->name();
-  if (_symbols.checkType(varTypeName))
-    return emitError(varType, diag::undefined_type);
-  if (_symbols.declareVariable(var, varTypeName))
-    return emitError(var, diag::redefinition_var);
-
-  auto initExpr = node->init().get();
-  if (sema(initExpr))
-    return failure();
-  if (varTypeName != initExpr->type())
-    return emitError(initExpr, diag::mismatch_type);
   return success();
 }
 
@@ -305,7 +290,7 @@ auto SemaImpl::semaStructAccess(BinaryExpr *node) -> CherryResult {
     return emitError(node->rhs().get(), diag::expected_field);
 
   auto fieldName = var->name();
-  const VectorUniquePtr<VariableDeclExpr> *fieldsTypes;
+  const VectorUniquePtr<VariableStat> *fieldsTypes;
   auto lhsType = node->lhs()->type();
   _symbols.getType(lhsType, fieldsTypes);
 
@@ -339,6 +324,38 @@ auto SemaImpl::sema(IfExpr *node) -> CherryResult {
 
   node->setType(elseType);
   return success();
+}
+
+auto SemaImpl::sema(Stat *node) -> CherryResult {
+  switch (node->getKind()) {
+  case Stat::Stat_VariableDecl:
+    return sema(cast<VariableStat>(node));
+  case Stat::Stat_Expression:
+    return sema(cast<ExprStat>(node));
+  default:
+    llvm_unreachable("Unexpected statement");
+  }
+}
+
+auto SemaImpl::sema(VariableStat *node) -> CherryResult {
+  auto var = node->variable().get();
+  auto varType = node->varType().get();
+  auto varTypeName = varType->name();
+  if (_symbols.checkType(varTypeName))
+    return emitError(varType, diag::undefined_type);
+  if (_symbols.declareVariable(var, varTypeName))
+    return emitError(var, diag::redefinition_var);
+
+  auto initExpr = node->init().get();
+  if (sema(initExpr))
+    return failure();
+  if (varTypeName != initExpr->type())
+    return emitError(initExpr, diag::mismatch_type);
+  return success();
+}
+
+auto SemaImpl::sema(ExprStat *node)  -> CherryResult {
+  return sema(node->expression().get());
 }
 
 namespace cherry {
