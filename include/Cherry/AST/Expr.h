@@ -194,8 +194,11 @@ private:
 class BlockExpr final : public Expr {
 public:
   explicit BlockExpr(llvm::SMLoc location,
-                     VectorUniquePtr<Expr> statements)
-      : Expr{Expr_Block, location}, _statements(std::move(statements)){};
+                     VectorUniquePtr<Expr> statements,
+                     std::unique_ptr<Expr> expression)
+      : Expr{Expr_Block, location},
+        _statements(std::move(statements)),
+        _expression(std::move(expression)) {};
 
   static auto classof(const Expr *node) -> bool {
     return node->getKind() == Expr_Block;
@@ -206,11 +209,12 @@ public:
   }
 
   auto expression() const -> const std::unique_ptr<Expr>& {
-    return _statements.back();
+    return _expression;
   }
 
 private:
   VectorUniquePtr<Expr> _statements;
+  std::unique_ptr<Expr> _expression;
 public:
   auto begin() const -> decltype(_statements.begin()) { return _statements.begin(); }
   auto end() const -> decltype(_statements.end()) { return _statements.end(); }

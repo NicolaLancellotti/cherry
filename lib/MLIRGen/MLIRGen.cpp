@@ -54,7 +54,7 @@ private:
 
   // Expressions
   auto gen(const Expr *node, mlir::Value &value) -> CherryResult;
-  auto gen(const VectorUniquePtr<Expr> &node, mlir::Value &value) -> CherryResult;
+  auto gen(const BlockExpr *node, mlir::Value &value) -> CherryResult;
   auto gen(const IfExpr *node, mlir::Value &value) -> CherryResult;
   auto genPrint(const CallExpr *node, mlir::Value &value) -> CherryResult;
   auto gen(const CallExpr *node, mlir::Value &value) -> CherryResult;
@@ -204,11 +204,11 @@ auto MLIRGenImpl::gen(const Expr *node, mlir::Value &value) -> CherryResult {
   }
 }
 
-auto MLIRGenImpl::gen(const VectorUniquePtr<Expr> &node, mlir::Value &value) -> CherryResult {
-  for (auto &expr : node)
+auto MLIRGenImpl::gen(const BlockExpr *node, mlir::Value &value) -> CherryResult {
+  for (auto &expr : *node)
     if (gen(expr.get(), value))
       return failure();
-  return success();
+  return gen(node->expression().get(), value);
 }
 
 auto MLIRGenImpl::gen(const IfExpr *node, mlir::Value &value) -> CherryResult {

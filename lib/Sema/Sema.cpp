@@ -174,7 +174,8 @@ auto SemaImpl::sema(BlockExpr *node) -> CherryResult {
   for (auto &expr : *node)
     if (sema(expr.get()))
       return failure();
-  return success();
+
+  return sema(node->expression().get());
 }
 
 auto SemaImpl::sema(CallExpr *node) -> CherryResult {

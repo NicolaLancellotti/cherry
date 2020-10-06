@@ -69,7 +69,7 @@ private:
 
   // Expressions
   auto gen(const Expr *node, llvm::Value *&value) -> CherryResult;
-  auto gen(const VectorUniquePtr<Expr> &node, llvm::Value *&value) -> CherryResult;
+  auto gen(const BlockExpr *node, llvm::Value *&value) -> CherryResult;
   auto gen(const CallExpr *node, llvm::Value *&value) -> CherryResult;
   auto gen(const VariableDeclExpr *node, llvm::Value *&value) -> CherryResult;
   auto gen(const VariableExpr *node, llvm::Value *&value) -> CherryResult;
@@ -329,12 +329,12 @@ auto LLVMGenImpl::gen(const Expr *node, llvm::Value *&value) -> CherryResult {
   }
 }
 
-auto LLVMGenImpl::gen(const VectorUniquePtr<Expr> &node,
+auto LLVMGenImpl::gen(const BlockExpr *node,
                       llvm::Value *&value) -> CherryResult {
-  for (auto &expr : node)
+  for (auto &expr : *node)
     if (gen(expr.get(), value))
       return failure();
-  return success();
+  return gen(node->expression().get(), value);
 }
 
 auto LLVMGenImpl::gen(const CallExpr *node, llvm::Value *&value) -> CherryResult {

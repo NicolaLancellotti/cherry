@@ -116,27 +116,29 @@ auto Parser::parsePrototype_c(unique_ptr<Prototype> &proto) -> CherryResult {
 
 auto Parser::parseBlockExpr(unique_ptr<BlockExpr> &block) -> CherryResult {
   auto loc = tokenLoc();
-  VectorUniquePtr<Expr> expressions;
+  VectorUniquePtr<Expr> statements;
   while (true) {
     unique_ptr<Expr> expr;
     if (parseStatementWithoutSemi(expr))
       return failure();
     auto isStatement = expr->isStatement();
-    expressions.push_back(move(expr));
-
     if (isStatement) {
       if (parseToken(Token::semi, diag::expected_semi))
         return failure();
+      statements.push_back(move(expr));
       continue;
     }
 
-    if (consumeIf(Token::semi))
+    if (consumeIf(Token::semi)) {
+      statements.push_back(move(expr));
       continue;
+    }
 
     if (parseToken(Token::r_brace, diag::expected_r_brace))
       return failure();
 
-    block = make_unique<BlockExpr>(loc, std::move(expressions));
+    block = make_unique<BlockExpr>(loc, std::move(statements),
+                                   std::move(expr));
     return success();
   }
 }
