@@ -181,10 +181,18 @@ public:
     return _op == ".";
   }
 
+  auto index() const -> int {
+      return _index;
+  }
+
+  auto setIndex(int index) {
+    _index = index;
+  }
 private:
   std::unique_ptr<Expr> _lhs;
   std::unique_ptr<Expr> _rhs;
   std::string _op;
+  int _index;
 };
 
 // _____________________________________________________________________________

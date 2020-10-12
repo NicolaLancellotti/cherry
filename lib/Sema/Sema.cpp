@@ -285,6 +285,10 @@ auto SemaImpl::semaAssign(BinaryExpr *node) -> CherryResult {
 auto SemaImpl::semaStructAccess(BinaryExpr *node) -> CherryResult {
   if (sema(node->lhs().get()))
     return failure();
+
+  if (!node->lhs()->isLvalue())
+    return emitError(node->lhs().get(), diag::expected_lvalue);
+
   VariableExpr *var = llvm::dyn_cast<VariableExpr>(node->rhs().get());
   if (!var)
     return emitError(node->rhs().get(), diag::expected_field);
@@ -294,11 +298,14 @@ auto SemaImpl::semaStructAccess(BinaryExpr *node) -> CherryResult {
   auto lhsType = node->lhs()->type();
   _symbols.getType(lhsType, fieldsTypes);
 
+  auto index = 0;
   for (auto &f : *fieldsTypes) {
     if (f->variable()->name() == fieldName) {
       node->setType(f->varType()->name());
+      node->setIndex(index);
       return success();
     }
+    index++;
   }
 
   return emitError(node->rhs().get(), diag::undefined_field);

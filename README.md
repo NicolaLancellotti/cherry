@@ -43,18 +43,16 @@ Generate a target ".o" object file  | -c[=\<filename>]
 ```
 # This is a comment
 
-# struct A { }
+# This is a comment
 
-# struct B {
-#   x: UInt64,
-#   y: A
-# }
+struct A { }
 
-# fn baz(x: B): B {
-#   B(1, A())
-# }
+struct B {
+  x: Bool,
+  y: A
+}
 
-fn bar(x: UInt64, y: Bool): Bool {
+fn bar(x: UInt64, y: Bool): B {
   var k: Bool = y;
   
   k = if k {
@@ -64,12 +62,13 @@ fn bar(x: UInt64, y: Bool): Bool {
     print(0);
     true
   };
-  k
+
+  B(k, A())
 }
 
 fn main(): UInt64 {
-  var x: Bool = bar(18446744073709551615, true);
-  print(boolToUInt64(x));
+  var structValue: B = bar(18446744073709551615, false);
+  print(boolToUInt64(structValue.x));
   1
 }
 ```
@@ -95,6 +94,5 @@ cherry-opt -lower-cherry-to-std -lower-cherry-std-to-llvm -print-ir-after-all ma
 ```
 
 ## Unimplemented features
-- Struct constructors and struct access expressions 
-can be parsed and type-checked but the lowering 
-to MLIR or LLVM is not implemented yet.
+- Structs are implemented only in LLVMGen (-b=llvm), 
+in MLIRGen (-b=mlir) they are not implemented yet.
