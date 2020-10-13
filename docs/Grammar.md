@@ -10,14 +10,16 @@ identifier-character → identifier-head
 identifier-character → `Digit 0 through 9`  
 
 **GRAMMAR OF A LITERAL**  
-literal → decimal-literal  
-literal → boolean-literal 
- 
-decimal-literal → decimal-digit decimal-digits<sub>opt</sub>  
-decimal-digit → `Digit 0 through 9`  
-decimal-digits → decimal-digit decimal-digits<sub>opt</sub>  
+literal → unit-literal  
+literal → boolean-literal  
+literal → decimal-literal   
+
+unit-literal  → `(` `)`   
 boolean-literal → `true`  
 boolean-literal → `false`   
+decimal-literal → decimal-digit decimal-digits<sub>opt</sub>    
+decimal-digit → `Digit 0 through 9`  
+decimal-digits → decimal-digit decimal-digits<sub>opt</sub>    
 
 ## Expressions
 expression → lvalue  
