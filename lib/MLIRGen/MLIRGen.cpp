@@ -54,6 +54,7 @@ private:
 
   // Expressions
   auto gen(const Expr *node, mlir::Value &value) -> CherryResult;
+  auto gen(const UnitExpr *node, mlir::Value &value) -> CherryResult;
   auto gen(const BlockExpr *node, mlir::Value &value) -> CherryResult;
   auto gen(const IfExpr *node, mlir::Value &value) -> CherryResult;
   auto genPrint(const CallExpr *node, mlir::Value &value) -> CherryResult;
@@ -76,7 +77,9 @@ private:
   }
 
   auto getType(llvm::StringRef name) -> mlir::Type {
-    if (name == builtins::UInt64Type) {
+    if (name == builtins::UnitType) {
+      return nullptr;
+    } else if (name == builtins::UInt64Type) {
       return _builder.getI64Type();
     } else if (name == builtins::BoolType) {
       return _builder.getI1Type();
@@ -133,7 +136,9 @@ auto MLIRGenImpl::gen(const Prototype *node, mlir::FuncOp &func) -> CherryResult
   for (auto &param : node->parameters())
     arg_types.push_back(getType(param->varType()->name()));
 
-  llvm::SmallVector<mlir::Type, 1> result_types(1, getType(node->type()->name()));
+  llvm::SmallVector<mlir::Type, 1> result_types;
+  if (auto type = getType(node->type()->name()))
+    result_types.push_back(type);
 
   auto funcName = node->id()->name();
   auto funcType = _builder.getFunctionType(arg_types, result_types);
@@ -165,7 +170,10 @@ auto MLIRGenImpl::gen(const FunctionDecl *node,
   }
 
   auto location = loc(node->body()->expression().get());
-  _builder.create<ReturnOp>(location, value);
+  if (value)
+    _builder.create<ReturnOp>(location, value);
+  else
+    _builder.create<ReturnOp>(location, llvm::None);
   return success();
 }
 
@@ -189,6 +197,8 @@ auto MLIRGenImpl::gen(const StructDecl *node) -> CherryResult {
 
 auto MLIRGenImpl::gen(const Expr *node, mlir::Value &value) -> CherryResult {
   switch (node->getKind()) {
+  case Expr::Expr_Unit:
+    return gen(cast<UnitExpr>(node), value);
   case Expr::Expr_DecimalLiteral:
     return gen(cast<DecimalLiteralExpr>(node), value);
   case Expr::Expr_BoolLiteral:
@@ -204,6 +214,10 @@ auto MLIRGenImpl::gen(const Expr *node, mlir::Value &value) -> CherryResult {
   default:
     llvm_unreachable("Unexpected expression");
   }
+}
+
+auto MLIRGenImpl::gen(const UnitExpr *node, mlir::Value &value) -> CherryResult {
+  value = nullptr;
 }
 
 auto MLIRGenImpl::gen(const BlockExpr *node, mlir::Value &value) -> CherryResult {
@@ -259,11 +273,13 @@ auto MLIRGenImpl::gen(const CallExpr *node, mlir::Value &value) -> CherryResult 
       return failure();
     operands.push_back(value);
   }
-  if (functionName == builtins::boolToUInt64)
+  if (functionName == builtins::boolToUInt64) {
     value = _builder.create<CastOp>(loc(node),  operands.front());
-  else
-    value = _builder.create<CallOp>(loc(node), node->name(), operands,
-                                    _functionSymbols[functionName]);
+  } else {
+    auto op = _builder.create<CallOp>(loc(node), node->name(), operands, _functionSymbols[functionName]);
+    value = node->type() == builtins::UnitType ? nullptr : op.getResult(0);
+  }
+
   return success();
 }
 

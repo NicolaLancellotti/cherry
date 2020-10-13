@@ -49,6 +49,7 @@ private:
 
   // Expressions
   auto sema(Expr *node) -> CherryResult;
+  auto sema(UnitExpr *node) -> CherryResult;
   auto sema(BlockExpr *node) -> CherryResult;
   auto sema(CallExpr *node) -> CherryResult;
   auto semaStructConstructor(CallExpr *node) -> CherryResult;
@@ -100,6 +101,8 @@ auto SemaImpl::sema(Prototype *node) -> CherryResult {
   for (auto &par : node->parameters()) {
     auto type = par->varType().get();
     auto typeName = type->name();
+    if (typeName == builtins::UnitType)
+      return emitError(type, diag::unexpected_unit_type);
     if (_symbols.checkType(typeName))
       return emitError(type, diag::undefined_type);
     if (_symbols.declareVariable(par->variable().get(), typeName))
@@ -140,6 +143,8 @@ auto SemaImpl::sema(StructDecl *node) -> CherryResult {
   for (auto &varDecl : *node) {
     auto type = varDecl->varType().get();
     auto var = varDecl->variable().get();
+    if (type->name() == builtins::UnitType)
+      return emitError(type, diag::unexpected_unit_type);
     if (_symbols.checkType(type->name()))
       return emitError(type, diag::undefined_type);
     if (variables.count(var->name()) > 0)
@@ -155,6 +160,8 @@ auto SemaImpl::sema(StructDecl *node) -> CherryResult {
 
 auto SemaImpl::sema(Expr *node) -> CherryResult {
   switch (node->getKind()) {
+  case Expr::Expr_Unit:
+    return sema(cast<UnitExpr>(node));
   case Expr::Expr_DecimalLiteral:
     return sema(cast<DecimalLiteralExpr>(node));
   case Expr::Expr_BoolLiteral:
@@ -170,6 +177,11 @@ auto SemaImpl::sema(Expr *node) -> CherryResult {
   default:
     llvm_unreachable("Unexpected expression");
   }
+}
+
+auto SemaImpl::sema(UnitExpr *node) -> CherryResult {
+  node->setType(builtins::UnitType);
+  return success();
 }
 
 auto SemaImpl::sema(BlockExpr *node) -> CherryResult {
@@ -276,9 +288,9 @@ auto SemaImpl::semaAssign(BinaryExpr *node) -> CherryResult {
   auto lhsType = node->lhs()->type();
   auto rhsType = node->rhs()->type();
   if (lhsType != rhsType)
-    return emitError(node->rhs().get(), diag::mismatch_type);
+    return emitError(node->lhs().get(), diag::mismatch_type);
 
-  node->setType(lhsType);
+  node->setType(builtins::UnitType);
   return success();
 }
 

@@ -75,6 +75,7 @@ private:
 
   // Expressions
   auto gen(const Expr *node, llvm::Value *&value) -> CherryResult;
+  auto gen(const UnitExpr *node, llvm::Value *&value) -> CherryResult;
   auto gen(const BlockExpr *node, llvm::Value *&value) -> CherryResult;
   auto gen(const CallExpr *node, llvm::Value *&value) -> CherryResult;
   auto genStructConstructor(const CallExpr *node,
@@ -98,8 +99,14 @@ private:
     return llvm::ConstantInt::get(_context, llvm::APInt(bits, value, true));
   }
 
+  auto getUnit() -> llvm::Value* {
+    return llvm::UndefValue::get(getType(builtins::UnitType));
+  }
+
   auto getType(llvm::StringRef name) -> llvm::Type* {
-    if (name == builtins::UInt64Type) {
+    if (name == builtins::UnitType) {
+      return llvm::Type::getVoidTy(_context);
+    } else if (name == builtins::UInt64Type) {
       return llvm::Type::getInt64Ty(_context);
     } else if (name == builtins::BoolType) {
       return llvm::Type::getInt1Ty(_context);
@@ -126,8 +133,11 @@ private:
                                                   llvm::dwarf::DW_ATE_unsigned);
       auto dUInt1Ty = _dBuilder->createBasicType(builtins::BoolType, 1,
                                                  llvm::dwarf::DW_ATE_unsigned);
+      auto dUnitTy = _dBuilder->createBasicType(builtins::UnitType, 0,
+                                                  llvm::dwarf::DW_ATE_unsigned);
       _dTypeSymbols[builtins::UInt64Type] = dUInt64Ty;
       _dTypeSymbols[builtins::BoolType] = dUInt1Ty;
+      _dTypeSymbols[builtins::UnitType] = dUnitTy;
     }
 
     auto llvmI64Ty = llvm::IntegerType::get(_context, 64);
@@ -165,6 +175,8 @@ private:
   auto createEntryBlockAlloca(llvm::Function *func,
                               llvm::StringRef varName,
                               llvm::Type *type) -> llvm::AllocaInst* {
+    if (type == getType(builtins::UnitType))
+      return nullptr;
     llvm::IRBuilder<> TmpB(&func->getEntryBlock(), func->getEntryBlock().begin());
     return TmpB.CreateAlloca(type, nullptr, varName);
   }
@@ -222,7 +234,7 @@ auto LLVMGenImpl::gen(const Module &node) -> CherryResult {
     _dBuilder->finalize();
   }
 
-  if (llvm::verifyModule(*module)) {
+  if (llvm::verifyModule(*module, &llvm::errs())) {
     llvm::errs() << "module verification error";
     return failure();
   }
@@ -323,16 +335,19 @@ auto LLVMGenImpl::gen(const FunctionDecl *node) -> CherryResult {
     return failure();
   }
 
-  if (!value) {
-    auto llvmType = getType(node->proto()->type()->name());
-    auto *structType = static_cast<llvm::StructType*>(llvmType);
-    auto index0 = getConstantInt(32, 0);
-    auto alloca = _variableSymbols[tmpExpression];
-    auto address = _builder.CreateGEP(structType, alloca, {index0});
-    value = _builder.CreateLoad(address, "tmp");
+  if (node->proto()->type()->name() == builtins::UnitType) {
+    _builder.CreateRetVoid();
+  } else {
+    if (!value) {
+      auto llvmType = getType(node->proto()->type()->name());
+      auto *structType = static_cast<llvm::StructType*>(llvmType);
+      auto index0 = getConstantInt(32, 0);
+      auto alloca = _variableSymbols[tmpExpression];
+      auto address = _builder.CreateGEP(structType, alloca, {index0});
+      value = _builder.CreateLoad(address, "tmp");
+    }
+    _builder.CreateRet(value);
   }
-
-  _builder.CreateRet(value);
 
   _pass->run(*func);
 
@@ -350,6 +365,8 @@ auto LLVMGenImpl::gen(const StructDecl *node) -> CherryResult {
 
 auto LLVMGenImpl::gen(const Expr *node, llvm::Value *&value) -> CherryResult {
   switch (node->getKind()) {
+  case Expr::Expr_Unit:
+    return gen(cast<UnitExpr>(node), value);
   case Expr::Expr_DecimalLiteral:
     return gen(cast<DecimalLiteralExpr>(node), value);
   case Expr::Expr_BoolLiteral:
@@ -365,6 +382,13 @@ auto LLVMGenImpl::gen(const Expr *node, llvm::Value *&value) -> CherryResult {
   default:
     llvm_unreachable("Unexpected expression");
   }
+}
+
+auto LLVMGenImpl::gen(const UnitExpr *node,
+                      llvm::Value *&value) -> CherryResult {
+  emitLocation(node);
+  value = getUnit();
+  return success();
 }
 
 auto LLVMGenImpl::gen(const BlockExpr *node,
@@ -393,7 +417,7 @@ auto LLVMGenImpl::gen(const CallExpr *node, llvm::Value *&value) -> CherryResult
                                    getType(builtins::UInt64Type), false);
   } else {
     llvm::Function *callee = module->getFunction(functionName);
-    value = _builder.CreateCall(callee, operands, functionName);
+    value = _builder.CreateCall(callee, operands);
   }
 
   return success();
@@ -433,8 +457,10 @@ auto LLVMGenImpl::genStructConstructor(const CallExpr *node,
 auto LLVMGenImpl::gen(const VariableExpr *node, llvm::Value *&value) -> CherryResult {
   emitLocation(node);
   auto name = node->name();
-  auto alloca = _variableSymbols[name];
-  value = _builder.CreateLoad(alloca, name);
+  if (auto alloca = _variableSymbols[name])
+    value = _builder.CreateLoad(alloca, name);
+  else
+    value = getUnit();
   return success();
 }
 
@@ -478,11 +504,11 @@ auto LLVMGenImpl::genAssign(const BinaryExpr *node,
   value = nullptr;
   if (gen(node->rhs().get(), value))
     return failure();
-  if (value)
-    _builder.CreateStore(value, address);
-  else
-    value = _builder.CreateLoad(address);
 
+  if (value && node->type() != builtins::UnitType)
+    _builder.CreateStore(value, address);
+
+  value = getUnit();
   structAddress = nullptr;
   return success();
 }
@@ -580,7 +606,7 @@ auto LLVMGenImpl::gen(const VariableStat *node) -> CherryResult {
   structAddress = nullptr;
 
   emitLocation(node);
-  if (initValue)
+  if (initValue && typeName != builtins::UnitType)
     _builder.CreateStore(initValue, alloca);
   return success();
 }

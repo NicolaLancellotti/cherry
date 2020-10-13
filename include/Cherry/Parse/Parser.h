@@ -93,6 +93,16 @@ private:
                  VectorUniquePtr<T> &elements,
                  PE<T> parseElement) -> CherryResult;
 
+  // _____________________________________________________________________________
+  // Parse Identifiers
+
+  auto parseType(std::unique_ptr<Type> &type) -> CherryResult;
+
+  auto parseFunctionName(std::unique_ptr<FunctionName> &functionName,
+                         const char * const message) -> CherryResult;
+
+  auto parseUnitType(std::unique_ptr<Type> &unit) -> CherryResult;
+
   // ___________________________________________________________________________
   // Parse Declarations
 
@@ -106,10 +116,6 @@ private:
 
   auto parseStructDecl_c(std::unique_ptr<Decl>&elem) -> CherryResult;
 
-  template <typename T>
-  auto parseIdentifier(std::unique_ptr<T> &identifier,
-                       const char * const message) -> CherryResult;
-
   // ___________________________________________________________________________
   // Parse Expressions
 
@@ -122,6 +128,8 @@ private:
                         const char * const end_error) -> CherryResult;
 
   auto parsePrimaryExpression(std::unique_ptr<Expr> &expr) -> CherryResult;
+
+  auto parseVariableExpr(std::unique_ptr<VariableExpr> &identifier) -> CherryResult;
 
   auto parseIfExpr_c(std::unique_ptr<Expr> &expr) -> CherryResult;
 

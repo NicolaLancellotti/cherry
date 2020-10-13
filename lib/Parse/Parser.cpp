@@ -50,6 +50,39 @@ auto Parser::parseList(Token::Kind separator,
 }
 
 // _____________________________________________________________________________
+// Parse Identifiers
+
+auto Parser::parseUnitType(unique_ptr<Type> &unit) -> CherryResult {
+  auto location = tokenLoc();
+  consume(Token::l_paren);
+  if (parseToken(Token::r_paren, diag::expected_l_paren))
+    return failure();
+  unit = make_unique<Type>(location, "Unit");
+}
+
+auto Parser::parseType(unique_ptr<Type> &type) -> CherryResult {
+  if (tokenIs(Token::l_paren))
+    return parseUnitType(type);
+
+  auto location = tokenLoc();
+  auto name = spelling();
+  if (parseToken(Token::identifier, diag::expected_type))
+    return failure();
+  type = make_unique<Type>(location, name);
+  return success();
+}
+
+auto Parser::parseFunctionName(unique_ptr<FunctionName> &functionName,
+                               const char * const message) -> CherryResult {
+  auto location = tokenLoc();
+  auto name = spelling();
+  if (parseToken(Token::identifier, message))
+    return failure();
+  functionName = make_unique<FunctionName>(location, name);
+  return success();
+}
+
+// _____________________________________________________________________________
 // Parse Declarations
 
 auto Parser::parseDeclaration(unique_ptr<Decl> &decl) -> CherryResult {
@@ -81,18 +114,18 @@ auto Parser::parsePrototype_c(unique_ptr<Prototype> &proto) -> CherryResult {
   consume(Token::kw_fn);
 
   // Parse name
-  unique_ptr<Identifier> name;
-  if (parseIdentifier(name, diag::expected_id) ||
+  unique_ptr<FunctionName> name;
+  if (parseFunctionName(name, diag::expected_id) ||
       parseToken(Token::l_paren, diag::expected_l_paren))
     return failure();
 
   // Parse Element
   PE<VariableStat> parseParam = [this] (unique_ptr<VariableStat> &elem) -> CherryResult {
     unique_ptr<VariableExpr> param;
-    unique_ptr<Identifier> type;
-    if (parseIdentifier(param, diag::expected_id) ||
+    unique_ptr<Type> type;
+    if (parseVariableExpr(param) ||
         parseToken(Token::colon, diag::expected_colon) ||
-        parseIdentifier(type, diag::expected_type))
+        parseType(type))
       return failure();
     elem = make_unique<VariableStat>(param->location(), move(param),
                                      move(type), nullptr);
@@ -101,12 +134,12 @@ auto Parser::parsePrototype_c(unique_ptr<Prototype> &proto) -> CherryResult {
 
   // Parse List
   VectorUniquePtr<VariableStat> parameters;
-  unique_ptr<Identifier> type;
+  unique_ptr<Type> type;
   if (parseList(Token::comma, Token::r_paren,
                 diag::expected_comma_or_r_paren,
                 diag::expected_r_paren, parameters, parseParam) ||
       parseToken(Token::colon, diag::expected_colon) ||
-      parseIdentifier(type, diag::expected_type))
+      parseType(type))
     return failure();
 
   // Make Proto
@@ -150,18 +183,18 @@ auto Parser::parseStructDecl_c(unique_ptr<Decl> &decl) -> CherryResult {
   consume(Token::kw_struct);
 
   // Parse Type
-  unique_ptr<Identifier> type;
-  if (parseIdentifier(type, diag::expected_id) ||
+  unique_ptr<Type> type;
+  if (parseType(type) ||
       parseToken(Token::l_brace, diag::expected_l_brace))
     return failure();
 
   // Parse Element
   PE<VariableStat> parseField = [this] (unique_ptr<VariableStat> &elem) -> CherryResult {
     unique_ptr<VariableExpr> var;
-    unique_ptr<Identifier> type;
-    if (parseIdentifier(var, diag::expected_id) ||
+    unique_ptr<Type> type;
+    if (parseVariableExpr(var) ||
         parseToken(Token::colon, diag::expected_colon) ||
-        parseIdentifier(type, diag::expected_type))
+        parseType(type))
       return failure();
     elem = make_unique<VariableStat>(var->location(), move(var), move(type),
                                      nullptr);
@@ -177,17 +210,6 @@ auto Parser::parseStructDecl_c(unique_ptr<Decl> &decl) -> CherryResult {
 
   // Make StructDecl
   decl = make_unique<StructDecl>(loc, move(type), move(fields));
-  return success();
-}
-
-template <typename T>
-auto Parser::parseIdentifier(unique_ptr<T> &identifier,
-                             const char * const message) -> CherryResult {
-  auto location = tokenLoc();
-  auto name = spelling();
-  if (parseToken(Token::identifier, message))
-    return failure();
-  identifier = make_unique<T>(location, name);
   return success();
 }
 
@@ -234,9 +256,26 @@ auto Parser::parsePrimaryExpression(unique_ptr<Expr> &expr) -> CherryResult {
     expr = make_unique<BoolLiteralExpr>(loc, false);
     return success();
   }
+  case Token::l_paren: {
+    auto location = tokenLoc();
+    consume(Token::l_paren);
+    if (parseToken(Token::r_paren, diag::expected_l_paren))
+      return failure();
+    expr = make_unique<UnitExpr>(location);
+    return success();
+  }
   default:
     return emitError(diag::expected_expr);
   }
+}
+
+auto Parser::parseVariableExpr(unique_ptr<VariableExpr> &identifier) -> CherryResult {
+  auto location = tokenLoc();
+  auto name = spelling();
+  if (parseToken(Token::identifier, diag::expected_id))
+    return failure();
+  identifier = make_unique<VariableExpr>(location, name);
+  return success();
 }
 
 auto Parser::parseIfExpr_c(std::unique_ptr<Expr> &expr) -> CherryResult {
@@ -366,11 +405,11 @@ auto Parser::parseVarDecl_c(unique_ptr<Stat> &stat) -> CherryResult {
   auto loc = tokenLoc();
   consume(Token::kw_var);
   unique_ptr<VariableExpr> var;
-  unique_ptr<Identifier> type;
+  unique_ptr<Type> type;
   unique_ptr<Expr> e;
-  if (parseIdentifier(var, diag::expected_id) ||
+  if (parseVariableExpr(var) ||
       parseToken(Token::colon, diag::expected_colon) ||
-      parseIdentifier(type, diag::expected_type) ||
+      parseType(type) ||
       parseToken(Token::assign, diag::expected_assign) ||
       parseExpression(e))
     return failure();

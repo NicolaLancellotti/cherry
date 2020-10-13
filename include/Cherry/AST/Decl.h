@@ -13,10 +13,12 @@
 
 namespace cherry {
 
+class BlockExpr;
 class Expr;
+class FunctionName;
 class VariableExpr;
 class VariableStat;
-class BlockExpr;
+class Type;
 
 // _____________________________________________________________________________
 // Declaration
@@ -39,38 +41,20 @@ private:
 };
 
 // _____________________________________________________________________________
-// Identifier
-
-class Identifier final : public Node {
-public:
-  explicit Identifier(llvm::SMLoc location,
-                      llvm::StringRef name)
-      : Node{location}, _name(name.str()) {};
-
-  auto name() const -> llvm::StringRef {
-    return _name;
-  }
-
-private:
-  std::string _name;
-};
-
-
-// _____________________________________________________________________________
 // Function declaration
 
 class Prototype final : public Node {
 public:
   explicit Prototype(llvm::SMLoc location,
-                     std::unique_ptr<Identifier> id,
+                     std::unique_ptr<FunctionName> id,
                      VectorUniquePtr<VariableStat> parameters,
-                     std::unique_ptr<Identifier> type)
+                     std::unique_ptr<Type> type)
       : Node{location},
         _id(std::move(id)),
         _parameters{std::move(parameters)},
         _type{std::move(type)} {};
 
-  auto id() const -> const std::unique_ptr<Identifier>& {
+  auto id() const -> const std::unique_ptr<FunctionName>& {
     return _id;
   }
 
@@ -78,14 +62,14 @@ public:
     return _parameters;
   }
 
-  auto type() const -> const std::unique_ptr<Identifier>& {
+  auto type() const -> const std::unique_ptr<Type>& {
     return _type;
   }
 
 private:
-  std::unique_ptr<Identifier> _id;
+  std::unique_ptr<FunctionName> _id;
   VectorUniquePtr<VariableStat> _parameters;
-  std::unique_ptr<Identifier> _type;
+  std::unique_ptr<Type> _type;
 };
 
 class FunctionDecl final : public Decl {
@@ -119,7 +103,7 @@ private:
 class StructDecl final : public Decl {
 public:
   explicit StructDecl(llvm::SMLoc location,
-                      std::unique_ptr<Identifier> id,
+                      std::unique_ptr<Type> id,
                       VectorUniquePtr<VariableStat> variables)
       : Decl{Decl_Struct, location}, _id(std::move(id)),
         _variables(std::move(variables)) {};
@@ -128,7 +112,7 @@ public:
     return node->getKind() == Decl_Struct;
   }
 
-  auto id() const -> const std::unique_ptr<Identifier>& {
+  auto id() const -> const std::unique_ptr<Type>& {
     return _id;
   }
 
@@ -137,7 +121,7 @@ public:
   }
 
 private:
-  std::unique_ptr<Identifier> _id;
+  std::unique_ptr<Type> _id;
   VectorUniquePtr<VariableStat> _variables;
 
 public:

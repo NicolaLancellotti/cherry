@@ -32,6 +32,7 @@ private:
 
   // Expressions
   auto dump(const Expr *node) -> void;
+  auto dump(const UnitExpr *node) -> void;
   auto dump(const BlockExpr *node, llvm::StringRef string) -> void;
   auto dump(const CallExpr *node) -> void;
   auto dump(const VariableExpr *node) -> void;
@@ -115,7 +116,7 @@ auto Dumper::dump(const StructDecl *node) -> void {
 
 auto Dumper::dump(const Expr *node) -> void {
   llvm::TypeSwitch<const Expr *>(node)
-      .Case<CallExpr, DecimalLiteralExpr, BoolLiteralExpr, VariableExpr, IfExpr,
+      .Case<UnitExpr, CallExpr, DecimalLiteralExpr, BoolLiteralExpr, VariableExpr, IfExpr,
           BinaryExpr>([&](auto *node) {
         this->dump(node);
       })
@@ -124,12 +125,18 @@ auto Dumper::dump(const Expr *node) -> void {
       });
 }
 
+auto Dumper::dump(const UnitExpr *node) -> void {
+  INDENT();
+  errs() << "UnitExpr " << loc(node) << " type=" << node->type() << "\n";
+}
+
 auto Dumper::dump(const BlockExpr *node,
                   llvm::StringRef string) -> void {
   INDENT();
   errs() << string << "\n";
   for (auto &expr : *node)
     dump(expr.get());
+  dump(node->expression().get());
 }
 
 auto Dumper::dump(const CallExpr *node) -> void {

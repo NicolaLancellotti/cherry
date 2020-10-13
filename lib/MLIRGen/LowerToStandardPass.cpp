@@ -58,14 +58,18 @@ struct ReturnOpLowering : public ConversionPattern {
                        ArrayRef<Value> operands,
                        ConversionPatternRewriter &rewriter)
   const -> LogicalResult final {
-    Value operand = operands.front();
-    Value newOperand = operand.getType().isa<MemRefType>()
-                       ? rewriter.create<LoadOp>(op->getLoc(), operands.front())
-                       : operand;
+    if (operands.size() == 0) {
+      rewriter.replaceOpWithNewOp<ReturnOp>(op, llvm::None);
+    } else {
+      Value operand = operands.front();
+      Value newOperand = operand.getType().isa<MemRefType>()
+                         ? rewriter.create<LoadOp>(op->getLoc(), operands.front())
+                         : operand;
 
-    rewriter.replaceOpWithNewOp<ReturnOp>(op,
-                                          llvm::ArrayRef<Type>(),
-                                          newOperand);
+      rewriter.replaceOpWithNewOp<ReturnOp>(op,
+                                            llvm::ArrayRef<Type>(),
+                                            newOperand);
+    }
     return success();
   }
 };
@@ -88,9 +92,13 @@ struct CallOpLowering : public ConversionPattern {
       }
     }
 
-    rewriter.replaceOpWithNewOp<CallOp>(op, callOp.callee(),
-                                        callOp.getResult().getType(),
-                                        loads);
+    if (callOp.getResults().size() == 0) {
+      rewriter.replaceOpWithNewOp<CallOp>(op, callOp.callee(), llvm::None, loads);
+    } else {
+      rewriter.replaceOpWithNewOp<CallOp>(op, callOp.callee(),
+                                          callOp.getResult(0).getType(),
+                                          loads);
+    }
     return success();
   }
 };

@@ -43,8 +43,6 @@ Generate a target ".o" object file  | -c[=\<filename>]
 ```
 # This is a comment
 
-# This is a comment
-
 struct A { }
 
 struct B {
@@ -66,9 +64,14 @@ fn bar(x: UInt64, y: Bool): B {
   B(k, A())
 }
 
+fn baz(): () {
+  ()
+}
+
 fn main(): UInt64 {
   var structValue: B = bar(18446744073709551615, false);
   print(boolToUInt64(structValue.x));
+  baz();
   1
 }
 ```

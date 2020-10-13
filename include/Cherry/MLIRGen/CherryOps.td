@@ -46,7 +46,7 @@ def ReturnOp : Cherry_Op<"return", [NoSideEffect, Terminator]> {
     ```
   }];
 
-  let arguments = (ins Cherry_Type:$input);
+  let arguments = (ins Variadic<Cherry_Type>:$input);
 }
 
 def CallOp : Cherry_Op<"call"> {
@@ -63,12 +63,12 @@ def CallOp : Cherry_Op<"call"> {
   }];
 
   let arguments = (ins FlatSymbolRefAttr:$callee,  Variadic<Cherry_Type>:$inputs);
-  let results = (outs Cherry_Type);
+  let results = (outs Variadic<Cherry_Type>);
 
   let builders = [
     OpBuilder<"OpBuilder &builder, OperationState &state, "
               "StringRef callee, ArrayRef<Value> arguments, "
-              "mlir::Type resultType">
+              "ArrayRef<Type> results">
   ];
 }
 

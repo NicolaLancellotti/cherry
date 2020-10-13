@@ -19,11 +19,12 @@ const llvm::StringRef print = "print";
 const llvm::StringRef boolToUInt64 = "boolToUInt64";
 
 // Types
-const llvm::StringRef UInt64Type = "UInt64";
+const llvm::StringRef UnitType = "Unit";
 const llvm::StringRef BoolType = "Bool";
+const llvm::StringRef UInt64Type = "UInt64";
 
 inline auto primitiveTypes() -> llvm::SmallVector<llvm::StringRef, 2> {
-  return { UInt64Type, BoolType };
+  return { UnitType, BoolType, UInt64Type };
 }
 }
 

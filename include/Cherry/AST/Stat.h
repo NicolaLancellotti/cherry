@@ -12,9 +12,6 @@
 #include "llvm/ADT/StringRef.h"
 
 namespace cherry {
-class Expr;
-class Identifier;
-class VariableExpr;
 
 // _____________________________________________________________________________
 // Expression
@@ -43,7 +40,7 @@ class VariableStat final : public Stat {
 public:
   explicit VariableStat(llvm::SMLoc location,
                         std::unique_ptr<VariableExpr> variable,
-                        std::unique_ptr<Identifier> varType,
+                        std::unique_ptr<Type> varType,
                         std::unique_ptr<Expr> init)
       : Stat{Stat_VariableDecl, location}, _variable(std::move(variable)),
         _varType(std::move(varType)), _init{std::move(init)} {};
@@ -56,7 +53,7 @@ public:
     return _variable;
   }
 
-  auto varType() const -> const std::unique_ptr<Identifier>& {
+  auto varType() const -> const std::unique_ptr<Type>& {
     return _varType;
   }
 
@@ -66,7 +63,7 @@ public:
 
 private:
   std::unique_ptr<VariableExpr> _variable;
-  std::unique_ptr<Identifier> _varType;
+  std::unique_ptr<Type> _varType;
   std::unique_ptr<Expr> _init;
 };
 

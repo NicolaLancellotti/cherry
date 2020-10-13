@@ -36,8 +36,8 @@ auto CallOp::build(mlir::OpBuilder &builder,
                    mlir::OperationState &state,
                    StringRef callee,
                    ArrayRef<mlir::Value> arguments,
-                   mlir::Type resultType) -> void {
-  state.addTypes(resultType);
+                   ArrayRef<Type> results) -> void {
+  state.addTypes(results);
   state.addOperands(arguments);
   state.addAttribute("callee", builder.getSymbolRefAttr(callee));
 }

@@ -19,6 +19,7 @@ class Stat;
 class Expr : public Node {
 public:
   enum ExpressionKind {
+    Expr_Unit,
     Expr_Call,
     Expr_DecimalLiteral,
     Expr_BoolLiteral,
@@ -49,6 +50,19 @@ public:
 private:
   const ExpressionKind _kind;
   std::string _type;
+};
+
+// _____________________________________________________________________________
+// Unit
+
+class UnitExpr final : public Expr {
+public:
+  explicit UnitExpr(llvm::SMLoc location)
+      : Expr{Expr_Unit, location} {};
+
+  static auto classof(const Expr *node) -> bool {
+    return node->getKind() == Expr_Unit;
+  }
 };
 
 // _____________________________________________________________________________
@@ -182,7 +196,7 @@ public:
   }
 
   auto index() const -> int {
-      return _index;
+    return _index;
   }
 
   auto setIndex(int index) {

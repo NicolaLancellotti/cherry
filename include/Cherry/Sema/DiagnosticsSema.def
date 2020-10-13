@@ -11,6 +11,7 @@ ERROR(mismatch_type, "type mismatch")
 ERROR(mismatch_type_then_else, "`then` and `else` expressions must have the same type")
 ERROR(wrong_return_type, "wrong return type")
 ERROR(wrong_num_arg, "wrong number of arguments")
+ERROR(unexpected_unit_type, "unexpected unit type")
 
 ERROR(expected_bool, "expected Bool")
 ERROR(expected_field, "expected struct field")
