@@ -2,10 +2,11 @@
 
 ## Types
 
-- UInt64
+- ()
 - Bool
+- UInt64
 
 ## Functions
 
-- print(UInt64) -> UInt64
-- boolToUInt64(Bool) -> UInt64
+- fn print(UInt64) -> UInt64
+- fn boolToUInt64(Bool) -> UInt64
