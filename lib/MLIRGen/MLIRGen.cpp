@@ -48,29 +48,29 @@ private:
   mlir::Identifier _fileNameIdentifier;
 
   // Declarations
-  auto gen(const Decl *node, mlir::Operation *&op) -> CherryResult;
-  auto gen(const Prototype *node, mlir::FuncOp &func) -> CherryResult;
-  auto gen(const FunctionDecl *node, mlir::FuncOp &func) -> CherryResult;
-  auto gen(const StructDecl *node) -> CherryResult;
+  auto gen(const Decl *node, mlir::Operation *&op) -> void;
+  auto gen(const Prototype *node, mlir::FuncOp &func) -> void;
+  auto gen(const FunctionDecl *node, mlir::FuncOp &func) -> void;
+  auto gen(const StructDecl *node) -> void;
 
   // Expressions
-  auto gen(const Expr *node, mlir::Value &value) -> CherryResult;
-  auto gen(const UnitExpr *node, mlir::Value &value) -> CherryResult;
-  auto gen(const BlockExpr *node, mlir::Value &value) -> CherryResult;
-  auto gen(const IfExpr *node, mlir::Value &value) -> CherryResult;
-  auto gen(const WhileExpr *node, mlir::Value &value) -> CherryResult;
-  auto genPrint(const CallExpr *node, mlir::Value &value) -> CherryResult;
-  auto gen(const CallExpr *node, mlir::Value &value) -> CherryResult;
-  auto gen(const VariableExpr *node, mlir::Value &value) -> CherryResult;
-  auto gen(const DecimalLiteralExpr *node, mlir::Value &value) -> CherryResult;
-  auto gen(const BoolLiteralExpr *node, mlir::Value &value) -> CherryResult;
-  auto gen(const BinaryExpr *node, mlir::Value &value) -> CherryResult;
-  auto genAssign(const BinaryExpr *node, mlir::Value &value) -> CherryResult;
+  auto gen(const Expr *node, mlir::Value &value) -> void;
+  auto gen(const UnitExpr *node, mlir::Value &value) -> void;
+  auto gen(const BlockExpr *node, mlir::Value &value) -> void;
+  auto gen(const IfExpr *node, mlir::Value &value) -> void;
+  auto gen(const WhileExpr *node, mlir::Value &value) -> void;
+  auto genPrint(const CallExpr *node, mlir::Value &value) -> void;
+  auto gen(const CallExpr *node, mlir::Value &value) -> void;
+  auto gen(const VariableExpr *node, mlir::Value &value) -> void;
+  auto gen(const DecimalLiteralExpr *node, mlir::Value &value) -> void;
+  auto gen(const BoolLiteralExpr *node, mlir::Value &value) -> void;
+  auto gen(const BinaryExpr *node, mlir::Value &value) -> void;
+  auto genAssign(const BinaryExpr *node, mlir::Value &value) -> void;
 
   // Statements
-  auto gen(const Stat *node) -> CherryResult;
-  auto gen(const VariableStat *node) -> CherryResult;
-  auto gen(const ExprStat *node) -> CherryResult;
+  auto gen(const Stat *node) -> void;
+  auto gen(const VariableStat *node) -> void;
+  auto gen(const ExprStat *node) -> void;
 
   // Utility
   auto loc(const Node *node) -> mlir::Location {
@@ -108,8 +108,7 @@ auto MLIRGenImpl::gen(const Module &node) -> CherryResult {
 
   for (auto &decl : node) {
     mlir::Operation *op;
-    if (gen(decl.get(), op))
-      return failure();
+    gen(decl.get(), op);
     if (op)
       module.push_back(op);
   }
@@ -122,27 +121,25 @@ auto MLIRGenImpl::gen(const Module &node) -> CherryResult {
   return success();
 }
 
-auto MLIRGenImpl::gen(const Decl *node, mlir::Operation *&op) -> CherryResult {
+auto MLIRGenImpl::gen(const Decl *node, mlir::Operation *&op) -> void {
   switch (node->getKind()) {
   case Decl::Decl_Function: {
     mlir::FuncOp func;
-    if (gen(cast<FunctionDecl>(node), func))
-      return failure();
+    gen(cast<FunctionDecl>(node), func);
     op = func;
-    return success();
+    return;
   }
   case Decl::Decl_Struct: {
-    if (gen(cast<StructDecl>(node)))
-      return failure();
+    gen(cast<StructDecl>(node));
     op = nullptr;
-    return success();
+    return;
   }
   default:
     llvm_unreachable("Unexpected declaration");
   }
 }
 
-auto MLIRGenImpl::gen(const Prototype *node, mlir::FuncOp &func) -> CherryResult {
+auto MLIRGenImpl::gen(const Prototype *node, mlir::FuncOp &func) -> void {
   llvm::SmallVector<mlir::Type, 3> arg_types;
   arg_types.reserve(node->parameters().size());
   for (auto &param : node->parameters())
@@ -170,34 +167,28 @@ auto MLIRGenImpl::gen(const Prototype *node, mlir::FuncOp &func) -> CherryResult
   }
 
   _functionSymbols[funcName] = getType(node->type()->name());
-  return success();
 }
 
 auto MLIRGenImpl::gen(const FunctionDecl *node,
-                      mlir::FuncOp &func) -> CherryResult {
+                      mlir::FuncOp &func) -> void {
   _variableSymbols = {};
-  if (gen(node->proto().get(), func))
-    return failure();
+  gen(node->proto().get(), func);
 
   mlir::Value value;
-  if (gen(node->body().get(), value)) {
-    func.erase();
-    return failure();
-  }
+  gen(node->body().get(), value);
 
   auto location = loc(node->body()->expression().get());
   if (value)
     _builder.create<ReturnOp>(location, value);
   else
     _builder.create<ReturnOp>(location, llvm::None);
-  return success();
 }
 
-auto MLIRGenImpl::gen(const StructDecl *node) -> CherryResult {
+auto MLIRGenImpl::gen(const StructDecl *node) -> void {
   auto &variables = node->variables();
   if (variables.size() == 0) {
     _typeSymbols[node->id()->name()] = _builder.getNoneType();
-    return success();
+    return;
   }
 
   llvm::SmallVector<mlir::Type, 2> elementTypes;
@@ -208,10 +199,9 @@ auto MLIRGenImpl::gen(const StructDecl *node) -> CherryResult {
   }
 
   _typeSymbols[node->id()->name()] = StructType::get(elementTypes);
-  return success();
 }
 
-auto MLIRGenImpl::gen(const Expr *node, mlir::Value &value) -> CherryResult {
+auto MLIRGenImpl::gen(const Expr *node, mlir::Value &value) -> void {
   switch (node->getKind()) {
   case Expr::Expr_Unit:
     return gen(cast<UnitExpr>(node), value);
@@ -234,37 +224,31 @@ auto MLIRGenImpl::gen(const Expr *node, mlir::Value &value) -> CherryResult {
   }
 }
 
-auto MLIRGenImpl::gen(const UnitExpr *node, mlir::Value &value) -> CherryResult {
+auto MLIRGenImpl::gen(const UnitExpr *node, mlir::Value &value) -> void {
   value = nullptr;
 }
 
-auto MLIRGenImpl::gen(const BlockExpr *node, mlir::Value &value) -> CherryResult {
+auto MLIRGenImpl::gen(const BlockExpr *node, mlir::Value &value) -> void {
   for (auto &expr : *node)
-    if (gen(expr.get()))
-      return failure();
-  return gen(node->expression().get(), value);
+    gen(expr.get());
+  gen(node->expression().get(), value);
 }
 
-auto MLIRGenImpl::gen(const IfExpr *node, mlir::Value &value) -> CherryResult {
+auto MLIRGenImpl::gen(const IfExpr *node, mlir::Value &value) -> void {
   mlir::Value cond;
-  if (gen(node->conditionExpr().get(), cond))
-    return failure();
-
-  bool error = false;
+  gen(node->conditionExpr().get(), cond);
 
   auto thenBlock = node->thenBlock().get();
   auto thenExprBuilder = [&](mlir::OpBuilder &builder, mlir::Location) {
     mlir::Value value;
-    if (gen(thenBlock, value))
-      error = true;
+    gen(thenBlock, value);
     builder.create<YieldOp>(loc(thenBlock->expression().get()), value);
   };
 
   auto elseBlock = node->elseBlock().get();
   auto elseExprBuilder = [&](mlir::OpBuilder &builder, mlir::Location) {
     mlir::Value value;
-    if (gen(elseBlock, value))
-      error = true;
+    gen(elseBlock, value);
     builder.create<YieldOp>(loc(elseBlock->expression().get()), value);
   };
   auto ifOp = _builder.create<IfOp>(loc(node),
@@ -272,40 +256,28 @@ auto MLIRGenImpl::gen(const IfExpr *node, mlir::Value &value) -> CherryResult {
                                     cond,
                                     thenExprBuilder,
                                     elseExprBuilder);
-  if (error)
-    return failure();
-
   value = ifOp.getResult();
-  return success();
 }
 
-auto MLIRGenImpl::gen(const WhileExpr *node, mlir::Value &value) -> CherryResult {
-  bool error = false;
-
+auto MLIRGenImpl::gen(const WhileExpr *node, mlir::Value &value) -> void {
   auto conditionExprBuilder = [&](mlir::OpBuilder &builder, mlir::Location) {
     mlir::Value cond;
-    if (gen(node->conditionExpr().get(), cond))
-      error = true;
+    gen(node->conditionExpr().get(), cond);
     builder.create<YieldOp>(loc(node->conditionExpr().get()), cond);
   };
 
   auto bodyBlock = node->bodyBlock().get();
   auto bodyExprBuilder = [&](mlir::OpBuilder &builder, mlir::Location) {
     mlir::Value value;
-    if (gen(bodyBlock, value))
-      error = true;
+    gen(bodyBlock, value);
     builder.create<YieldOp>(loc(bodyBlock->expression().get()), llvm::None);
   };
 
   auto whileOp = _builder.create<WhileOp>(loc(node), conditionExprBuilder, bodyExprBuilder);
-  if (error)
-    return failure();
-
   value = nullptr;
-  return success();
 }
 
-auto MLIRGenImpl::gen(const CallExpr *node, mlir::Value &value) -> CherryResult {
+auto MLIRGenImpl::gen(const CallExpr *node, mlir::Value &value) -> void {
   auto functionName = node->name();
   if (node->name() == builtins::print)
     return genPrint(node, value);
@@ -313,8 +285,7 @@ auto MLIRGenImpl::gen(const CallExpr *node, mlir::Value &value) -> CherryResult 
   llvm::SmallVector<mlir::Value, 4> operands;
   for (auto &expr : *node) {
     mlir::Value value;
-    if (gen(expr.get(), value))
-      return failure();
+    gen(expr.get(), value);
     operands.push_back(value);
   }
   if (functionName == builtins::boolToUInt64) {
@@ -323,37 +294,30 @@ auto MLIRGenImpl::gen(const CallExpr *node, mlir::Value &value) -> CherryResult 
     auto op = _builder.create<CallOp>(loc(node), node->name(), operands, _functionSymbols[functionName]);
     value = node->type() == builtins::UnitType ? nullptr : op.getResult(0);
   }
-
-  return success();
 }
 
-auto MLIRGenImpl::genPrint(const CallExpr *node, mlir::Value &value) -> CherryResult {
+auto MLIRGenImpl::genPrint(const CallExpr *node, mlir::Value &value) -> void {
   auto &expressions = node->expressions();
   mlir::Value operand;
-  if (gen(expressions.front().get(), operand))
-    return failure();
+  gen(expressions.front().get(), operand);
 
   value = _builder.create<PrintOp>(loc(node), operand);
-  return success();
 }
 
-auto MLIRGenImpl::gen(const VariableExpr *node, mlir::Value &value) -> CherryResult {
+auto MLIRGenImpl::gen(const VariableExpr *node, mlir::Value &value) -> void {
   auto address  = _variableSymbols[node->name()];
   value = _builder.create<mlir::LoadOp>(loc(node), address);
-  return success();
 }
 
-auto MLIRGenImpl::gen(const DecimalLiteralExpr *node, mlir::Value &value) -> CherryResult {
+auto MLIRGenImpl::gen(const DecimalLiteralExpr *node, mlir::Value &value) -> void {
   value = _builder.create<ConstantOp>(loc(node), node->value());
-  return success();
 }
 
-auto MLIRGenImpl::gen(const BoolLiteralExpr *node, mlir::Value &value) -> CherryResult {
+auto MLIRGenImpl::gen(const BoolLiteralExpr *node, mlir::Value &value) -> void {
   value = _builder.create<ConstantOp>(loc(node), node->value());
-  return success();
 }
 
-auto MLIRGenImpl::gen(const BinaryExpr *node, mlir::Value &value) -> CherryResult {
+auto MLIRGenImpl::gen(const BinaryExpr *node, mlir::Value &value) -> void {
   auto op = node->op();
   if (op == "=")
     return genAssign(node, value);
@@ -361,10 +325,9 @@ auto MLIRGenImpl::gen(const BinaryExpr *node, mlir::Value &value) -> CherryResul
     llvm_unreachable("Unexpected BinaryExpr operator");
 }
 
-auto MLIRGenImpl::genAssign(const BinaryExpr *node, mlir::Value &value) -> CherryResult {
+auto MLIRGenImpl::genAssign(const BinaryExpr *node, mlir::Value &value) -> void {
   mlir::Value rhsValue;
-  if (gen(node->rhs().get(), rhsValue))
-    return failure();
+  gen(node->rhs().get(), rhsValue);
 
   // TODO: handle struct access
   auto lhs = static_cast<VariableExpr *>(node->lhs().get());
@@ -375,10 +338,9 @@ auto MLIRGenImpl::genAssign(const BinaryExpr *node, mlir::Value &value) -> Cherr
     _builder.create<mlir::StoreOp>(loc(node), rhsValue, address);
 
   value = nullptr;
-  return success();
 }
 
-auto MLIRGenImpl::gen(const Stat *node) -> CherryResult {
+auto MLIRGenImpl::gen(const Stat *node) -> void {
   switch (node->getKind()) {
   case Stat::Stat_VariableDecl:
     return gen(cast<VariableStat>(node));
@@ -389,25 +351,22 @@ auto MLIRGenImpl::gen(const Stat *node) -> CherryResult {
   }
 }
 
-auto MLIRGenImpl::gen(const VariableStat *node) -> CherryResult {
+auto MLIRGenImpl::gen(const VariableStat *node) -> void {
   auto typeName = node->varType()->name();
   auto varName = node->variable()->name();
   auto alloca = createEntryBlockAlloca(getType(typeName), loc(node));
   _variableSymbols[varName] = alloca;
 
   mlir::Value initValue;
-  if (gen(node->init().get(), initValue))
-    return failure();
+  gen(node->init().get(), initValue);
 
   if (typeName != builtins::UnitType)
     _builder.create<mlir::StoreOp>(loc(node), initValue, alloca);
-
-  return success();
 }
 
-auto MLIRGenImpl::gen(const ExprStat *node) -> CherryResult {
+auto MLIRGenImpl::gen(const ExprStat *node) -> void {
   mlir::Value value;
-  return gen(node->expression().get(), value);
+  gen(node->expression().get(), value);
 }
 
 namespace cherry {

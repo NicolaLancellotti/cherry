@@ -68,32 +68,31 @@ private:
   std::map<llvm::StringRef, llvm::DIType*> _dTypeSymbols;
 
   // Declarations
-  auto gen(const Decl *node) -> CherryResult;
-  auto gen(const Prototype *node, llvm::Function *&func) -> CherryResult;
-  auto gen(const FunctionDecl *node) -> CherryResult;
-  auto gen(const StructDecl *node) -> CherryResult;
+  auto gen(const Decl *node) -> void;
+  auto gen(const Prototype *node, llvm::Function *&func) -> void;
+  auto gen(const FunctionDecl *node) -> void;
+  auto gen(const StructDecl *node) -> void;
 
   // Expressions
-  auto gen(const Expr *node, llvm::Value *&value) -> CherryResult;
-  auto gen(const UnitExpr *node, llvm::Value *&value) -> CherryResult;
-  auto gen(const BlockExpr *node, llvm::Value *&value) -> CherryResult;
-  auto gen(const CallExpr *node, llvm::Value *&value) -> CherryResult;
-  auto genStructConstructor(const CallExpr *node,
-                            llvm::Value *&value) -> CherryResult;
-  auto gen(const VariableExpr *node, llvm::Value *&value) -> CherryResult;
-  auto gen(const DecimalLiteralExpr *node, llvm::Value *&value) -> CherryResult;
-  auto gen(const BoolLiteralExpr *node, llvm::Value *&value) -> CherryResult;
-  auto gen(const BinaryExpr *node, llvm::Value *&value) -> CherryResult;
-  auto genAssign(const BinaryExpr *node, llvm::Value *&value) -> CherryResult;
-  auto genStructAccess(const BinaryExpr *node, llvm::Value *&value) -> CherryResult;
+  auto gen(const Expr *node, llvm::Value *&value) -> void;
+  auto gen(const UnitExpr *node, llvm::Value *&value) -> void;
+  auto gen(const BlockExpr *node, llvm::Value *&value) -> void;
+  auto gen(const CallExpr *node, llvm::Value *&value) -> void;
+  auto genStructConstructor(const CallExpr *node, llvm::Value *&value) -> void;
+  auto gen(const VariableExpr *node, llvm::Value *&value) -> void;
+  auto gen(const DecimalLiteralExpr *node, llvm::Value *&value) -> void;
+  auto gen(const BoolLiteralExpr *node, llvm::Value *&value) -> void;
+  auto gen(const BinaryExpr *node, llvm::Value *&value) -> void;
+  auto genAssign(const BinaryExpr *node, llvm::Value *&value) -> void;
+  auto genStructAccess(const BinaryExpr *node, llvm::Value *&value) -> void;
   auto genStructAddress(const BinaryExpr *node) -> llvm::Value*;
-  auto gen(const IfExpr *node, llvm::Value *&value) -> CherryResult;
-  auto gen(const WhileExpr *node, llvm::Value *&value) -> CherryResult;
+  auto gen(const IfExpr *node, llvm::Value *&value) -> void;
+  auto gen(const WhileExpr *node, llvm::Value *&value) -> void;
 
   // Statements
-  auto gen(const Stat *node) -> CherryResult;
-  auto gen(const VariableStat *node) -> CherryResult;
-  auto gen(const ExprStat *node) -> CherryResult;
+  auto gen(const Stat *node) -> void;
+  auto gen(const VariableStat *node) -> void;
+  auto gen(const ExprStat *node) -> void;
 
   // Utility
   auto getConstantInt(int bits, int value) -> llvm::ConstantInt* {
@@ -135,7 +134,7 @@ private:
       auto dUInt1Ty = _dBuilder->createBasicType(builtins::BoolType, 1,
                                                  llvm::dwarf::DW_ATE_unsigned);
       auto dUnitTy = _dBuilder->createBasicType(builtins::UnitType, 0,
-                                                  llvm::dwarf::DW_ATE_unsigned);
+                                                llvm::dwarf::DW_ATE_unsigned);
       _dTypeSymbols[builtins::UInt64Type] = dUInt64Ty;
       _dTypeSymbols[builtins::BoolType] = dUInt1Ty;
       _dTypeSymbols[builtins::UnitType] = dUnitTy;
@@ -191,6 +190,7 @@ private:
       _builder.SetCurrentDebugLocation(llvm::DebugLoc::get(line, col, scope));
     }
   }
+
 };
 
 } // end namespace
@@ -227,8 +227,7 @@ auto LLVMGenImpl::gen(const Module &node) -> CherryResult {
   addBuiltins();
 
   for (auto &decl : node) {
-    if (gen(decl.get()))
-      return failure();
+    gen(decl.get());
   }
 
   if (_debugInfo) {
@@ -243,7 +242,7 @@ auto LLVMGenImpl::gen(const Module &node) -> CherryResult {
   return success();
 }
 
-auto LLVMGenImpl::gen(const Decl *node) -> CherryResult {
+auto LLVMGenImpl::gen(const Decl *node) -> void {
   switch (node->getKind()) {
   case Decl::Decl_Function:
     return gen(cast<FunctionDecl>(node));
@@ -254,7 +253,7 @@ auto LLVMGenImpl::gen(const Decl *node) -> CherryResult {
   }
 }
 
-auto LLVMGenImpl::gen(const Prototype *node, llvm::Function *&func) -> CherryResult {
+auto LLVMGenImpl::gen(const Prototype *node, llvm::Function *&func) -> void {
   auto name = node->id()->name();
   auto resultType = node->type()->name();
   llvm::SmallVector<llvm::Type*, 3> argTypes;
@@ -320,21 +319,15 @@ auto LLVMGenImpl::gen(const Prototype *node, llvm::Function *&func) -> CherryRes
     _builder.CreateStore(&arg, alloca);
     _variableSymbols[name] = alloca;
   }
-
-  return success();
 }
 
-auto LLVMGenImpl::gen(const FunctionDecl *node) -> CherryResult {
+auto LLVMGenImpl::gen(const FunctionDecl *node) -> void {
   _variableSymbols = {};
   llvm::Function *func;
-  if (gen(node->proto().get(), func))
-    return failure();
+  gen(node->proto().get(), func);
 
   llvm::Value *value = nullptr;
-  if (gen(node->body().get(), value)) {
-    func->eraseFromParent();
-    return failure();
-  }
+  gen(node->body().get(), value);
 
   if (node->proto()->type()->name() == builtins::UnitType) {
     _builder.CreateRetVoid();
@@ -352,19 +345,15 @@ auto LLVMGenImpl::gen(const FunctionDecl *node) -> CherryResult {
 
   _pass->run(*func);
 
-  if (_debugInfo) {
+  if (_debugInfo)
     _dlexicalBlocks.pop_back();
-  }
-
-  return success();
 }
 
-auto LLVMGenImpl::gen(const StructDecl *node) -> CherryResult {
+auto LLVMGenImpl::gen(const StructDecl *node) -> void {
   addType(node);
-  return success();
 }
 
-auto LLVMGenImpl::gen(const Expr *node, llvm::Value *&value) -> CherryResult {
+auto LLVMGenImpl::gen(const Expr *node, llvm::Value *&value) -> void {
   switch (node->getKind()) {
   case Expr::Expr_Unit:
     return gen(cast<UnitExpr>(node), value);
@@ -388,21 +377,19 @@ auto LLVMGenImpl::gen(const Expr *node, llvm::Value *&value) -> CherryResult {
 }
 
 auto LLVMGenImpl::gen(const UnitExpr *node,
-                      llvm::Value *&value) -> CherryResult {
+                      llvm::Value *&value) -> void {
   emitLocation(node);
   value = getUnit();
-  return success();
 }
 
 auto LLVMGenImpl::gen(const BlockExpr *node,
-                      llvm::Value *&value) -> CherryResult {
+                      llvm::Value *&value) -> void {
   for (auto &expr : *node)
-    if (gen(expr.get()))
-      return failure();
-  return gen(node->expression().get(), value);
+    gen(expr.get());
+  gen(node->expression().get(), value);
 }
 
-auto LLVMGenImpl::gen(const CallExpr *node, llvm::Value *&value) -> CherryResult {
+auto LLVMGenImpl::gen(const CallExpr *node, llvm::Value *&value) -> void {
   if (getType(node->name()))
     return genStructConstructor(node, value);
 
@@ -410,8 +397,7 @@ auto LLVMGenImpl::gen(const CallExpr *node, llvm::Value *&value) -> CherryResult
   llvm::SmallVector<llvm::Value*, 4> operands;
   for (auto &expr : *node) {
     llvm::Value *value;
-    if (gen(expr.get(), value))
-      return failure();
+    gen(expr.get(), value);
     operands.push_back(value);
   }
   auto functionName = node->name();
@@ -422,12 +408,10 @@ auto LLVMGenImpl::gen(const CallExpr *node, llvm::Value *&value) -> CherryResult
     llvm::Function *callee = module->getFunction(functionName);
     value = _builder.CreateCall(callee, operands);
   }
-
-  return success();
 }
 
 auto LLVMGenImpl::genStructConstructor(const CallExpr *node,
-                                       llvm::Value *&value) -> CherryResult {
+                                       llvm::Value *&value) -> void {
   emitLocation(node);
   auto llvmType = getType(node->name());
   auto *structType = static_cast<llvm::StructType*>(llvmType);
@@ -447,39 +431,34 @@ auto LLVMGenImpl::genStructConstructor(const CallExpr *node,
     auto fieldAddress = _builder.CreateGEP(structType, address, {index0, fieldIndex});
     structAddress = fieldAddress;
     llvm::Value *value = nullptr;
-    if (gen(expr.get(), value))
-      return failure();
+    gen(expr.get(), value);
     if (value)
       _builder.CreateStore(value, fieldAddress);
   }
 
   structAddress = nullptr;
-  return success();
 }
 
-auto LLVMGenImpl::gen(const VariableExpr *node, llvm::Value *&value) -> CherryResult {
+auto LLVMGenImpl::gen(const VariableExpr *node, llvm::Value *&value) -> void {
   emitLocation(node);
   auto name = node->name();
   if (auto alloca = _variableSymbols[name])
     value = _builder.CreateLoad(alloca, name);
   else
     value = getUnit();
-  return success();
 }
 
-auto LLVMGenImpl::gen(const DecimalLiteralExpr *node, llvm::Value *&value) -> CherryResult {
+auto LLVMGenImpl::gen(const DecimalLiteralExpr *node, llvm::Value *&value) -> void {
   emitLocation(node);
   value = llvm::ConstantInt::get(getType(builtins::UInt64Type), node->value());
-  return success();
 }
 
-auto LLVMGenImpl::gen(const BoolLiteralExpr *node, llvm::Value *&value) -> CherryResult {
+auto LLVMGenImpl::gen(const BoolLiteralExpr *node, llvm::Value *&value) -> void {
   emitLocation(node);
   value = llvm::ConstantInt::get(getType(builtins::BoolType), node->value());
-  return success();
 }
 
-auto LLVMGenImpl::gen(const BinaryExpr *node, llvm::Value *&value) -> CherryResult {
+auto LLVMGenImpl::gen(const BinaryExpr *node, llvm::Value *&value) -> void {
   auto op = node->op();
   if (op == "=")
     return genAssign(node, value);
@@ -490,7 +469,7 @@ auto LLVMGenImpl::gen(const BinaryExpr *node, llvm::Value *&value) -> CherryResu
 }
 
 auto LLVMGenImpl::genAssign(const BinaryExpr *node,
-                            llvm::Value *&value) -> CherryResult {
+                            llvm::Value *&value) -> void {
   emitLocation(node);
   llvm::Value *address;
   llvm::TypeSwitch<const Expr *>(node->lhs().get())
@@ -505,22 +484,19 @@ auto LLVMGenImpl::genAssign(const BinaryExpr *node,
       });
 
   value = nullptr;
-  if (gen(node->rhs().get(), value))
-    return failure();
+  gen(node->rhs().get(), value);
 
   if (value && node->lhs()->type() != builtins::UnitType)
     _builder.CreateStore(value, address);
 
   value = getUnit();
   structAddress = nullptr;
-  return success();
 }
 
-auto LLVMGenImpl::genStructAccess(const BinaryExpr *node, llvm::Value *&value) -> CherryResult {
+auto LLVMGenImpl::genStructAccess(const BinaryExpr *node, llvm::Value *&value) -> void {
   emitLocation(node);
   auto *address = genStructAddress(node);
   value = _builder.CreateLoad(address);
-  return success();
 }
 
 auto LLVMGenImpl::genStructAddress(const BinaryExpr *node) -> llvm::Value * {
@@ -543,7 +519,7 @@ auto LLVMGenImpl::genStructAddress(const BinaryExpr *node) -> llvm::Value * {
   return _builder.CreateGEP(structType, address, {index0, fieldIndex});
 }
 
-auto LLVMGenImpl::gen(const IfExpr *node, llvm::Value *&value) -> CherryResult {
+auto LLVMGenImpl::gen(const IfExpr *node, llvm::Value *&value) -> void {
   emitLocation(node);
   llvm::Function *func = _builder.GetInsertBlock()->getParent();
 
@@ -553,16 +529,14 @@ auto LLVMGenImpl::gen(const IfExpr *node, llvm::Value *&value) -> CherryResult {
 
   // Emit condition
   llvm::Value *conditionValue;
-  if (gen(node->conditionExpr().get(), conditionValue))
-    return failure();
+  gen(node->conditionExpr().get(), conditionValue);
   _builder.CreateCondBr(conditionValue, thenBB, elseBB);
 
   // Emit then block
   func->getBasicBlockList().push_back(thenBB);
   _builder.SetInsertPoint(thenBB);
   llvm::Value *thenValue;
-  if (gen(node->thenBlock().get(), thenValue))
-    return failure();
+  gen(node->thenBlock().get(), thenValue);
   _builder.CreateBr(mergeBB);
   thenBB = _builder.GetInsertBlock();
 
@@ -570,8 +544,7 @@ auto LLVMGenImpl::gen(const IfExpr *node, llvm::Value *&value) -> CherryResult {
   func->getBasicBlockList().push_back(elseBB);
   _builder.SetInsertPoint(elseBB);
   llvm::Value *elseValue;
-  if (gen(node->elseBlock().get(), elseValue))
-    return failure();
+  gen(node->elseBlock().get(), elseValue);
   _builder.CreateBr(mergeBB);
   elseBB = _builder.GetInsertBlock();
 
@@ -585,7 +558,7 @@ auto LLVMGenImpl::gen(const IfExpr *node, llvm::Value *&value) -> CherryResult {
   value = pn;
 }
 
-auto LLVMGenImpl::gen(const WhileExpr *node, llvm::Value *&value) -> CherryResult {
+auto LLVMGenImpl::gen(const WhileExpr *node, llvm::Value *&value) -> void {
   emitLocation(node);
   auto *func = _builder.GetInsertBlock()->getParent();
   auto *initial = _builder.GetInsertBlock();
@@ -600,16 +573,14 @@ auto LLVMGenImpl::gen(const WhileExpr *node, llvm::Value *&value) -> CherryResul
   func->getBasicBlockList().push_back(conditionBB);
   _builder.SetInsertPoint(conditionBB);
   llvm::Value *conditionValue;
-  if (gen(node->conditionExpr().get(), conditionValue))
-    return failure();
+  gen(node->conditionExpr().get(), conditionValue);
   _builder.CreateCondBr(conditionValue, loopBB, afterLoopBB);
 
   // Emit body block
   func->getBasicBlockList().push_back(loopBB);
   _builder.SetInsertPoint(loopBB);
   llvm::Value *bodyValue;
-  if (gen(node->bodyBlock().get(), bodyValue))
-    return failure();
+  gen(node->bodyBlock().get(), bodyValue);
   _builder.CreateBr(conditionBB);
 
   // Emit after loop block
@@ -619,7 +590,7 @@ auto LLVMGenImpl::gen(const WhileExpr *node, llvm::Value *&value) -> CherryResul
   value = nullptr;
 }
 
-auto LLVMGenImpl::gen(const Stat *node) -> CherryResult {
+auto LLVMGenImpl::gen(const Stat *node) -> void {
   switch (node->getKind()) {
   case Stat::Stat_VariableDecl:
     return gen(cast<VariableStat>(node));
@@ -630,7 +601,7 @@ auto LLVMGenImpl::gen(const Stat *node) -> CherryResult {
   }
 }
 
-auto LLVMGenImpl::gen(const VariableStat *node) -> CherryResult {
+auto LLVMGenImpl::gen(const VariableStat *node) -> void {
   auto name = node->variable()->name();
   auto typeName = node->varType()->name();
   auto llvmType = getType(typeName);
@@ -641,19 +612,17 @@ auto LLVMGenImpl::gen(const VariableStat *node) -> CherryResult {
   _variableSymbols[name] = alloca;
 
   llvm::Value *initValue = nullptr;
-  if (gen(node->init().get(), initValue))
-    return failure();
+  gen(node->init().get(), initValue);
   structAddress = nullptr;
 
   emitLocation(node);
   if (initValue && typeName != builtins::UnitType)
     _builder.CreateStore(initValue, alloca);
-  return success();
 }
 
-auto LLVMGenImpl::gen(const ExprStat *node) -> CherryResult {
+auto LLVMGenImpl::gen(const ExprStat *node) -> void {
   llvm::Value *value;
-  return gen(node->expression().get(), value);
+  gen(node->expression().get(), value);
 }
 
 namespace cherry {
