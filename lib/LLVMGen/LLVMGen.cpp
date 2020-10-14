@@ -88,6 +88,7 @@ private:
   auto genStructAccess(const BinaryExpr *node, llvm::Value *&value) -> CherryResult;
   auto genStructAddress(const BinaryExpr *node) -> llvm::Value*;
   auto gen(const IfExpr *node, llvm::Value *&value) -> CherryResult;
+  auto gen(const WhileExpr *node, llvm::Value *&value) -> CherryResult;
 
   // Statements
   auto gen(const Stat *node) -> CherryResult;
@@ -379,6 +380,8 @@ auto LLVMGenImpl::gen(const Expr *node, llvm::Value *&value) -> CherryResult {
     return gen(cast<BinaryExpr>(node), value);
   case Expr::Expr_If:
     return gen(cast<IfExpr>(node), value);
+  case Expr::Expr_While:
+    return gen(cast<WhileExpr>(node), value);
   default:
     llvm_unreachable("Unexpected expression");
   }
@@ -514,12 +517,14 @@ auto LLVMGenImpl::genAssign(const BinaryExpr *node,
 }
 
 auto LLVMGenImpl::genStructAccess(const BinaryExpr *node, llvm::Value *&value) -> CherryResult {
+  emitLocation(node);
   auto *address = genStructAddress(node);
   value = _builder.CreateLoad(address);
   return success();
 }
 
 auto LLVMGenImpl::genStructAddress(const BinaryExpr *node) -> llvm::Value * {
+  emitLocation(node);
   auto lhs = node->lhs().get();
   auto *structType = static_cast<llvm::StructType*>(getType(lhs->type()));
   auto index0 = getConstantInt(32, 0);
@@ -539,6 +544,7 @@ auto LLVMGenImpl::genStructAddress(const BinaryExpr *node) -> llvm::Value * {
 }
 
 auto LLVMGenImpl::gen(const IfExpr *node, llvm::Value *&value) -> CherryResult {
+  emitLocation(node);
   llvm::Function *func = _builder.GetInsertBlock()->getParent();
 
   llvm::BasicBlock *thenBB = llvm::BasicBlock::Create(_context, "then");
