@@ -57,6 +57,7 @@ TOK_KEYWORD(true)
 TOK_KEYWORD(false)
 TOK_KEYWORD(if)
 TOK_KEYWORD(else)
+TOK_KEYWORD(while)
 
 #undef TOK_MARKER
 #undef TOK_IDENTIFIER

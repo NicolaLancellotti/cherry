@@ -133,6 +133,8 @@ private:
 
   auto parseIfExpr_c(std::unique_ptr<Expr> &expr) -> CherryResult;
 
+  auto parseWhileExpr_c(std::unique_ptr<Expr> &expr) -> CherryResult;
+
   auto parseDecimal_c(std::unique_ptr<Expr> &expr) -> CherryResult;
 
   auto parseFuncStructVar_c(std::unique_ptr<Expr> &expr) -> CherryResult;

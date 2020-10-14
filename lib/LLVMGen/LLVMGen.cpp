@@ -551,7 +551,7 @@ auto LLVMGenImpl::gen(const IfExpr *node, llvm::Value *&value) -> CherryResult {
   llvm::BasicBlock *elseBB = llvm::BasicBlock::Create(_context, "else");
   llvm::BasicBlock *mergeBB = llvm::BasicBlock::Create(_context, "ifcont");
 
-  // Condition
+  // Emit condition
   llvm::Value *conditionValue;
   if (gen(node->conditionExpr().get(), conditionValue))
     return failure();
@@ -583,6 +583,40 @@ auto LLVMGenImpl::gen(const IfExpr *node, llvm::Value *&value) -> CherryResult {
   pn->addIncoming(thenValue, thenBB);
   pn->addIncoming(elseValue, elseBB);
   value = pn;
+}
+
+auto LLVMGenImpl::gen(const WhileExpr *node, llvm::Value *&value) -> CherryResult {
+  emitLocation(node);
+  auto *func = _builder.GetInsertBlock()->getParent();
+  auto *initial = _builder.GetInsertBlock();
+  auto *conditionBB = llvm::BasicBlock::Create(_context, "condition");
+  auto *loopBB = llvm::BasicBlock::Create(_context, "loop");
+  auto *afterLoopBB = llvm::BasicBlock::Create(_context, "afterloop");
+
+  _builder.SetInsertPoint(initial);
+  _builder.CreateBr(conditionBB);
+
+  // Emit condition
+  func->getBasicBlockList().push_back(conditionBB);
+  _builder.SetInsertPoint(conditionBB);
+  llvm::Value *conditionValue;
+  if (gen(node->conditionExpr().get(), conditionValue))
+    return failure();
+  _builder.CreateCondBr(conditionValue, loopBB, afterLoopBB);
+
+  // Emit body block
+  func->getBasicBlockList().push_back(loopBB);
+  _builder.SetInsertPoint(loopBB);
+  llvm::Value *bodyValue;
+  if (gen(node->bodyBlock().get(), bodyValue))
+    return failure();
+  _builder.CreateBr(conditionBB);
+
+  // Emit after loop block
+  func->getBasicBlockList().push_back(afterLoopBB);
+  _builder.SetInsertPoint(afterLoopBB);
+
+  value = nullptr;
 }
 
 auto LLVMGenImpl::gen(const Stat *node) -> CherryResult {

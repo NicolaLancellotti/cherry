@@ -40,6 +40,7 @@ private:
   auto dump(const BoolLiteralExpr *node) -> void;
   auto dump(const BinaryExpr *node) -> void;
   auto dump(const IfExpr *node) -> void;
+  auto dump(const WhileExpr *node) -> void;
 
   // Statements
   auto dump(const Stat *node) -> void;
@@ -116,8 +117,8 @@ auto Dumper::dump(const StructDecl *node) -> void {
 
 auto Dumper::dump(const Expr *node) -> void {
   llvm::TypeSwitch<const Expr *>(node)
-      .Case<UnitExpr, CallExpr, DecimalLiteralExpr, BoolLiteralExpr, VariableExpr, IfExpr,
-          BinaryExpr>([&](auto *node) {
+      .Case<UnitExpr, CallExpr, DecimalLiteralExpr, BoolLiteralExpr, VariableExpr,
+            IfExpr, WhileExpr, BinaryExpr>([&](auto *node) {
         this->dump(node);
       })
       .Default([&](const Expr *) {
@@ -179,6 +180,13 @@ auto Dumper::dump(const IfExpr *node) -> void {
   dump(node->conditionExpr().get());
   dump(node->thenBlock().get(), "thenBlock:");
   dump(node->elseBlock().get(), "elseBlock:");
+}
+
+auto Dumper::dump(const WhileExpr *node) -> void {
+  INDENT();
+  errs() << "WhileExpr " << loc(node) << " type=" << node->type() << "`\n";
+  dump(node->conditionExpr().get());
+  dump(node->bodyBlock().get(), "bodyBlock:");
 }
 
 auto Dumper::dump(const Stat *node) -> void {

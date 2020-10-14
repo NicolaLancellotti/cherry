@@ -76,5 +76,22 @@ auto IfOp::build(mlir::OpBuilder &builder,mlir::OperationState &state,
   elseBuilder(builder, state.location);
 }
 
+auto WhileOp::build(mlir::OpBuilder &builder, mlir::OperationState &state,
+                    function_ref<void(mlir::OpBuilder &, mlir::Location)> conditionBuilder,
+                    function_ref<void(mlir::OpBuilder &, mlir::Location)> bodyBuilder) -> void {
+  state.addTypes(llvm::None);
+  state.addOperands(llvm::None);
+
+  OpBuilder::InsertionGuard guard(builder);
+
+  Region *conditionRegion = state.addRegion();
+  builder.createBlock(conditionRegion);
+  conditionBuilder(builder, state.location);
+
+  Region *bodyRegion = state.addRegion();
+  builder.createBlock(bodyRegion);
+  bodyBuilder(builder, state.location);
+}
+
 } // namespace cherry
 } // namespace mlir

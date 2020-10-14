@@ -34,6 +34,7 @@ rvalue → literal-expression
 rvalue → function-call-expression  
 rvalue → assign-expression  
 rvalue → if-expression    
+rvalue → while-expression      
 
 **GRAMMAR OF A LITERAL EXPRESSION**  
 literal-expression → literal  
@@ -58,6 +59,9 @@ assign-expression → lvalue `=` rvalue
   
 **GRAMMAR OF A IF EXPRESSION**    
 if-expression → `if` expression block-expression `else` block-expression
+
+**GRAMMAR OF A WHIle EXPRESSION**    
+while-expression → `while` expression block-expression  
 
 **GRAMMAR OF A BLOCK EXPRESSION**    
 block-expression → `{` statement-list<sub>opt</sub> expression `}`    

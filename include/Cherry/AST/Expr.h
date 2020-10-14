@@ -28,6 +28,7 @@ public:
     Expr_Binary,
     Expr_Block,
     Expr_If,
+    Expr_While,
   };
 
   explicit Expr(ExpressionKind kind,
@@ -273,6 +274,33 @@ private:
   std::unique_ptr<Expr> _condition;
   std::unique_ptr<BlockExpr>  _thenExpr;
   std::unique_ptr<BlockExpr>  _elseExpr;
+};
+
+// _____________________________________________________________________________
+// While expression
+
+class WhileExpr final : public Expr {
+public:
+  explicit WhileExpr(llvm::SMLoc location,
+                     std::unique_ptr<Expr> condition,
+                     std::unique_ptr<BlockExpr> bodyBlock)
+      : Expr{Expr_While, location}, _condition(std::move(condition)),
+        _bodyBlock(std::move(bodyBlock)) {};
+
+  static auto classof(const Expr *node) -> bool {
+    return node->getKind() == Expr_While;
+  }
+
+  auto conditionExpr() const -> const std::unique_ptr<Expr>& {
+    return _condition;
+  }
+
+  auto bodyBlock() const -> const std::unique_ptr<BlockExpr> & {
+    return _bodyBlock;
+  }
+private:
+  std::unique_ptr<Expr> _condition;
+  std::unique_ptr<BlockExpr>  _bodyBlock;
 };
 
 } // end namespace cherry

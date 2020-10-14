@@ -20,32 +20,12 @@ using namespace mlir;
 
 namespace {
 
-static Value insertAlloca(MemRefType type, Location loc,
-                          PatternRewriter &rewriter) {
-  auto alloca = rewriter.create<AllocaOp>(loc, type);
-
-  auto *parentBlock = alloca.getOperation()->getBlock();
-  alloca.getOperation()->moveBefore(&parentBlock->front());
-
-//  auto dealloc = rewriter.create<DeallocOp>(loc, alloc);
-//  dealloc.getOperation()->moveBefore(&parentBlock->back());
-  return alloca;
-}
-
 struct ConstantOpLowering : public OpRewritePattern<cherry::ConstantOp> {
   using OpRewritePattern<cherry::ConstantOp>::OpRewritePattern;
 
   auto matchAndRewrite(cherry::ConstantOp op,
                        PatternRewriter &rewriter) const -> LogicalResult final {
-    Location loc = op.getLoc();
-    mlir::Type argType = op.getResult().getType();
-    MemRefType memRefType = MemRefType::get({}, argType);
-    auto alloca = insertAlloca(memRefType, loc, rewriter);
-
-    auto c = rewriter.create<ConstantOp>(loc, op.valueAttr());
-    rewriter.create<StoreOp>(loc, c, alloca);
-
-    rewriter.replaceOp(op, alloca);
+    rewriter.replaceOpWithNewOp<ConstantOp>(op, op.valueAttr());
     return success();
   }
 };
@@ -62,13 +42,8 @@ struct ReturnOpLowering : public ConversionPattern {
       rewriter.replaceOpWithNewOp<ReturnOp>(op, llvm::None);
     } else {
       Value operand = operands.front();
-      Value newOperand = operand.getType().isa<MemRefType>()
-                         ? rewriter.create<LoadOp>(op->getLoc(), operands.front())
-                         : operand;
-
-      rewriter.replaceOpWithNewOp<ReturnOp>(op,
-                                            llvm::ArrayRef<Type>(),
-                                            newOperand);
+      rewriter.replaceOpWithNewOp<ReturnOp>(op,llvm::ArrayRef<Type>(),
+                                            operand);
     }
     return success();
   }
@@ -83,22 +58,11 @@ struct CallOpLowering : public ConversionPattern {
                        ArrayRef<Value> operands,
                        ConversionPatternRewriter &rewriter) const -> LogicalResult final {
     auto callOp = dyn_cast<cherry::CallOp>(op);
-    SmallVector<Value, 3> loads;
-    for (auto operand : operands) {
-      if (operand.getType().isa<MemRefType>()) {
-        loads.push_back(rewriter.create<LoadOp>(op->getLoc(), operand));
-      } else {
-        loads.push_back(operand);
-      }
-    }
+    llvm::SmallVector<Type, 1> results;
+    if (callOp.getResults().size() != 0)
+      results.push_back(callOp.getResult(0).getType());
 
-    if (callOp.getResults().size() == 0) {
-      rewriter.replaceOpWithNewOp<CallOp>(op, callOp.callee(), llvm::None, loads);
-    } else {
-      rewriter.replaceOpWithNewOp<CallOp>(op, callOp.callee(),
-                                          callOp.getResult(0).getType(),
-                                          loads);
-    }
+    rewriter.replaceOpWithNewOp<CallOp>(op, callOp.callee(), results, operands);
     return success();
   }
 };
@@ -113,12 +77,9 @@ struct IfOpLowering : public ConversionPattern {
   const -> LogicalResult final {
     Location loc = op->getLoc();
     Value operand = operands.front();
-    Value newOperand = operand.getType().isa<MemRefType>()
-                       ? rewriter.create<LoadOp>(op->getLoc(), operands.front())
-                       : operand;
     auto ifOp = dyn_cast<cherry::IfOp>(op);
 
-    auto scfIfOp = rewriter.create<mlir::scf::IfOp>(loc, ifOp.getResult().getType(),  newOperand, true);
+    auto scfIfOp = rewriter.create<mlir::scf::IfOp>(loc, ifOp.getResult().getType(),  operand, true);
     rewriter.inlineRegionBefore(ifOp.thenRegion(), &scfIfOp.thenRegion().back());
     rewriter.eraseBlock(&scfIfOp.thenRegion().back());
 
@@ -126,6 +87,53 @@ struct IfOpLowering : public ConversionPattern {
     rewriter.eraseBlock(&scfIfOp.elseRegion().back());
 
     rewriter.replaceOp(op, scfIfOp.getResult(0));
+    return success();
+  }
+};
+
+struct WhileOpLowering : public ConversionPattern {
+  WhileOpLowering(MLIRContext *ctx)
+      : ConversionPattern(cherry::WhileOp::getOperationName(), 1, ctx) {}
+
+  auto matchAndRewrite(Operation *op,
+                       ArrayRef<Value> operands,
+                       ConversionPatternRewriter &rewriter)
+  const -> LogicalResult final {
+    Location loc = op->getLoc();
+    auto whileOp = dyn_cast<cherry::WhileOp>(op);
+
+    auto *initialBlock = rewriter.getInsertionBlock();
+    auto opPosition = rewriter.getInsertionPoint();
+    auto *afterLoopBlock = rewriter.splitBlock(initialBlock, opPosition);
+
+    auto &bodyRegion = whileOp.bodyRegion();
+    auto *bodyBlock = &bodyRegion.front();
+
+    // Emit condition block
+    auto &conditionRegion = whileOp.conditionRegion();
+    Block *conditionBlock = &conditionRegion.front();
+    Operation *conditionTerminator = conditionRegion.back().getTerminator();
+    ValueRange conditionTerminatorOperands = conditionTerminator->getOperands();
+    rewriter.setInsertionPointToEnd(&conditionRegion.back());
+    Value operand = conditionTerminatorOperands.front();
+    rewriter.create<CondBranchOp>(loc, operand,
+                                  bodyBlock, ArrayRef<Value>(),
+                                  afterLoopBlock, ArrayRef<Value>());
+    rewriter.eraseOp(conditionTerminator);
+    rewriter.inlineRegionBefore(conditionRegion, afterLoopBlock);
+
+    // Emit body block
+    Operation *bodyTerminator = bodyRegion.back().getTerminator();
+    rewriter.eraseOp(bodyTerminator);
+    rewriter.setInsertionPointToEnd(&bodyRegion.back());
+    rewriter.create<BranchOp>(loc, conditionBlock, llvm::None);
+    rewriter.inlineRegionBefore(bodyRegion, afterLoopBlock);
+
+    // Emit branch to condition block
+    rewriter.setInsertionPointToEnd(initialBlock);
+    rewriter.create<BranchOp>(loc, conditionBlock);
+
+    rewriter.replaceOp(whileOp, afterLoopBlock->getArguments());
     return success();
   }
 };
@@ -139,10 +147,7 @@ struct YieldOpLowering : public ConversionPattern {
                        ConversionPatternRewriter &rewriter)
   const -> LogicalResult final {
     Value operand = operands.front();
-    Value newOperand = operand.getType().isa<MemRefType>()
-                       ? rewriter.create<LoadOp>(op->getLoc(), operands.front())
-                       : operand;
-    rewriter.replaceOpWithNewOp<mlir::scf::YieldOp>(op, newOperand);
+    rewriter.replaceOpWithNewOp<mlir::scf::YieldOp>(op, operand);
     return success();
   }
 };
@@ -164,6 +169,7 @@ struct CherryToStandardLoweringPass
     patterns.insert<CallOpLowering>(&getContext());
     patterns.insert<YieldOpLowering>(&getContext());
     patterns.insert<IfOpLowering>(&getContext());
+    patterns.insert<WhileOpLowering>(&getContext());
 
     auto f = getFunction();
     if (failed(applyPartialConversion(f,target, patterns)))

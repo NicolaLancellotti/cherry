@@ -60,6 +60,7 @@ private:
   auto semaAssign(BinaryExpr *node) -> CherryResult;
   auto semaStructAccess(BinaryExpr *node) -> CherryResult;
   auto sema(IfExpr *node) -> CherryResult;
+  auto sema(WhileExpr *node) -> CherryResult;
 
   // Statements
   auto sema(Stat *node) -> CherryResult;
@@ -174,6 +175,8 @@ auto SemaImpl::sema(Expr *node) -> CherryResult {
     return sema(cast<BinaryExpr>(node));
   case Expr::Expr_If:
     return sema(cast<IfExpr>(node));
+  case Expr::Expr_While:
+    return sema(cast<WhileExpr>(node));
   default:
     llvm_unreachable("Unexpected expression");
   }
@@ -342,6 +345,25 @@ auto SemaImpl::sema(IfExpr *node) -> CherryResult {
     return emitError(elseExpr, diag::mismatch_type_then_else);
 
   node->setType(elseType);
+  return success();
+}
+
+auto SemaImpl::sema(WhileExpr *node) -> CherryResult {
+  auto conditionExpr = node->conditionExpr().get();
+  if (sema(conditionExpr))
+    return failure();
+  if (conditionExpr->type() != builtins::BoolType)
+    return emitError(conditionExpr, diag::expected_bool);
+
+  auto bodyBlock = node->bodyBlock().get();
+  if (sema(bodyBlock))
+    return failure();
+
+  auto bodyType = bodyBlock->expression()->type();
+  if (bodyType != builtins::UnitType)
+    return emitError(bodyBlock->expression().get(), diag::mismatch_type);
+
+  node->setType(builtins::UnitType);
   return success();
 }
 

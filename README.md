@@ -61,6 +61,11 @@ fn bar(x: UInt64, y: Bool): B {
     true
   };
 
+  var unit: () = while k {
+  	k = false;
+  	()
+  };
+
   B(k, A())
 }
 
