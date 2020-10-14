@@ -505,7 +505,7 @@ auto LLVMGenImpl::genAssign(const BinaryExpr *node,
   if (gen(node->rhs().get(), value))
     return failure();
 
-  if (value && node->type() != builtins::UnitType)
+  if (value && node->lhs()->type() != builtins::UnitType)
     _builder.CreateStore(value, address);
 
   value = getUnit();
