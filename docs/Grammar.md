@@ -76,12 +76,12 @@ operator → `/`
 operator → `%`  
 operator → `and`  
 operator → `or`   
-operator → `eq`
+operator → `eq`  
 operator → `neq`   
-operator → `lt`
-operator → `le`
-operator → `gt`
-operator → `ge`
+operator → `lt`  
+operator → `le`    
+operator → `gt`  
+operator → `ge`  
 
 ## Declarations  
 declaration → function-declaration  
