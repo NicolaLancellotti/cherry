@@ -146,6 +146,7 @@ private:
   auto parseBinaryExpRHS(int exprPrec, std::unique_ptr<Expr> &expr) -> CherryResult;
   auto getTokenPrecedence() -> int;
   auto isTokenRightAssociative() -> bool;
+  auto tokenToOperator(Token token) -> BinaryExpr::Operator;
 
   // ___________________________________________________________________________
   // Parse Statements

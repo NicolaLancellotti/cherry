@@ -169,11 +169,19 @@ private:
 
 class BinaryExpr final : public Expr {
 public:
+  enum class Operator {
+    Assign,
+    StructAccess,
+    Add, Mul, Diff, Div, Rem,
+    And, Or,
+    LT, LE, GT, GE, EQ, NEQ,
+  };
+
   explicit BinaryExpr(llvm::SMLoc location,
-                      llvm::StringRef op,
+                      BinaryExpr::Operator op,
                       std::unique_ptr<Expr> lhs,
                       std::unique_ptr<Expr> rhs)
-      : Expr{Expr_Binary, location}, _op{op.str()},
+      : Expr{Expr_Binary, location}, _op{op},
         _lhs{std::move(lhs)}, _rhs{std::move(rhs)} {};
 
   static auto classof(const Expr *node) -> bool {
@@ -189,11 +197,32 @@ public:
   }
 
   auto op() const -> llvm::StringRef {
+    switch (_op) {
+    case Operator::Assign: return "=";
+    case Operator::StructAccess: return ".";
+    case Operator::Add: return "+";
+    case Operator::Diff: return "-";
+    case Operator::Mul: return "*";
+    case Operator::Div: return "/";
+    case Operator::Rem: return "%";
+    case Operator::And: return "and";
+    case Operator::Or: return "or";
+    case Operator::LT: return "lt";
+    case Operator::LE: return "le";
+    case Operator::GT: return "gt";
+    case Operator::GE: return "ge";
+    case Operator::EQ: return "eq";
+    case Operator::NEQ: return "neq";
+    default: llvm_unreachable("Unexpected operator");
+    }
+  }
+
+  auto opEnum() const -> Operator {
     return _op;
   }
 
   auto isLvalue() -> bool {
-    return _op == ".";
+    return _op == Operator::StructAccess;
   }
 
   auto index() const -> int {
@@ -206,7 +235,7 @@ public:
 private:
   std::unique_ptr<Expr> _lhs;
   std::unique_ptr<Expr> _rhs;
-  std::string _op;
+  Operator _op;
   int _index;
 };
 

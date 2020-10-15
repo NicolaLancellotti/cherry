@@ -57,8 +57,8 @@ private:
   auto sema(DecimalLiteralExpr *node) -> CherryResult;
   auto sema(BoolLiteralExpr *node) -> CherryResult;
   auto sema(BinaryExpr *node) -> CherryResult;
-  auto semaAssign(BinaryExpr *node) -> CherryResult;
-  auto semaStructAccess(BinaryExpr *node) -> CherryResult;
+  auto semaRhsLhsSameType(BinaryExpr *node, llvm::StringRef &type) -> CherryResult;
+  auto semaStructAccessOp(BinaryExpr *node) -> CherryResult;
   auto sema(IfExpr *node) -> CherryResult;
   auto sema(WhileExpr *node) -> CherryResult;
 
@@ -272,32 +272,76 @@ auto SemaImpl::sema(BoolLiteralExpr *node) -> CherryResult {
 }
 
 auto SemaImpl::sema(BinaryExpr *node) -> CherryResult {
-  auto op = node->op();
-  if (op == "=")
-    return semaAssign(node);
-  else if (op == ".")
-    return semaStructAccess(node);
-  else
+  using Operator = BinaryExpr::Operator;
+  switch (node->opEnum()) {
+  case Operator::Assign: {
+    llvm::StringRef type;
+    if (semaRhsLhsSameType(node, type))
+      return mlir::failure();
+    if (!node->lhs()->isLvalue())
+      return emitError(node->lhs().get(), diag::expected_lvalue);
+    node->setType(builtins::UnitType);
+    return success();
+  }
+  case Operator::StructAccess:
+    return semaStructAccessOp(node);
+  }
+
+  llvm::StringRef type;
+  if (semaRhsLhsSameType(node, type))
+    return mlir::failure();
+
+  switch (node->opEnum()) {
+  case Operator::Add:
+  case Operator::Mul:
+  case Operator::Diff:
+  case Operator::Div:
+  case Operator::Rem: {
+    if (type != builtins::UInt64Type)
+      return emitError(node->lhs().get(), diag::mismatch_type);
+    node->setType(builtins::UInt64Type);
+    return success();
+  }
+  case Operator::And:
+  case Operator::Or: {
+    if (type != builtins::BoolType)
+      return emitError(node->lhs().get(), diag::mismatch_type);
+    node->setType(builtins::BoolType);
+    return success();
+  }
+  case Operator::EQ:
+  case Operator::NEQ:{
+    if (type != builtins::UInt64Type && type != builtins::BoolType)
+      return emitError(node->lhs().get(), diag::mismatch_type);
+    node->setType(builtins::BoolType);
+    return success();
+  }
+  case Operator::LT:
+  case Operator::LE:
+  case Operator::GT:
+  case Operator::GE:{
+    if (type != builtins::UInt64Type)
+      return emitError(node->lhs().get(), diag::mismatch_type);
+    node->setType(builtins::BoolType);
+    return success();
+  }
+  default:
     llvm_unreachable("Unexpected BinaryExpr operator");
+  }
 }
 
-auto SemaImpl::semaAssign(BinaryExpr *node) -> CherryResult {
+auto SemaImpl::semaRhsLhsSameType(BinaryExpr *node, llvm::StringRef &type) -> CherryResult {
   if (sema(node->lhs().get()) || sema(node->rhs().get()))
     return failure();
-
-  if (!node->lhs()->isLvalue())
-    return emitError(node->lhs().get(), diag::expected_lvalue);
-
   auto lhsType = node->lhs()->type();
   auto rhsType = node->rhs()->type();
   if (lhsType != rhsType)
     return emitError(node->lhs().get(), diag::mismatch_type);
-
-  node->setType(builtins::UnitType);
+  type = lhsType;
   return success();
 }
 
-auto SemaImpl::semaStructAccess(BinaryExpr *node) -> CherryResult {
+auto SemaImpl::semaStructAccessOp(BinaryExpr *node) -> CherryResult {
   if (sema(node->lhs().get()))
     return failure();
 

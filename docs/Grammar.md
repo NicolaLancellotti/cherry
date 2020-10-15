@@ -35,6 +35,7 @@ rvalue → function-call-expression
 rvalue → assign-expression  
 rvalue → if-expression    
 rvalue → while-expression      
+rvalue → binary-expression        
 
 **GRAMMAR OF A LITERAL EXPRESSION**  
 literal-expression → literal  
@@ -65,6 +66,22 @@ while-expression → `while` expression block-expression
 
 **GRAMMAR OF A BLOCK EXPRESSION**    
 block-expression → `{` statement-list<sub>opt</sub> expression `}`    
+
+**GRAMMAR OF A BINARY EXPRESSION**      
+binary-expression → expression operator expression      
+operator → `+`    
+operator → `-`     
+operator → `*`     
+operator → `/`      
+operator → `%`  
+operator → `and`  
+operator → `or`   
+operator → `eq`
+operator → `neq`   
+operator → `lt`
+operator → `le`
+operator → `gt`
+operator → `ge`
 
 ## Declarations  
 declaration → function-declaration  

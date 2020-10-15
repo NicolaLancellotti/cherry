@@ -93,5 +93,17 @@ auto WhileOp::build(mlir::OpBuilder &builder, mlir::OperationState &state,
   bodyBuilder(builder, state.location);
 }
 
+auto ArithmeticLogicOp::build(mlir::OpBuilder &builder,
+                              mlir::OperationState &state,
+                              mlir::Value lhs, mlir::Value rhs,
+                              StringRef op,
+                              mlir::Type type) -> void {
+  state.addTypes(type);;
+  state.addOperands({lhs, rhs});
+
+  auto dataAttribute = StringAttr::get(op, builder.getContext());
+  state.addAttribute("op", dataAttribute);
+}
+
 } // namespace cherry
 } // namespace mlir

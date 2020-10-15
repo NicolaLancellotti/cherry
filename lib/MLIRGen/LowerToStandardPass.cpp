@@ -152,6 +152,53 @@ struct YieldOpLowering : public ConversionPattern {
   }
 };
 
+struct ArithmeticLogicOpLowering : public ConversionPattern {
+  ArithmeticLogicOpLowering(MLIRContext *ctx)
+      : ConversionPattern(cherry::ArithmeticLogicOp::getOperationName(), 1, ctx) {}
+
+  auto matchAndRewrite(Operation *op,
+                       ArrayRef<Value> operands,
+                       ConversionPatternRewriter &rewriter)
+  const -> LogicalResult final {
+    auto resultTypes = op->getResultTypes();
+    auto arithmeticLogicOp = dyn_cast<cherry::ArithmeticLogicOp>(op);
+    auto oper = arithmeticLogicOp.op();
+    if (oper == "+")
+      rewriter.replaceOpWithNewOp<AddIOp>(op, resultTypes, operands);
+    else if (oper == "-")
+      rewriter.replaceOpWithNewOp<SubIOp>(op, resultTypes, operands);
+    else if (oper == "*")
+      rewriter.replaceOpWithNewOp<MulIOp>(op, resultTypes, operands);
+    else if (oper == "/")
+      rewriter.replaceOpWithNewOp<UnsignedDivIOp>(op, resultTypes, operands);
+    else if (oper == "%")
+      rewriter.replaceOpWithNewOp<UnsignedRemIOp>(op, resultTypes, operands);
+    else if (oper == "and")
+      rewriter.replaceOpWithNewOp<AndOp>(op, resultTypes, operands);
+    else if (oper == "or")
+      rewriter.replaceOpWithNewOp<OrOp>(op, resultTypes, operands);
+    else if (oper == "eq")
+      rewriter.replaceOpWithNewOp<CmpIOp>(op, resultTypes, mlir::CmpIPredicate::eq,
+                                          operands[0], operands[1]);
+    else if (oper == "neq")
+      rewriter.replaceOpWithNewOp<CmpIOp>(op, resultTypes, mlir::CmpIPredicate::ne,
+                                          operands[0], operands[1]);
+    else if (oper == "lt")
+      rewriter.replaceOpWithNewOp<CmpIOp>(op, resultTypes, mlir::CmpIPredicate::ult,
+                                          operands[0], operands[1]);
+    else if (oper == "le")
+      rewriter.replaceOpWithNewOp<CmpIOp>(op, resultTypes, mlir::CmpIPredicate::ule,
+                                          operands[0], operands[1]);
+    else if (oper == "gt")
+      rewriter.replaceOpWithNewOp<CmpIOp>(op, resultTypes, mlir::CmpIPredicate::ugt,
+                                          operands[0], operands[1]);
+    else if (oper == "ge")
+      rewriter.replaceOpWithNewOp<CmpIOp>(op, resultTypes, mlir::CmpIPredicate::uge,
+                                          operands[0], operands[1]);
+    return success();
+  }
+};
+
 struct CherryToStandardLoweringPass
     : public PassWrapper<CherryToStandardLoweringPass, FunctionPass> {
 
@@ -170,6 +217,7 @@ struct CherryToStandardLoweringPass
     patterns.insert<YieldOpLowering>(&getContext());
     patterns.insert<IfOpLowering>(&getContext());
     patterns.insert<WhileOpLowering>(&getContext());
+    patterns.insert<ArithmeticLogicOpLowering>(&getContext());
 
     auto f = getFunction();
     if (failed(applyPartialConversion(f,target, patterns)))

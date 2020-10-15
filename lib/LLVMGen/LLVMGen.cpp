@@ -83,8 +83,9 @@ private:
   auto gen(const DecimalLiteralExpr *node) -> llvm::Value*;
   auto gen(const BoolLiteralExpr *node) -> llvm::Value*;
   auto gen(const BinaryExpr *node) -> llvm::Value*;
-  auto genAssign(const BinaryExpr *node) -> llvm::Value*;
-  auto genStructAccess(const BinaryExpr *node) -> llvm::Value*;
+  auto genAssignOp(const BinaryExpr *node) -> llvm::Value*;
+  auto genArithmeticOp(const BinaryExpr *node) -> llvm::Value*;
+  auto genStructAccessOp(const BinaryExpr *node) -> llvm::Value*;
   auto genStructAddress(const BinaryExpr *node) -> llvm::Value*;
   auto gen(const IfExpr *node) -> llvm::Value*;
   auto gen(const WhileExpr *node) -> llvm::Value*;
@@ -274,9 +275,9 @@ auto LLVMGenImpl::gen(const Prototype *node) -> llvm::Function* {
   auto llvmResultType = getType(resultType);
   auto funcType = llvm::FunctionType::get(llvmResultType, argTypes, false);
   auto func = llvm::Function::Create(funcType,
-                                llvm::Function::ExternalLinkage,
-                                name,
-                                module.get());
+                                     llvm::Function::ExternalLinkage,
+                                     name,
+                                     module.get());
 
   auto *bb = llvm::BasicBlock::Create(_context, "entry", func);
   _builder.SetInsertPoint(bb);
@@ -397,7 +398,7 @@ auto LLVMGenImpl::gen(const CallExpr *node) -> llvm::Value* {
   auto functionName = node->name();
   if (functionName == builtins::boolToUInt64) {
     return _builder.CreateIntCast(operands.front(),
-                                   getType(builtins::UInt64Type), false);
+                                  getType(builtins::UInt64Type), false);
   } else {
     auto *callee = module->getFunction(functionName);
     return _builder.CreateCall(callee, operands);
@@ -450,16 +451,48 @@ auto LLVMGenImpl::gen(const BoolLiteralExpr *node) -> llvm::Value* {
 }
 
 auto LLVMGenImpl::gen(const BinaryExpr *node) -> llvm::Value* {
-  auto op = node->op();
-  if (op == "=")
-    return genAssign(node);
-  else if (op == ".")
-    return genStructAccess(node);
-  else
-    llvm_unreachable("Unexpected BinaryExpr operator");
+  using Operator = BinaryExpr::Operator;
+  auto op = node->opEnum();
+  switch (op) {
+  case Operator::Assign:
+    return genAssignOp(node);
+  case Operator::StructAccess:
+    return genStructAccessOp(node);
+  }
+
+  auto lhs = gen(node->lhs().get());
+  auto rhs = gen(node->rhs().get());
+  switch (op) {
+  case Operator::Add:
+    return _builder.CreateAdd(lhs, rhs);
+  case Operator::Mul:
+    return _builder.CreateMul(lhs, rhs);
+  case Operator::Diff:
+    return _builder.CreateSub(lhs, rhs);
+  case Operator::Div:
+    return _builder.CreateUDiv(lhs, rhs);
+  case Operator::Rem:
+    return _builder.CreateURem(lhs, rhs);
+  case Operator::And:
+    return _builder.CreateAnd(lhs, rhs);
+  case Operator::Or:
+    return _builder.CreateOr(lhs, rhs);
+  case Operator::LT:
+    return _builder.CreateICmpULT(lhs, rhs);
+  case Operator::LE:
+    return _builder.CreateICmpULE(lhs, rhs);
+  case Operator::GT:
+    return _builder.CreateICmpUGT(lhs, rhs);
+  case Operator::GE:
+    return _builder.CreateICmpUGE(lhs, rhs);
+  case Operator::EQ:
+    return _builder.CreateICmpEQ(lhs, rhs);
+  case Operator::NEQ:
+    return _builder.CreateICmpNE(lhs, rhs);
+  }
 }
 
-auto LLVMGenImpl::genAssign(const BinaryExpr *node) -> llvm::Value* {
+auto LLVMGenImpl::genAssignOp(const BinaryExpr *node) -> llvm::Value* {
   emitLocation(node);
   llvm::Value *address;
   llvm::TypeSwitch<const Expr *>(node->lhs().get())
@@ -480,7 +513,7 @@ auto LLVMGenImpl::genAssign(const BinaryExpr *node) -> llvm::Value* {
   return getUnit();
 }
 
-auto LLVMGenImpl::genStructAccess(const BinaryExpr *node) -> llvm::Value* {
+auto LLVMGenImpl::genStructAccessOp(const BinaryExpr *node) -> llvm::Value* {
   emitLocation(node);
   auto *address = genStructAddress(node);
   return _builder.CreateLoad(address);

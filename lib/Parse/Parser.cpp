@@ -362,16 +362,14 @@ auto Parser::parseBinaryExpRHS(int exprPrec, std::unique_ptr<Expr> &expr) -> Che
       return emitError(diag::expected_expr);
 
     int nextPrec = getTokenPrecedence();
-    bool rightAssociative = isTokenRightAssociative();
     if (tokPrec < nextPrec) {
       if (parseBinaryExpRHS(tokPrec + 1, rhs))
         return failure();
-    } else if ((tokPrec == nextPrec) && rightAssociative) {
+    } else if ((tokPrec == nextPrec) && isTokenRightAssociative()) {
       if (parseBinaryExpRHS(tokPrec, rhs))
         return failure();
     }
-
-    expr = std::make_unique<BinaryExpr>(location, t.getSpelling(),
+    expr = std::make_unique<BinaryExpr>(location, tokenToOperator(t),
                                         std::move(expr), std::move(rhs));
   }
 }
@@ -379,9 +377,28 @@ auto Parser::parseBinaryExpRHS(int exprPrec, std::unique_ptr<Expr> &expr) -> Che
 auto Parser::getTokenPrecedence() -> int {
   switch (tokenKind()) {
   case Token::assign:
-    return 2;
+    return 100;
+  case Token::kw_or:
+    return 200;
+  case Token::kw_and:
+    return 300;
+  case Token::kw_eq:
+  case Token::kw_neq:
+    return 400;
+  case Token::kw_lt:
+  case Token::kw_le:
+  case Token::kw_gt:
+  case Token::kw_ge:
+    return 500;
+  case Token::add:
+  case Token::diff:
+    return 600;
+  case Token::mul:
+  case Token::div:
+  case Token::rem:
+    return 700;
   case Token::dot:
-    return 10;
+    return 800;
   default:
     return -1;
   }
@@ -391,10 +408,29 @@ auto Parser::isTokenRightAssociative() -> bool {
   switch (tokenKind()) {
   case Token::assign:
     return true;
-  case Token::dot:
-    return false;
   default:
     return false;
+  }
+}
+
+auto Parser::tokenToOperator(Token token) -> BinaryExpr::Operator {
+  switch (token.getKind()) {
+  case Token::assign: return BinaryExpr::Operator::Assign;
+  case Token::dot: return BinaryExpr::Operator::StructAccess;
+  case Token::add: return BinaryExpr::Operator::Add;
+  case Token::diff: return BinaryExpr::Operator::Diff;
+  case Token::mul: return BinaryExpr::Operator::Mul;
+  case Token::div: return BinaryExpr::Operator::Div;
+  case Token::rem: return BinaryExpr::Operator::Rem;
+  case Token::kw_and: return BinaryExpr::Operator::And;
+  case Token::kw_or: return BinaryExpr::Operator::Or;
+  case Token::kw_eq: return BinaryExpr::Operator::EQ;
+  case Token::kw_neq: return BinaryExpr::Operator::NEQ;
+  case Token::kw_lt: return BinaryExpr::Operator::LT;
+  case Token::kw_le: return BinaryExpr::Operator::LE;
+  case Token::kw_gt: return BinaryExpr::Operator::GT;
+  case Token::kw_ge: return BinaryExpr::Operator::GE;
+  default: llvm_unreachable("Unexpected operator");
   }
 }
 

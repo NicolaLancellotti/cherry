@@ -140,4 +140,15 @@ def YieldOp : Cherry_Op<"yield", [NoSideEffect, Terminator]> {
   ];
 }
 
+def ArithmeticLogicOp : Cherry_Op<"arithmetic-logic", [NoSideEffect]> {
+
+  let arguments = (ins Cherry_Type:$lhs, Cherry_Type:$rhs, StrAttr:$op);
+  let results = (outs Cherry_Type);
+
+  let builders = [
+      OpBuilder<"OpBuilder &b, OperationState &state, Value lhs, Value rhs, "
+              "StringRef op, Type type">
+  ];
+}
+
 #endif // CHERRY_OPS

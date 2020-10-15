@@ -65,7 +65,7 @@ private:
   auto gen(const DecimalLiteralExpr *node) -> mlir::Value;
   auto gen(const BoolLiteralExpr *node) -> mlir::Value;
   auto gen(const BinaryExpr *node) -> mlir::Value;
-  auto genAssign(const BinaryExpr *node) -> mlir::Value;
+  auto genAssignOp(const BinaryExpr *node) -> mlir::Value;
 
   // Statements
   auto gen(const Stat *node) -> void;
@@ -305,14 +305,38 @@ auto MLIRGenImpl::gen(const BoolLiteralExpr *node) -> mlir::Value {
 }
 
 auto MLIRGenImpl::gen(const BinaryExpr *node) -> mlir::Value {
-  auto op = node->op();
-  if (op == "=")
-    return genAssign(node);
-  else
-    llvm_unreachable("Unexpected BinaryExpr operator");
+  using Operator = BinaryExpr::Operator;
+  auto op = node->opEnum();
+  switch (op) {
+    case Operator::Assign:
+      return genAssignOp(node);
+    case Operator::StructAccess:
+       llvm_unreachable("unimplemented");
+  }
+
+  auto lhs = gen(node->lhs().get());
+  auto rhs = gen(node->rhs().get());
+  auto type = getType(node->type());
+  switch (op) {
+    case Operator::Add:
+    case Operator::Diff:
+    case Operator::Mul:
+    case Operator::Div:
+    case Operator::Rem:
+    case Operator::And:
+    case Operator::Or:
+    case Operator::EQ:
+    case Operator::NEQ:
+    case Operator::LT:
+    case Operator::LE:
+    case Operator::GT:
+    case Operator::GE:
+      return _builder.create<ArithmeticLogicOp>(loc(node), lhs, rhs,
+                                                node->op(), type);
+  }
 }
 
-auto MLIRGenImpl::genAssign(const BinaryExpr *node) -> mlir::Value {
+auto MLIRGenImpl::genAssignOp(const BinaryExpr *node) -> mlir::Value {
   auto rhsValue = gen(node->rhs().get());
 
   // TODO: handle struct access

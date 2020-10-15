@@ -74,6 +74,10 @@ fn baz(): () {
 }
 
 fn main(): UInt64 {
+  0 % 3 * 8 / 4 + 3 - 1;
+  3 lt 1; 3 le 1; 3 gt 1; 3 ge 1;
+  true and false or true eq false neq true;
+
   var structValue: B = bar(18446744073709551615, false);
   print(boolToUInt64(structValue.x));
   baz();
