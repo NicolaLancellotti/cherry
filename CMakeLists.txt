@@ -42,7 +42,6 @@ add_definitions(${LLVM_DEFINITIONS})
 
 set(CHERRY_HEADERS ${cherry_SOURCE_DIR}/include/)
 message(STATUS "CHERRY_HEADERS: ${CHERRY_HEADERS}")
-add_subdirectory(utils)
 
 add_subdirectory(include)
 add_subdirectory(lib)
