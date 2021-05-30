@@ -1,7 +1,7 @@
 //===--- Passes.h - MLIR Passes ---------------------------------*- C++ -*-===//
 //
 // This source file is part of the Cherry open source project
-// See TODO for license information
+// See LICENSE.txt for license information
 //
 //===----------------------------------------------------------------------===//
 
@@ -15,11 +15,11 @@ class Pass;
 
 namespace cherry {
 
-auto createLowerToStandardPass() -> std::unique_ptr<mlir::Pass>;
+auto createLowerToSCFPass() -> std::unique_ptr<mlir::Pass>;
+auto createLowerToSCFAndStandardPass() -> std::unique_ptr<mlir::Pass>;
 auto createLowerToLLVMPass() -> std::unique_ptr<mlir::Pass>;
 
-} // end namespace toy
+} // end namespace cherry
 } // end namespace mlir
-
 
 #endif // CHERRY_PASSES_H

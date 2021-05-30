@@ -9,13 +9,15 @@ namespace cl = llvm::cl;
 namespace {
 enum Action {
   None,
-  DumpTokens,
-  DumpParse,
-  DumpAST,
-  DumpMLIR,
-  DumpMLIRStandard,
-  DumpMLIRLLVM,
-  DumpLLVM,
+  Dump_Tokens,
+  Dump_Parse,
+  Dump_AST,
+  Dump_MLIR,
+  Dump_MLIR_SCF,
+  Dump_MLIR_SCF_Standard,
+  Dump_MLIR_Standard,
+  Dump_MLIR_LLVM,
+  Dump_LLVM,
 };
 
 enum Backend {
@@ -40,25 +42,31 @@ static cl::opt<bool> typecheck("typecheck",
 static cl::opt<enum Action>
     dumpAction("dump",
                cl::desc("Select the kind of output desired"),
-               cl::values(clEnumValN(DumpTokens,
+               cl::values(clEnumValN(Dump_Tokens,
                                      "tokens",
                                      "dump internal rep of tokens")),
-               cl::values(clEnumValN(DumpParse,
+               cl::values(clEnumValN(Dump_Parse,
                                      "parse",
                                      "parse and output the AST dump")),
-               cl::values(clEnumValN(DumpAST,
+               cl::values(clEnumValN(Dump_AST,
                                      "ast",
                                      "parse, type-check and output the AST dump")),
-               cl::values(clEnumValN(DumpMLIR,
+               cl::values(clEnumValN(Dump_MLIR,
                                      "mlir",
-                                     "output the MLIR dump")),
-               cl::values(clEnumValN(DumpMLIRStandard,
+                                     "output the MLIR dump (cherry)")),
+               cl::values(clEnumValN(Dump_MLIR_SCF,
+                                     "mlir-scf",
+                                     "output the MLIR dump (cherry + scf)")),
+               cl::values(clEnumValN(Dump_MLIR_SCF_Standard,
+                                     "mlir-scf-std",
+                                     "output the MLIR dump (cherry + scf + standard)")),
+               cl::values(clEnumValN(Dump_MLIR_Standard,
                                      "mlir-std",
-                                     "output the MLIR dump after std lowering")),
-               cl::values(clEnumValN(DumpMLIRLLVM,
+                                     "output the MLIR dump (cherry + standard)")),
+               cl::values(clEnumValN(Dump_MLIR_LLVM,
                                      "mlir-llvm",
-                                     "output the MLIR dump after std and llvm lowering")),
-               cl::values(clEnumValN(DumpLLVM,
+                                     "output the MLIR dump (llvm)")),
+               cl::values(clEnumValN(Dump_LLVM,
                                      "llvm",
                                      "output the LLVM dump")));
 
@@ -91,19 +99,23 @@ auto main(int argc, const char **argv) -> int {
     return compilation->typecheck();
 
   switch (dumpAction) {
-  case Action::DumpTokens:
+  case Action::Dump_Tokens:
     return compilation->dumpTokens();
-  case Action::DumpParse:
+  case Action::Dump_Parse:
     return compilation->dumpParse();
-  case Action::DumpAST:
+  case Action::Dump_AST:
     return compilation->dumpAST();
-  case Action::DumpMLIR:
+  case Action::Dump_MLIR:
     return compilation->dumpMLIR(Compilation::Lowering::None);
-  case Action::DumpMLIRStandard:
+  case Action::Dump_MLIR_SCF:
+    return compilation->dumpMLIR(Compilation::Lowering::SCF);
+  case Action::Dump_MLIR_SCF_Standard:
+    return compilation->dumpMLIR(Compilation::Lowering::SCF_Standard);
+  case Action::Dump_MLIR_Standard:
     return compilation->dumpMLIR(Compilation::Lowering::Standard);
-  case Action::DumpMLIRLLVM:
+  case Action::Dump_MLIR_LLVM:
     return compilation->dumpMLIR(Compilation::Lowering::LLVM);
-  case Action::DumpLLVM:
+  case Action::Dump_LLVM:
     return compilation->dumpLLVM();
   default:
     return compilation->jit();

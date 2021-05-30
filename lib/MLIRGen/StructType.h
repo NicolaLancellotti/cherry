@@ -1,7 +1,7 @@
 //===--- StructType.h - MLIR lowering of Cherry struct type -----*- C++ -*-===//
 //
 // This source file is part of the Cherry open source project
-// See TODO for license information
+// See LICENSE.txt for license information
 //
 //===----------------------------------------------------------------------===//
 
@@ -9,12 +9,6 @@
 #define CHERRY_STRUCTTYPE_H
 
 #include "mlir/IR/Types.h"
-
-namespace CherryTypes {
-enum Types {
-  Struct = mlir::Type::FIRST_PRIVATE_EXPERIMENTAL_0_TYPE,
-};
-}
 
 namespace mlir {
 namespace cherry {
@@ -47,19 +41,17 @@ struct StructTypeStorage : public mlir::TypeStorage {
   llvm::ArrayRef<mlir::Type> elementTypes;
 };
 
-} // end namespace details
+} // end namespace detail
 
 class StructType : public mlir::Type::TypeBase<StructType, mlir::Type,
-    detail::StructTypeStorage> {
+                                               detail::StructTypeStorage> {
 public:
   using Base::Base;
-
-  static bool kindof(unsigned kind) { return kind == CherryTypes::Struct; }
 
   static StructType get(llvm::ArrayRef<mlir::Type> elementTypes) {
     assert(!elementTypes.empty() && "expected at least 1 element type");
     mlir::MLIRContext *ctx = elementTypes.front().getContext();
-    return Base::get(ctx, CherryTypes::Struct, elementTypes);
+    return Base::get(ctx, elementTypes);
   }
 
   llvm::ArrayRef<mlir::Type> getElementTypes() {

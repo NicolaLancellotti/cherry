@@ -1,32 +1,29 @@
 //===- CherryDialect.cpp - Cherry dialect ---------------------------------===//
 //
 // This source file is part of the Cherry open source project
-// See TODO for license information
+// See LICENSE.txt for license information
 //
 //===----------------------------------------------------------------------===//
 
-#include "StructType.h"
 #include "cherry/MLIRGen/CherryDialect.h"
+#include "StructType.h"
 #include "cherry/MLIRGen/CherryOps.h"
-#include "mlir/IR/Builders.h"
 #include "mlir/IR/DialectImplementation.h"
-#include "mlir/IR/StandardTypes.h"
 
 using namespace mlir;
 using namespace mlir::cherry;
 
-CherryDialect::CherryDialect(mlir::MLIRContext *context)
-    : Dialect(getDialectNamespace(), context) {
+void CherryDialect::initialize() {
   addOperations<
 #define GET_OP_LIST
 #include "cherry/MLIRGen/CherryOps.cpp.inc"
-  >();
+      >();
   addTypes<StructType>();
 }
 
-
 //   struct-type ::= `struct` `<` type (`,` type)* `>`
-auto CherryDialect::parseType(mlir::DialectAsmParser &parser) const -> mlir::Type{
+auto CherryDialect::parseType(mlir::DialectAsmParser &parser) const
+    -> mlir::Type {
   if (parser.parseKeyword("struct") || parser.parseLess())
     return Type();
 

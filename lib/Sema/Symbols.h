@@ -1,7 +1,7 @@
 //===--- Symbols.h - Symbol Table -------------------------------*- C++ -*-===//
 //
 // This source file is part of the Cherry open source project
-// See TODO for license information
+// See LICENSE.txt for license information
 //
 //===----------------------------------------------------------------------===//
 
@@ -43,9 +43,8 @@ public:
     return success();
   }
 
-  auto getFunction(llvm::StringRef name,
-                   llvm::ArrayRef<llvm::StringRef> &types,
-                   llvm::StringRef &returnType)  -> CherryResult {
+  auto getFunction(llvm::StringRef name, llvm::ArrayRef<llvm::StringRef> &types,
+                   llvm::StringRef &returnType) -> CherryResult {
     auto symbol = _functionSymbols.find(name);
     if (symbol == _functionSymbols.end())
       return failure();
@@ -79,11 +78,10 @@ public:
     return success();
   }
 
-  auto resetVariables() {
-    _variableSymbols = {};
-  }
+  auto resetVariables() { _variableSymbols = {}; }
 
-  auto declareVariable(const VariableExpr *var, llvm::StringRef type) -> CherryResult {
+  auto declareVariable(const VariableExpr *var, llvm::StringRef type)
+      -> CherryResult {
     auto name = var->name();
     if (_variableSymbols.find(name) != _variableSymbols.end())
       return failure();
@@ -91,7 +89,8 @@ public:
     return success();
   }
 
-  auto getVariableType(const VariableExpr *node, llvm::StringRef &type) -> CherryResult {
+  auto getVariableType(const VariableExpr *node, llvm::StringRef &type)
+      -> CherryResult {
     auto symbol = _variableSymbols.find(node->name());
     if (symbol == _variableSymbols.end()) {
       return failure();
@@ -101,13 +100,17 @@ public:
   }
 
   VectorUniquePtr<VariableStat> emptyVector;
+
 private:
   std::map</*name*/ llvm::StringRef,
-      std::pair<
-          /*_functionSymbolstypes*/ llvm::SmallVector<llvm::StringRef, 2>,
-          /*return type*/ llvm::StringRef>> _functionSymbols;
-  std::map</*name*/ llvm::StringRef, /*types*/ const VectorUniquePtr<VariableStat>*> _typeSymbols;
-  std::map</*name*/llvm::StringRef, /*type*/ llvm::StringRef> _variableSymbols;
+           std::pair<
+               /*_functionSymbolstypes*/ llvm::SmallVector<llvm::StringRef, 2>,
+               /*return type*/ llvm::StringRef>>
+      _functionSymbols;
+  std::map</*name*/ llvm::StringRef,
+           /*types*/ const VectorUniquePtr<VariableStat> *>
+      _typeSymbols;
+  std::map</*name*/ llvm::StringRef, /*type*/ llvm::StringRef> _variableSymbols;
 };
 
 } // end namespace cherry

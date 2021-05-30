@@ -1,18 +1,21 @@
-# RUN: cherry-driver %s 2>&1| FileCheck %s
+# RUN: cherry-driver %s 2>&1 | FileCheck %s
 
-fn baz(x: UInt64) {
+fn baz(x: UInt64): () {
   print(x);
+  ()
 }
 
-fn bar(x: UInt64, y: UInt64) {
+fn bar(x: UInt64, y: UInt64): () {
   print(x);
   print(y);
   print(18446744073709551615);
+  ()
 }
 
-fn main() {
+fn main(): UInt64 {
   bar(0, 1);
   baz(print(2));
+  0
 }
 
 # CHECK: 0

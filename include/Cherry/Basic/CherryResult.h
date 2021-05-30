@@ -1,7 +1,7 @@
 //===--- CherryResult.h - Cherry subclass of LogicalResult ------*- C++ -*-===//
 //
 // This source file is part of the Cherry open source project
-// See TODO for license information
+// See LICENSE.txt for license information
 //
 //===----------------------------------------------------------------------===//
 
@@ -14,7 +14,8 @@ namespace cherry {
 
 class CherryResult : public mlir::LogicalResult {
 public:
-  CherryResult(LogicalResult result = mlir::success()) : mlir::LogicalResult(result) {}
+  CherryResult(LogicalResult result = mlir::success())
+      : mlir::LogicalResult(result) {}
 
   explicit operator bool() const { return failed(*this); }
 };

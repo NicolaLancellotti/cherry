@@ -1,7 +1,7 @@
 //===--- Module.h - Cherry Language Module AST ------------------*- C++ -*-===//
 //
 // This source file is part of the Cherry open source project
-// See TODO for license information
+// See LICENSE.txt for license information
 //
 //===----------------------------------------------------------------------===//
 
@@ -15,12 +15,10 @@ class Decl;
 
 class Module : public Node {
 public:
-  explicit Module(llvm::SMLoc location,
-                  VectorUniquePtr<Decl> declarations)
-      : Node{location},
-        _declarations{std::move(declarations)} {};
+  explicit Module(llvm::SMLoc location, VectorUniquePtr<Decl> declarations)
+      : Node{location}, _declarations{std::move(declarations)} {};
 
-  auto declarations() const -> const VectorUniquePtr<Decl>& {
+  auto declarations() const -> const VectorUniquePtr<Decl> & {
     return _declarations;
   }
 
@@ -28,8 +26,12 @@ private:
   VectorUniquePtr<Decl> _declarations;
 
 public:
-  auto begin() const -> decltype(_declarations.begin()) { return _declarations.begin(); }
-  auto end() const -> decltype(_declarations.end()) { return _declarations.end(); }
+  auto begin() const -> decltype(_declarations.begin()) {
+    return _declarations.begin();
+  }
+  auto end() const -> decltype(_declarations.end()) {
+    return _declarations.end();
+  }
 };
 
 } // end namespace cherry

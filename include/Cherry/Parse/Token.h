@@ -1,7 +1,7 @@
 //===--- Token.h - Cherry Language Token ------------------------*- C++ -*-===//
 //
 // This source file is part of the Cherry open source project
-// See TODO for license information
+// See LICENSE.txt for license information
 //
 //===----------------------------------------------------------------------===//
 
@@ -24,7 +24,8 @@ public:
 #include "TokenKinds.def"
   };
 
-  Token(Kind kind, llvm::StringRef spelling) : _kind(kind), _spelling(spelling) {}
+  Token(Kind kind, llvm::StringRef spelling)
+      : _kind(kind), _spelling(spelling) {}
 
   auto getSpelling() const -> llvm::StringRef { return _spelling; }
 
@@ -37,7 +38,7 @@ public:
   llvm::SMLoc getEndLoc() const;
   llvm::SMRange getLocRange() const;
 
-  auto getTokenName() -> const char*;
+  auto getTokenName() -> const char *;
 
 private:
   Kind _kind;

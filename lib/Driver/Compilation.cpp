@@ -1,12 +1,12 @@
 //===--- Compilation.cpp - Compilation Task Data Structure ----------------===//
 //
 // This source file is part of the Cherry open source project
-// See TODO for license information
+// See LICENSE.txt for license information
 //
 //===----------------------------------------------------------------------===//
 
-#include "KaleidoscopeJIT.h"
 #include "cherry/Driver/Compilation.h"
+#include "KaleidoscopeJIT.h"
 #include "cherry/LLVMGen/LLVMGen.h"
 #include "cherry/MLIRGen/CherryDialect.h"
 #include "cherry/MLIRGen/MLIRGen.h"
@@ -14,14 +14,13 @@
 #include "cherry/Parse/Lexer.h"
 #include "cherry/Parse/Parser.h"
 #include "cherry/Sema/Sema.h"
-#include "mlir/Dialect/StandardOps/IR/Ops.h"
+#include "mlir/Conversion/SCFToStandard/SCFToStandard.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/SCF/SCF.h"
+#include "mlir/Dialect/StandardOps/IR/Ops.h"
 #include "mlir/ExecutionEngine/ExecutionEngine.h"
 #include "mlir/ExecutionEngine/OptUtils.h"
 #include "mlir/IR/Dialect.h"
-#include "mlir/IR/Function.h"
-#include "mlir/IR/Module.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Target/LLVMIR.h"
@@ -30,20 +29,14 @@
 #include "llvm/IR/Module.h"
 #include "llvm/Support/Host.h"
 #include "llvm/Support/MemoryBuffer.h"
-#include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/TargetRegistry.h"
 #include "llvm/Support/TargetSelect.h"
+#include "llvm/Support/raw_ostream.h"
 
 using namespace cherry;
 
-auto Compilation::make(llvm::StringRef filename,
-                       bool enableOpt,
+auto Compilation::make(llvm::StringRef filename, bool enableOpt,
                        bool backendLLVM) -> std::unique_ptr<Compilation> {
-  mlir::registerDialect<mlir::cherry::CherryDialect>();
-  mlir::registerDialect<mlir::StandardOpsDialect>();
-  mlir::registerDialect<mlir::LLVM::LLVMDialect>();
-  mlir::registerDialect<mlir::scf::SCFDialect>();
-
   auto fileOrErr = llvm::MemoryBuffer::getFileOrSTDIN(filename);
 
   if (auto ec = fileOrErr.getError()) {
@@ -51,8 +44,17 @@ auto Compilation::make(llvm::StringRef filename,
     return {};
   }
 
+  llvm::InitializeNativeTarget();
+  llvm::InitializeNativeTargetAsmPrinter();
+
   auto compilation = std::make_unique<Compilation>();
-  compilation->sourceManager().AddNewSourceBuffer(std::move(fileOrErr.get()), llvm::SMLoc());
+  compilation->_mlirContext.getOrLoadDialect<mlir::cherry::CherryDialect>();
+  compilation->_mlirContext.getOrLoadDialect<mlir::StandardOpsDialect>();
+  compilation->_mlirContext.getOrLoadDialect<mlir::LLVM::LLVMDialect>();
+  compilation->_mlirContext.getOrLoadDialect<mlir::scf::SCFDialect>();
+  compilation->_llvmContext = std::make_unique<llvm::LLVMContext>();
+  compilation->sourceManager().AddNewSourceBuffer(std::move(fileOrErr.get()),
+                                                  llvm::SMLoc());
   compilation->_enableOpt = enableOpt;
   compilation->_backendLLVM = backendLLVM;
   return compilation;
@@ -64,8 +66,8 @@ auto Compilation::parse(std::unique_ptr<Module> &module) -> CherryResult {
   return parser.parseModule(module);
 }
 
-auto Compilation::genMLIR(mlir::OwningModuleRef &module,
-                          Lowering lowering) -> CherryResult {
+auto Compilation::genMLIR(mlir::OwningModuleRef &module, Lowering lowering)
+    -> CherryResult {
   std::unique_ptr<Module> moduleAST;
   if (parse(moduleAST))
     return failure();
@@ -75,13 +77,18 @@ auto Compilation::genMLIR(mlir::OwningModuleRef &module,
     return failure();
 
   mlir::PassManager pm(&_mlirContext);
-  if (_enableOpt) {
-    mlir::OpPassManager &optPM = pm.nest<mlir::FuncOp>();
+  mlir::OpPassManager &optPM = pm.nest<mlir::FuncOp>();
+  if (_enableOpt)
     optPM.addPass(mlir::createCanonicalizerPass());
-  }
+
+  if (lowering >= Lowering::SCF)
+    pm.addPass(mlir::cherry::createLowerToSCFPass());
+
+  if (lowering >= Lowering::SCF_Standard)
+    optPM.addPass(mlir::cherry::createLowerToSCFAndStandardPass());
 
   if (lowering >= Lowering::Standard)
-    pm.addPass(mlir::cherry::createLowerToStandardPass());
+    pm.addPass(mlir::createLowerToCFGPass());
 
   if (lowering >= Lowering::LLVM)
     pm.addPass(mlir::cherry::createLowerToLLVMPass());
@@ -89,19 +96,19 @@ auto Compilation::genMLIR(mlir::OwningModuleRef &module,
   return pm.run(*module);
 }
 
-auto Compilation::genLLVM(std::unique_ptr<llvm::Module> &llvmModule) -> CherryResult {
+auto Compilation::genLLVM(std::unique_ptr<llvm::Module> &llvmModule)
+    -> CherryResult {
   if (_backendLLVM) {
     std::unique_ptr<Module> module;
-    if (parse(module) ||
-        cherry::sema(_sourceManager, *module.get()) ||
-        llvmGen(_sourceManager, _llvmContext, *module, llvmModule, _enableOpt))
+    if (parse(module) || cherry::sema(_sourceManager, *module.get()) ||
+        llvmGen(_sourceManager, *_llvmContext, *module, llvmModule, _enableOpt))
       return failure();
   } else {
     mlir::OwningModuleRef module;
     if (genMLIR(module, Lowering::LLVM))
       return failure();
 
-    llvmModule = mlir::translateModuleToLLVMIR(*module);
+    llvmModule = mlir::translateModuleToLLVMIR(*module, *this->_llvmContext);
     if (!llvmModule)
       return failure();
 
@@ -109,8 +116,8 @@ auto Compilation::genLLVM(std::unique_ptr<llvm::Module> &llvmModule) -> CherryRe
 
     auto optPipeline =
         mlir::makeOptimizingTransformer(_enableOpt ? 3 : 0,
-            /*sizeLevel=*/0,
-            /*targetMachine=*/nullptr);
+                                        /*sizeLevel=*/0,
+                                        /*targetMachine=*/nullptr);
 
     if (auto err = optPipeline(llvmModule.get())) {
       llvm::errs() << "Failed to optimize LLVM IR " << err << "\n";
@@ -130,38 +137,41 @@ auto Compilation::typecheck() -> int {
 }
 
 auto Compilation::jit() -> int {
-  llvm::InitializeNativeTarget();
-  llvm::InitializeNativeTargetAsmPrinter();
+  llvm::ExitOnError exitOnErr;
 
   if (_backendLLVM) {
-    llvm::orc::KaleidoscopeJIT jit;
+    auto jit = exitOnErr(llvm::orc::KaleidoscopeJIT::Create());
     std::unique_ptr<llvm::Module> llvmModule;
     if (genLLVM(llvmModule))
       return EXIT_FAILURE;
 
-    llvmModule->setDataLayout(jit.getTargetMachine().createDataLayout());
-    auto moduleHandle = jit.addModule(std::move(llvmModule));
-    auto symbol = jit.findSymbol("main");
-    uint64_t (*fp)() = (uint64_t (*)())(intptr_t)cantFail(symbol.getAddress());
-    auto result = fp();
+    llvmModule->setDataLayout(jit->getDataLayout());
+
+    exitOnErr(jit->addModule(llvm::orc::ThreadSafeModule(
+        std::move(llvmModule), std::move(_llvmContext))));
+
+    auto symbol = exitOnErr(jit->lookup("main"));
+    uint64_t (*fp)() = (uint64_t(*)())(intptr_t)symbol.getAddress();
+    fp();
     return EXIT_SUCCESS;
   } else {
     mlir::OwningModuleRef module;
     if (genMLIR(module, Lowering::LLVM))
       return EXIT_FAILURE;
 
-    auto optPipeline = mlir::makeOptimizingTransformer(
-        _enableOpt ? 3 : 0,
-        /*sizeLevel=*/0,
-        /*targetMachine=*/nullptr);
+    auto optPipeline =
+        mlir::makeOptimizingTransformer(_enableOpt ? 3 : 0,
+                                        /*sizeLevel=*/0,
+                                        /*targetMachine=*/nullptr);
 
-    auto maybeEngine = mlir::ExecutionEngine::create(*module, optPipeline);
+    auto maybeEngine = mlir::ExecutionEngine::create(
+        *module, /*llvmModuleBuilder=*/nullptr, optPipeline);
     assert(maybeEngine && "failed to construct an execution engine");
     auto &engine = maybeEngine.get();
 
     if (auto fun = engine->lookup("main")) {
       int result;
-      void *pResult = (void*)&result;
+      void *pResult = (void *)&result;
       fun.get()(&pResult);
       return EXIT_SUCCESS;
     }
@@ -173,9 +183,6 @@ auto Compilation::genObjectFile(const char *outputFileName) -> int {
   std::unique_ptr<llvm::Module> llvmModule;
   if (genLLVM(llvmModule))
     return EXIT_FAILURE;
-
-  llvm::InitializeNativeTarget();
-  llvm::InitializeNativeTargetAsmPrinter();
 
   auto targetTriple = llvm::sys::getDefaultTargetTriple();
 
@@ -190,8 +197,8 @@ auto Compilation::genObjectFile(const char *outputFileName) -> int {
   auto features = "";
   llvm::TargetOptions opt;
   auto rm = llvm::Optional<llvm::Reloc::Model>();
-  auto targetMachine = target->createTargetMachine(targetTriple, cpu,
-                                                   features, opt, rm);
+  auto targetMachine =
+      target->createTargetMachine(targetTriple, cpu, features, opt, rm);
 
   llvmModule->setTargetTriple(targetTriple);
   llvmModule->setDataLayout(targetMachine->createDataLayout());
@@ -210,7 +217,7 @@ auto Compilation::genObjectFile(const char *outputFileName) -> int {
 
   try {
     pass.run(*llvmModule);
-  } catch (std::exception e){
+  } catch (std::exception e) {
     llvm::errs() << e.what();
     return EXIT_FAILURE;
   }

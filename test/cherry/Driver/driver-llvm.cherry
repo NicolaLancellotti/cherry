@@ -1,0 +1,53 @@
+# _______________________________________________________
+# JIT
+# RUN: cherry-driver %s --b=llvm 2>&1 | FileCheck %s
+# _______________________________________________________
+# Generate object file
+# RUN: cherry-driver %s --b=llvm -c=%t.o 
+# RUN: clang %t.o -o %t.out
+# RUN: %t.out 2>&1 | FileCheck %s
+# _______________________________________________________
+
+struct A { }
+
+struct B {
+  x: Bool,
+  y: A
+}
+
+fn bar(x: UInt64, y: Bool): B {
+  var k: Bool = y;
+  
+  k = if k {
+    print(18446744073709551615);
+    false
+  } else {
+    print(1);
+    true
+  };
+
+  var unit: () = while k {
+  	k = false;
+  	()
+  };
+
+  B(k, A())
+}
+
+fn baz(): () {
+  ()
+}
+
+fn main(): UInt64 {
+  0 % 3 * 8 / 4 + 3 - 1;
+  3 lt 1; 3 le 1; 3 gt 1; 3 ge 1;
+  true and false or true eq false neq true;
+
+  var structValue: B = bar(18446744073709551615, false);
+  print(boolToUInt64(structValue.x));
+  baz();
+  0
+}
+
+# CHECK: 1
+# CHECK: 0

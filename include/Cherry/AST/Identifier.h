@@ -1,7 +1,7 @@
 //===--- Identifier.h - Cherry Language Identifier ASTs ---------*- C++ -*-===//
 //
 // This source file is part of the Cherry open source project
-// See TODO for license information
+// See LICENSE.txt for license information
 //
 //===----------------------------------------------------------------------===//
 
@@ -15,13 +15,10 @@ namespace cherry {
 
 class Identifier : public Node {
 public:
-  explicit Identifier(llvm::SMLoc location,
-                      llvm::StringRef name)
-      : Node{location}, _name(name.str()) {};
+  explicit Identifier(llvm::SMLoc location, llvm::StringRef name)
+      : Node{location}, _name(name.str()){};
 
-  auto name() const -> llvm::StringRef {
-    return _name;
-  }
+  auto name() const -> llvm::StringRef { return _name; }
 
 private:
   std::string _name;

@@ -1,7 +1,7 @@
 //===--- DiagnosticsSema.h - Diagnostic Definitions -------------*- C++ -*-===//
 //
 // This source file is part of the Cherry open source project
-// See TODO for license information
+// See LICENSE.txt for license information
 //
 //===----------------------------------------------------------------------===//
 
@@ -10,7 +10,7 @@
 
 namespace cherry {
 namespace diag {
-#define ERROR(ID, TEXT) const char * const ID = TEXT;
+#define ERROR(ID, TEXT) const char *const ID = TEXT;
 #include "DiagnosticsSema.def"
 
 } // end namespace diag

@@ -1,7 +1,7 @@
 //===--- MLIRGen.h - MLIR Generator -----------------------------*- C++ -*-===//
 //
 // This source file is part of the Cherry open source project
-// See TODO for license information
+// See LICENSE.txt for license information
 //
 //===----------------------------------------------------------------------===//
 
@@ -21,10 +21,9 @@ namespace cherry {
 class Module;
 class CherryResult;
 
-auto mlirGen(const llvm::SourceMgr &sourceManager,
-             mlir::MLIRContext &context,
-             const Module &moduleAST,
-             mlir::OwningModuleRef &module) -> CherryResult;
+auto mlirGen(const llvm::SourceMgr &sourceManager, mlir::MLIRContext &context,
+             const Module &moduleAST, mlir::OwningModuleRef &module)
+    -> CherryResult;
 
 } // end namespace cherry
 

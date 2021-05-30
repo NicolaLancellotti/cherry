@@ -1,7 +1,7 @@
 //===--- Node.h - Cherry Language Node AST ----------------------*- C++ -*-===//
 //
 // This source file is part of the Cherry open source project
-// See TODO for license information
+// See LICENSE.txt for license information
 //
 //===----------------------------------------------------------------------===//
 
@@ -13,7 +13,8 @@
 
 namespace cherry {
 
-template<typename T> using VectorUniquePtr = llvm::SmallVector<std::unique_ptr<T>, 2>;
+template <typename T>
+using VectorUniquePtr = llvm::SmallVector<std::unique_ptr<T>, 2>;
 
 class Node {
 public:
@@ -21,14 +22,12 @@ public:
 
   virtual ~Node() = default;
 
-  auto location() const -> const llvm::SMLoc& {
-    return _location;
-  }
+  auto location() const -> const llvm::SMLoc & { return _location; }
 
 private:
   llvm::SMLoc _location;
 };
 
-}
+} // namespace cherry
 
 #endif // CHERRY_NODE_H

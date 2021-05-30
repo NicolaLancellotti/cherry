@@ -1,4 +1,4 @@
-# RUN: cherry-driver -dump=tokens %s 2>&1| FileCheck %s
+# RUN: cherry-driver -dump=tokens %s 2>&1 | FileCheck %s
 
 # CHECK: kw_fn 'fn'
 # CHECK: identifier 'foo'

@@ -8,7 +8,8 @@ add_mlir_dialect_library(cherryMLIRGen
         CherryOps.cpp
 
 		${LIB_HEADERS}/Passes.h
-		LowerToStandardPass.cpp
+		LowerToSCFPass.cpp
+        LowerToSCFAndStandardPass.cpp
 		LowerToLLVMPass.cpp
 
 		StructType.h

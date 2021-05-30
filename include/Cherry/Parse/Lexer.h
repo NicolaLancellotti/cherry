@@ -1,7 +1,7 @@
 //===--- Lexer.h - Cherry Language Lexer ------------------------*- C++ -*-===//
 //
 // This source file is part of the Cherry open source project
-// See TODO for license information
+// See LICENSE.txt for license information
 //
 //===----------------------------------------------------------------------===//
 
@@ -16,20 +16,22 @@ namespace cherry {
 
 class Lexer {
 public:
-
   explicit Lexer(const llvm::SourceMgr &sourceMgr);
 
   auto lexToken() -> Token;
 
-  static auto tokenize(const llvm::SourceMgr &sourceManager, Lexer &lexer) -> void {
+  static auto tokenize(const llvm::SourceMgr &sourceManager, Lexer &lexer)
+      -> void {
     while (true) {
       auto token = lexer.lexToken();
       if (token.is(Token::eof)) {
         break;
       }
-      auto [line, col] = sourceManager.getLineAndColumn(token.getLoc());
+      auto lineCol = sourceManager.getLineAndColumn(token.getLoc());
+      auto line = std::get<0>(lineCol);
+      auto col = std::get<1>(lineCol);
       llvm::errs() << token.getTokenName() << " '" << token.getSpelling()
-                   << "' loc="<< line << ":" << col << "\n";
+                   << "' loc=" << line << ":" << col << "\n";
     }
   }
 
@@ -41,7 +43,6 @@ private:
   auto lexIdentifierOrKeyword(const char *tokStart) -> Token;
   auto lexDecimal(const char *tokStart) -> Token;
 
-  const llvm::SourceMgr &_sourceMgr;
   llvm::StringRef _curBuffer;
   const char *_curPtr;
 

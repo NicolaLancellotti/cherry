@@ -1,7 +1,7 @@
 //===--- Compilation.h - Compilation Task Data Structure --------*- C++ -*-===//
 //
 // This source file is part of the Cherry open source project
-// See TODO for license information
+// See LICENSE.txt for license information
 //
 //===----------------------------------------------------------------------===//
 
@@ -10,8 +10,8 @@
 
 #include "mlir/IR/MLIRContext.h"
 #include "llvm/ADT/StringRef.h"
-#include "llvm/Support/SourceMgr.h"
 #include "llvm/IR/LLVMContext.h"
+#include "llvm/Support/SourceMgr.h"
 
 namespace mlir {
 class OwningModuleRef;
@@ -27,15 +27,10 @@ class CherryResult;
 
 class Compilation {
 public:
-  enum Lowering {
-    None,
-    Standard,
-    LLVM
-  };
+  enum Lowering { None, SCF, SCF_Standard, Standard, LLVM };
 
-  static auto make(llvm::StringRef filename,
-                   bool enableOpt,
-                   bool backendLLVM) -> std::unique_ptr<Compilation>;
+  static auto make(llvm::StringRef filename, bool enableOpt, bool backendLLVM)
+      -> std::unique_ptr<Compilation>;
 
   auto dumpTokens() -> int;
   auto dumpParse() -> int;
@@ -47,18 +42,18 @@ public:
   auto jit() -> int;
   auto genObjectFile(const char *outputFileName) -> int;
 
-  auto sourceManager() -> llvm::SourceMgr& { return _sourceManager; };
+  auto sourceManager() -> llvm::SourceMgr & { return _sourceManager; };
 
 private:
   llvm::SourceMgr _sourceManager;
   bool _enableOpt;
   bool _backendLLVM;
   mlir::MLIRContext _mlirContext;
-  llvm::LLVMContext _llvmContext;
+  std::unique_ptr<llvm::LLVMContext> _llvmContext;
 
   auto parse(std::unique_ptr<Module> &module) -> CherryResult;
-  auto genMLIR(mlir::OwningModuleRef &module,
-               Lowering lowering) -> CherryResult;
+  auto genMLIR(mlir::OwningModuleRef &module, Lowering lowering)
+      -> CherryResult;
   auto genLLVM(std::unique_ptr<llvm::Module> &llvmModule) -> CherryResult;
 };
 

@@ -1,7 +1,7 @@
 //===--- CherryDialect.h - Cherry dialect -----------------------*- C++ -*-===//
 //
 // This source file is part of the Cherry open source project
-// See TODO for license information
+// See LICENSE.txt for license information
 //
 //===----------------------------------------------------------------------===//
 
@@ -10,12 +10,6 @@
 
 #include "mlir/IR/Dialect.h"
 
-namespace mlir {
-namespace cherry {
-
 #include "cherry/MLIRGen/CherryOpsDialect.h.inc"
-
-} // end namespace cherry
-} // end namespace mlir
 
 #endif // CHERRY_CHERRYDIALECT_H

@@ -1,7 +1,7 @@
 //===--- Stat.h - Cherry Language Expression ASTs ---------------*- C++ -*-===//
 //
 // This source file is part of the Cherry open source project
-// See TODO for license information
+// See LICENSE.txt for license information
 //
 //===----------------------------------------------------------------------===//
 
@@ -23,8 +23,7 @@ public:
     Stat_Expression,
   };
 
-  explicit Stat(StatementKind kind,
-                llvm::SMLoc location)
+  explicit Stat(StatementKind kind, llvm::SMLoc location)
       : Node{location}, _kind{kind} {};
 
   auto getKind() const -> StatementKind { return _kind; }
@@ -49,17 +48,13 @@ public:
     return node->getKind() == Stat_VariableDecl;
   }
 
-  auto variable() const -> const std::unique_ptr<VariableExpr>& {
+  auto variable() const -> const std::unique_ptr<VariableExpr> & {
     return _variable;
   }
 
-  auto varType() const -> const std::unique_ptr<Type>& {
-    return _varType;
-  }
+  auto varType() const -> const std::unique_ptr<Type> & { return _varType; }
 
-  auto init() const -> const std::unique_ptr<Expr>& {
-    return _init;
-  }
+  auto init() const -> const std::unique_ptr<Expr> & { return _init; }
 
 private:
   std::unique_ptr<VariableExpr> _variable;
@@ -72,22 +67,18 @@ private:
 
 class ExprStat final : public Stat {
 public:
-  explicit ExprStat(llvm::SMLoc location,
-                    std::unique_ptr<Expr> expression)
-      : Stat{Stat_Expression, location},
-        _expression{std::move(expression)} {};
+  explicit ExprStat(llvm::SMLoc location, std::unique_ptr<Expr> expression)
+      : Stat{Stat_Expression, location}, _expression{std::move(expression)} {};
 
   static auto classof(const Stat *node) -> bool {
     return node->getKind() == Stat_Expression;
   }
 
-  auto expression() const -> const std::unique_ptr<Expr>& {
+  auto expression() const -> const std::unique_ptr<Expr> & {
     return _expression;
   }
 
-  auto expression() -> std::unique_ptr<Expr>& {
-    return _expression;
-  }
+  auto expression() -> std::unique_ptr<Expr> & { return _expression; }
 
 private:
   std::unique_ptr<Expr> _expression;

@@ -1,7 +1,7 @@
 //===--- CherryDialect.td - Cherry dialect -----------------*- tablegen -*-===//
 //
 // This source file is part of the Cherry open source project
-// See TODO for license information
+// See LICENSE.txt for license information
 //
 //===----------------------------------------------------------------------===//
 
@@ -15,13 +15,13 @@ include "mlir/IR/OpBase.td"
 //===----------------------------------------------------------------------===//
 
 def Cherry_Dialect : Dialect {
-    let name = "cherry";
-    let cppNamespace = "cherry";
+  let name = "cherry";
+  let cppNamespace = "::mlir::cherry";
 
   let extraClassDeclaration = [{
-    auto parseType(mlir::DialectAsmParser &parser) const -> mlir::Type;
+    auto parseType(mlir::DialectAsmParser &parser) const -> mlir::Type override;
     auto printType(mlir::Type type,
-                   mlir::DialectAsmPrinter &printer) const -> void;
+                   mlir::DialectAsmPrinter &printer) const -> void override;
   }];
 }
 

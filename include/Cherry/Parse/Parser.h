@@ -1,7 +1,7 @@
 //===--- Parser.h - Cherry Language Parser ----------------------*- C++ -*-===//
 //
 // This source file is part of the Cherry open source project
-// See TODO for license information
+// See LICENSE.txt for license information
 //
 //===----------------------------------------------------------------------===//
 
@@ -24,14 +24,12 @@ using mlir::success;
 
 // Parse Element
 template <typename T>
-using PE = llvm::function_ref<CherryResult(std::unique_ptr<T>&)>;
+using PE = llvm::function_ref<CherryResult(std::unique_ptr<T> &)>;
 
 class Parser {
 public:
-  Parser(std::unique_ptr<Lexer> lexer,
-         llvm::SourceMgr &sourceManager)
-      : _token{lexer->lexToken()},
-        _lexer{std::move(lexer)},
+  Parser(std::unique_ptr<Lexer> lexer, llvm::SourceMgr &sourceManager)
+      : _token{lexer->lexToken()}, _lexer{std::move(lexer)},
         _sourceManager{sourceManager} {}
 
   auto parseModule(std::unique_ptr<Module> &module) -> CherryResult;
@@ -44,7 +42,7 @@ private:
   // ___________________________________________________________________________
   // Lex
 
-  auto token() -> Token& { return _token; }
+  auto token() -> Token & { return _token; }
 
   auto tokenIs(Token::Kind kind) -> bool { return token().is(kind); }
 
@@ -70,28 +68,25 @@ private:
   // Error
 
   CherryResult emitError(const llvm::Twine &msg) {
-    _sourceManager.PrintMessage(tokenLoc(),
-                                llvm::SourceMgr::DiagKind::DK_Error,
+    _sourceManager.PrintMessage(tokenLoc(), llvm::SourceMgr::DiagKind::DK_Error,
                                 msg);
     return failure();
   }
 
   // ___________________________________________________________________________
 
-  auto parseToken(Token::Kind expected,
-                  const llvm::Twine &message) -> CherryResult {
+  auto parseToken(Token::Kind expected, const llvm::Twine &message)
+      -> CherryResult {
     if (consumeIf(expected))
       return success();
     return emitError(message);
   }
 
   template <typename T>
-  auto parseList(Token::Kind separator,
-                 Token::Kind end,
-                 const char * const separator_error,
-                 const char * const end_error,
-                 VectorUniquePtr<T> &elements,
-                 PE<T> parseElement) -> CherryResult;
+  auto parseList(Token::Kind separator, Token::Kind end,
+                 const char *const separator_error, const char *const end_error,
+                 VectorUniquePtr<T> &elements, PE<T> parseElement)
+      -> CherryResult;
 
   // _____________________________________________________________________________
   // Parse Identifiers
@@ -99,7 +94,7 @@ private:
   auto parseType(std::unique_ptr<Type> &type) -> CherryResult;
 
   auto parseFunctionName(std::unique_ptr<FunctionName> &functionName,
-                         const char * const message) -> CherryResult;
+                         const char *const message) -> CherryResult;
 
   auto parseUnitType(std::unique_ptr<Type> &unit) -> CherryResult;
 
@@ -114,22 +109,21 @@ private:
 
   auto parseBlockExpr(std::unique_ptr<BlockExpr> &block) -> CherryResult;
 
-  auto parseStructDecl_c(std::unique_ptr<Decl>&elem) -> CherryResult;
+  auto parseStructDecl_c(std::unique_ptr<Decl> &elem) -> CherryResult;
 
   // ___________________________________________________________________________
   // Parse Expressions
 
   auto parseExpression(std::unique_ptr<Expr> &expr) -> CherryResult;
 
-  auto parseExpressions(VectorUniquePtr<Expr>&elem,
-                        Token::Kind separator,
-                        Token::Kind end,
-                        const char * const separator_error,
-                        const char * const end_error) -> CherryResult;
+  auto parseExpressions(VectorUniquePtr<Expr> &elem, Token::Kind separator,
+                        Token::Kind end, const char *const separator_error,
+                        const char *const end_error) -> CherryResult;
 
   auto parsePrimaryExpression(std::unique_ptr<Expr> &expr) -> CherryResult;
 
-  auto parseVariableExpr(std::unique_ptr<VariableExpr> &identifier) -> CherryResult;
+  auto parseVariableExpr(std::unique_ptr<VariableExpr> &identifier)
+      -> CherryResult;
 
   auto parseIfExpr_c(std::unique_ptr<Expr> &expr) -> CherryResult;
 
@@ -139,11 +133,11 @@ private:
 
   auto parseFuncStructVar_c(std::unique_ptr<Expr> &expr) -> CherryResult;
 
-  auto parseFunctionCall_c(llvm::SMLoc location,
-                           llvm::StringRef name,
+  auto parseFunctionCall_c(llvm::SMLoc location, llvm::StringRef name,
                            std::unique_ptr<Expr> &expr) -> CherryResult;
 
-  auto parseBinaryExpRHS(int exprPrec, std::unique_ptr<Expr> &expr) -> CherryResult;
+  auto parseBinaryExpRHS(int exprPrec, std::unique_ptr<Expr> &expr)
+      -> CherryResult;
   auto getTokenPrecedence() -> int;
   auto isTokenRightAssociative() -> bool;
   auto tokenToOperator(Token token) -> BinaryExpr::Operator;
@@ -154,7 +148,6 @@ private:
   auto parseStatementWithoutSemi(std::unique_ptr<Stat> &stat) -> CherryResult;
 
   auto parseVarDecl_c(std::unique_ptr<Stat> &stat) -> CherryResult;
-
 };
 
 } // end namespace cherry

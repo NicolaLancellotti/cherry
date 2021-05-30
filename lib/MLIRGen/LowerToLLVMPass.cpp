@@ -1,14 +1,13 @@
 //===--- LowerToLLVMPass.cpp - Lowering to the llvm dialect ---------------===//
 //
 // This source file is part of the Cherry open source project
-// See TODO for license information
+// See LICENSE.txt for license information
 //
 //===----------------------------------------------------------------------===//
 
 #include "StructType.h"
 #include "cherry/MLIRGen/CherryOps.h"
 #include "cherry/MLIRGen/Passes.h"
-#include "mlir/Conversion/SCFToStandard/SCFToStandard.h"
 #include "mlir/Conversion/StandardToLLVM/ConvertStandardToLLVM.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/StandardOps/IR/Ops.h"
@@ -25,20 +24,16 @@ public:
 
   auto matchAndRewrite(Operation *op, ArrayRef<Value> operands,
                        ConversionPatternRewriter &rewriter) const
-  -> LogicalResult final {
+      -> LogicalResult final {
     auto loc = op->getLoc();
-
-    auto *llvmDialect =
-        op->getContext()->getRegisteredDialect<LLVM::LLVMDialect>();
-    Type llvmI64Ty = LLVM::LLVMType::getInt64Ty(llvmDialect);
-
     auto castOp = cast<cherry::CastOp>(op);
     auto operand = castOp.input();
     Value newOperand = operand.getType().isa<MemRefType>()
-                       ? rewriter.create<LoadOp>(loc, operand)
-                       : operand;
+                           ? rewriter.create<LoadOp>(loc, operand)
+                           : operand;
 
-    auto cast = rewriter.create<LLVM::ZExtOp>(loc, llvmI64Ty, newOperand);
+    auto cast =
+        rewriter.create<LLVM::ZExtOp>(loc, rewriter.getI64Type(), newOperand);
     rewriter.replaceOp(op, cast.res());
     return success();
   }
@@ -50,51 +45,46 @@ public:
       : ConversionPattern(cherry::PrintOp::getOperationName(), 1, context) {}
 
   auto matchAndRewrite(Operation *op, ArrayRef<Value> operands,
-                       ConversionPatternRewriter &rewriter) const -> LogicalResult final {
+                       ConversionPatternRewriter &rewriter) const
+      -> LogicalResult final {
     auto loc = op->getLoc();
-    auto *llvmDialect =
-        op->getContext()->getRegisteredDialect<LLVM::LLVMDialect>();
-    assert(llvmDialect && "expected llvm dialect to be registered");
 
     // Get a symbol reference to the printf function, inserting it if necessary.
     ModuleOp parentModule = op->getParentOfType<ModuleOp>();
-    auto printfRef = getOrInsertPrintf(rewriter, parentModule, llvmDialect);
+    auto printfRef = getOrInsertPrintf(rewriter, parentModule);
     Value formatSpecifierCst = getOrCreateGlobalString(
-        loc, rewriter, "frmt_spec", StringRef("%llu\n\0", 6), parentModule,
-        llvmDialect);
+        loc, rewriter, "frmt_spec", StringRef("%llu\n\0", 6), parentModule);
 
     auto printOp = cast<cherry::PrintOp>(op);
     auto operand = printOp.input();
     Value newOperand = operand.getType().isa<MemRefType>()
-                     ? rewriter.create<LoadOp>(loc, operand)
-                     : operand;
+                           ? rewriter.create<LoadOp>(loc, operand)
+                           : operand;
 
-    rewriter.replaceOpWithNewOp<CallOp>(op, printfRef,
-                                        rewriter.getI64Type(),
-                                        ArrayRef<Value>({formatSpecifierCst, newOperand}));
+    rewriter.replaceOpWithNewOp<CallOp>(
+        op, printfRef, rewriter.getI64Type(),
+        ArrayRef<Value>({formatSpecifierCst, newOperand}));
     return success();
   }
 
 private:
-
   static FlatSymbolRefAttr getOrInsertPrintf(PatternRewriter &rewriter,
-                                             ModuleOp module,
-                                             LLVM::LLVMDialect *llvmDialect) {
+                                             ModuleOp module) {
     auto *context = module.getContext();
     if (module.lookupSymbol<LLVM::LLVMFuncOp>("printf"))
       return SymbolRefAttr::get("printf", context);
 
     // Create a function declaration for printf, the signature is:
     //   * `i32 (i8*, ...)`
-    auto llvmI32Ty = LLVM::LLVMType::getInt64Ty(llvmDialect);
-    auto llvmI8PtrTy = LLVM::LLVMType::getInt8PtrTy(llvmDialect);
-    auto llvmFnType = LLVM::LLVMType::getFunctionTy(llvmI32Ty, llvmI8PtrTy,
-        /*isVarArg=*/true);
+    auto i32Ty = IntegerType::get(context, 64); // TODO: cast
+    auto i8PtrTy = LLVM::LLVMPointerType::get(IntegerType::get(context, 8));
+    auto fnType = LLVM::LLVMFunctionType::get(i32Ty, i8PtrTy,
+                                              /*isVarArg=*/true);
 
     // Insert the printf function into the body of the parent module.
     PatternRewriter::InsertionGuard insertGuard(rewriter);
     rewriter.setInsertionPointToStart(module.getBody());
-    rewriter.create<LLVM::LLVMFuncOp>(module.getLoc(), "printf", llvmFnType);
+    rewriter.create<LLVM::LLVMFuncOp>(module.getLoc(), "printf", fnType);
     return SymbolRefAttr::get("printf", context);
   }
 
@@ -102,15 +92,14 @@ private:
   /// name, creating the string if necessary.
   static Value getOrCreateGlobalString(Location loc, OpBuilder &builder,
                                        StringRef name, StringRef value,
-                                       ModuleOp module,
-                                       LLVM::LLVMDialect *llvmDialect) {
+                                       ModuleOp module) {
     // Create the global at the entry of the module.
     LLVM::GlobalOp global;
     if (!(global = module.lookupSymbol<LLVM::GlobalOp>(name))) {
       OpBuilder::InsertionGuard insertGuard(builder);
       builder.setInsertionPointToStart(module.getBody());
-      auto type = LLVM::LLVMType::getArrayTy(
-          LLVM::LLVMType::getInt8Ty(llvmDialect), value.size());
+      auto type = LLVM::LLVMArrayType::get(
+          IntegerType::get(builder.getContext(), 8), value.size());
       global = builder.create<LLVM::GlobalOp>(loc, type, /*isConstant=*/true,
                                               LLVM::Linkage::Internal, name,
                                               builder.getStringAttr(value));
@@ -119,20 +108,23 @@ private:
     // Get the pointer to the first character in the global string.
     Value globalPtr = builder.create<LLVM::AddressOfOp>(loc, global);
     Value cst0 = builder.create<LLVM::ConstantOp>(
-        loc, LLVM::LLVMType::getInt64Ty(llvmDialect),
+        loc, IntegerType::get(builder.getContext(), 64),
         builder.getIntegerAttr(builder.getIndexType(), 0));
     return builder.create<LLVM::GEPOp>(
-        loc, LLVM::LLVMType::getInt8PtrTy(llvmDialect), globalPtr,
-        ArrayRef<Value>({cst0, cst0}));
+        loc,
+        LLVM::LLVMPointerType::get(IntegerType::get(builder.getContext(), 8)),
+        globalPtr, ArrayRef<Value>({cst0, cst0}));
   }
 };
 
 struct CherryToLLVMLoweringPass
     : public PassWrapper<CherryToLLVMLoweringPass, OperationPass<ModuleOp>> {
 
-  auto runOnOperation() -> void final {
-    LLVM::LLVMDialect *llvmDialect = getContext().getRegisteredDialect<LLVM::LLVMDialect>();
+  void getDependentDialects(DialectRegistry &registry) const override {
+    registry.insert<LLVM::LLVMDialect>();
+  }
 
+  auto runOnOperation() -> void final {
     // Target
     LLVMConversionTarget target(getContext());
     target.addLegalOp<ModuleOp, ModuleTerminatorOp>();
@@ -144,33 +136,29 @@ struct CherryToLLVMLoweringPass
 
     // Types conversions
     LLVMTypeConverter typeConverter(&getContext());
-    populateLoopToStdConversionPatterns(patterns, &getContext());
     populateStdToLLVMConversionPatterns(typeConverter, patterns);
     typeConverter.addConversion([&](mlir::cherry::StructType type) {
-      SmallVector<LLVM::LLVMType, 2> types;
+      SmallVector<Type, 2> types;
       for (auto t : type.getElementTypes()) {
         if (t.isa<mlir::NoneType>()) {
-          types.push_back(LLVM::LLVMType::getInt1Ty(llvmDialect));
+          types.push_back(IntegerType::get(&getContext(), 1));
         } else if (auto structType = t.dyn_cast<mlir::cherry::StructType>()) {
-          types.push_back(typeConverter.convertType(structType).cast<LLVM::LLVMType>());
+          types.push_back(typeConverter.convertType(structType));
         } else {
-          types.push_back(typeConverter.convertType(t).cast<LLVM::LLVMType>());
+          types.push_back(typeConverter.convertType(t));
         }
       }
-      return LLVM::LLVMType::getStructTy(llvmDialect, types);
+      return LLVM::LLVMStructType::getLiteral(&getContext(), types);
     });
 
     // Conversion
     auto module = getOperation();
-    if (failed(applyFullConversion(module, target, patterns)))
+    if (failed(applyPartialConversion(module, target, std::move(patterns))))
       signalPassFailure();
   }
-
 };
 
 } // end namespace
-
-
 
 namespace mlir {
 
@@ -178,8 +166,8 @@ auto mlir::cherry::createLowerToLLVMPass() -> std::unique_ptr<mlir::Pass> {
   return std::make_unique<CherryToLLVMLoweringPass>();
 }
 auto registerLowerToLLVMPass() -> void {
-  PassRegistration<CherryToLLVMLoweringPass>("lower-cherry-std-to-llvm",
-                                             "Lower Cherry and Standard operations into the LLVM dialect");
+  PassRegistration<CherryToLLVMLoweringPass>("convert-cherry-to-llvm",
+                                             "Convert Cherry ops to llvm ops");
 }
 
-}
+} // namespace mlir

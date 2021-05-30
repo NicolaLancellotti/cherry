@@ -1,7 +1,7 @@
 //===--- Sema.h - Cherry Semantic Analysis ----------------------*- C++ -*-===//
 //
 // This source file is part of the Cherry open source project
-// See TODO for license information
+// See LICENSE.txt for license information
 //
 //===----------------------------------------------------------------------===//
 
@@ -16,8 +16,8 @@ namespace cherry {
 class Module;
 class CherryResult;
 
-auto sema(const llvm::SourceMgr &sourceManager,
-          Module &moduleAST) -> CherryResult;
+auto sema(const llvm::SourceMgr &sourceManager, Module &moduleAST)
+    -> CherryResult;
 
 } // end namespace cherry
 

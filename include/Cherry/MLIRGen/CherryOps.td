@@ -1,7 +1,7 @@
 //===--- CherryOps.h - Cherry dialect ops -----------------------*- C++ -*-===//
 //
 // This source file is part of the Cherry open source project
-// See TODO for license information
+// See LICENSE.txt for license information
 //
 //===----------------------------------------------------------------------===//
 
@@ -27,8 +27,8 @@ def ConstantOp : Cherry_Op<"constant", [NoSideEffect]> {
   let results = (outs Cherry_Type);
 
   let builders = [
-    OpBuilder<"OpBuilder &builder, OperationState &state, uint64_t value">,
-    OpBuilder<"OpBuilder &builder, OperationState &state, bool value">
+    OpBuilderDAG<(ins "uint64_t":$value)>,
+    OpBuilderDAG<(ins "bool":$value)>
   ];
 }
 
@@ -66,9 +66,8 @@ def CallOp : Cherry_Op<"call"> {
   let results = (outs Variadic<Cherry_Type>);
 
   let builders = [
-    OpBuilder<"OpBuilder &builder, OperationState &state, "
-              "StringRef callee, ArrayRef<Value> arguments, "
-              "ArrayRef<Type> results">
+    OpBuilderDAG<(ins "StringRef":$callee, "ArrayRef<Value>":$arguments,
+                      "ArrayRef<Type>":$results)>
   ];
 }
 
@@ -82,8 +81,7 @@ def PrintOp : Cherry_Op<"print"> {
   let results = (outs I64);
 
   let builders = [
-      OpBuilder<"OpBuilder &builder, OperationState &state, "
-                "Value arguments">
+    OpBuilderDAG<(ins "Value":$arguments)>
   ];
 }
 
@@ -97,8 +95,7 @@ def CastOp : Cherry_Op<"cast"> {
   let results = (outs I64);
 
   let builders = [
-      OpBuilder<"OpBuilder &builder, OperationState &state, "
-                "Value arguments">
+    OpBuilderDAG<(ins "Value":$arguments)>
   ];
 }
 
@@ -110,10 +107,19 @@ def IfOp : Cherry_Op<"if"> {
   let regions = (region SizedRegion<1>:$thenRegion, SizedRegion<1>:$elseRegion);
 
   let builders = [
-      OpBuilder<"OpBuilder &builder, OperationState &state, "
-                "Type resultType, Value cond, "
-                "function_ref<void(OpBuilder &, Location)> thenBuilder, "
-                "function_ref<void(OpBuilder &, Location)> elseBuilder">
+    OpBuilderDAG<(ins "Type":$resultType, "Value":$cond,
+                    "function_ref<void(OpBuilder &, Location)>":$thenBuilder,
+                    "function_ref<void(OpBuilder &, Location)>":$elseBuilder)>
+  ];
+}
+
+def YieldIfOp : Cherry_Op<"yield_if", [NoSideEffect, Terminator]> {
+  let summary = "loop yield and termination operation";
+
+  let arguments = (ins Variadic<Cherry_Type>:$result);
+
+  let builders = [
+    OpBuilderDAG<(ins ), [{ /* nothing to do */ }]>
   ];
 }
 
@@ -123,20 +129,18 @@ def WhileOp : Cherry_Op<"while"> {
   let regions = (region SizedRegion<1>:$conditionRegion, SizedRegion<1>:$bodyRegion);
 
   let builders = [
-      OpBuilder<"OpBuilder &builder, OperationState &state, "
-                "function_ref<void(OpBuilder &, Location)> conditionBuilder, "
-                "function_ref<void(OpBuilder &, Location)> bodyBuilder">
+    OpBuilderDAG<(ins "function_ref<void(OpBuilder &, Location)>":$conditionBuilder,
+                    "function_ref<void(OpBuilder &, Location)>":$bodyBuilder)>
   ];
 }
 
-def YieldOp : Cherry_Op<"yield", [NoSideEffect, Terminator]> {
+def YieldWhileOp : Cherry_Op<"yield_while", [NoSideEffect, Terminator]> {
   let summary = "loop yield and termination operation";
 
   let arguments = (ins Variadic<Cherry_Type>:$result);
 
   let builders = [
-      OpBuilder<"OpBuilder &builder, OperationState &result",
-          [{ /* nothing to do */ }]>
+    OpBuilderDAG<(ins ), [{ /* nothing to do */ }]>
   ];
 }
 
@@ -146,8 +150,7 @@ def ArithmeticLogicOp : Cherry_Op<"arithmetic-logic", [NoSideEffect]> {
   let results = (outs Cherry_Type);
 
   let builders = [
-      OpBuilder<"OpBuilder &b, OperationState &state, Value lhs, Value rhs, "
-              "StringRef op, Type type">
+    OpBuilderDAG<(ins "Value":$lhs, "Value":$rhs, "StringRef":$op, "Type":$type)>
   ];
 }
 
