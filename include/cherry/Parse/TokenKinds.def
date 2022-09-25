@@ -1,0 +1,79 @@
+//===--- TokenKinds.def - Cherry Language Token Kinds -----------*- C++ -*-===//
+//
+// This source file is part of the Cherry open source project
+// See LICENSE.txt for license information
+//
+//===----------------------------------------------------------------------===//
+
+#if !defined(TOK_MARKER) && !defined(TOK_IDENTIFIER) &&                        \
+    !defined(TOK_LITERAL) && !defined(TOK_PUNCTUATION) &&                      \
+    !defined(TOK_KEYWORD)
+#error Must define one of the TOK_ macros.
+#endif
+
+#ifndef TOK_MARKER
+#define TOK_MARKER(X)
+#endif
+#ifndef TOK_IDENTIFIER
+#define TOK_IDENTIFIER(NAME)
+#endif
+#ifndef TOK_LITERAL
+#define TOK_LITERAL(NAME)
+#endif
+#ifndef TOK_PUNCTUATION
+#define TOK_PUNCTUATION(NAME, SPELLING)
+#endif
+#ifndef TOK_KEYWORD
+#define TOK_KEYWORD(SPELLING)
+#endif
+
+// Markers
+TOK_MARKER(eof)
+TOK_MARKER(error)
+
+// Identifiers
+TOK_IDENTIFIER(identifier)
+
+// Literals
+TOK_LITERAL(decimal)
+
+// Punctuation
+TOK_PUNCTUATION(semi, ";")
+TOK_PUNCTUATION(comma, ",")
+TOK_PUNCTUATION(l_brace, "{")
+TOK_PUNCTUATION(r_brace, "}")
+TOK_PUNCTUATION(l_paren, "(")
+TOK_PUNCTUATION(r_paren, ")")
+TOK_PUNCTUATION(colon, ":")
+TOK_PUNCTUATION(dot, ".")
+TOK_PUNCTUATION(assign, "=")
+TOK_PUNCTUATION(add, "+")
+TOK_PUNCTUATION(mul, "-")
+TOK_PUNCTUATION(diff, "*")
+TOK_PUNCTUATION(div, "/")
+TOK_PUNCTUATION(rem, "%")
+
+// Keywords
+
+TOK_KEYWORD(fn)
+TOK_KEYWORD(struct)
+TOK_KEYWORD(var)
+TOK_KEYWORD(true)
+TOK_KEYWORD(false)
+TOK_KEYWORD(if)
+TOK_KEYWORD(else)
+TOK_KEYWORD(while)
+TOK_KEYWORD(and)
+TOK_KEYWORD(or)
+TOK_KEYWORD(eq)
+TOK_KEYWORD(neq)
+TOK_KEYWORD(lt)
+TOK_KEYWORD(le)
+TOK_KEYWORD(gt)
+TOK_KEYWORD(ge)
+
+#undef TOK_MARKER
+#undef TOK_IDENTIFIER
+#undef TOK_LITERAL
+#undef TOK_PUNCTUATION
+#undef TOK_KEYWORD

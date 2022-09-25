@@ -1,16 +1,17 @@
 //===--- Lexer.cpp - Cherry Language Lexer --------------------------------===//
 //
 // This source file is part of the Cherry open source project
-// See TODO for license information
+// See LICENSE.txt for license information
 //
 //===----------------------------------------------------------------------===//
 
 #include "Lexer.h"
 #include "mlir/IR/Diagnostics.h"
+#include "llvm/ADT/StringSwitch.h"
 
 using namespace cherry;
 
-Lexer::Lexer(const llvm::SourceMgr &sourceMgr): _sourceMgr(sourceMgr) {
+Lexer::Lexer(const llvm::SourceMgr &sourceMgr) {
   auto bufferID = sourceMgr.getMainFileID();
   _curBuffer = sourceMgr.getMemoryBuffer(bufferID)->getBuffer();
   _curPtr = _curBuffer.begin();
@@ -18,7 +19,7 @@ Lexer::Lexer(const llvm::SourceMgr &sourceMgr): _sourceMgr(sourceMgr) {
 
 auto Lexer::lexToken() -> Token {
   while (true) {
-    Restart:
+  Restart:
     const char *tokStart = _curPtr;
     switch (*_curPtr++) {
     default:
@@ -97,7 +98,7 @@ auto Lexer::lexIdentifierOrKeyword(const char *tokStart) -> Token {
   Token::Kind kind = llvm::StringSwitch<Token::Kind>(spelling)
 #define TOK_KEYWORD(SPELLING) .Case(#SPELLING, Token::kw_##SPELLING)
 #include "TokenKinds.def"
-      .Default(Token::identifier);
+                         .Default(Token::identifier);
 
   return Token(kind, spelling);
 }

@@ -1,0 +1,101 @@
+# RUN: cherry-driver -b=mlir %s 2>&1 | FileCheck %s
+# RUN: cherry-driver -b=llvm %s 2>&1 | FileCheck %s
+
+fn main(): UInt64 {
+  print(20 + 10);
+  # CHECK: 30
+  print(18446744073709551615 + 0);
+  # CHECK: 18446744073709551615
+  print(18446744073709551615 + 1);
+  # CHECK: 0
+
+  print(20 - 10);
+  # CHECK: 10
+  print(0 - 1);
+  # CHECK: 18446744073709551615
+
+  print(20 * 10);
+  # CHECK: 200
+
+  print(20 / 10);
+  # CHECK: 2
+  print(20 / 3);
+  # CHECK: 6
+
+  print(20 % 10);
+  # CHECK: 0
+  print(20 % 3);
+  # CHECK: 2
+
+  print(boolToUInt64(20 lt 10));
+  # CHECK: 0
+  print(boolToUInt64(10 lt 20));
+  # CHECK: 1
+  print(boolToUInt64(10 lt 10));
+  # CHECK: 0
+
+  print(boolToUInt64(20 le 10));
+  # CHECK: 0
+  print(boolToUInt64(10 le 20));
+  # CHECK: 1
+  print(boolToUInt64(10 le 10));
+  # CHECK: 1
+
+  print(boolToUInt64(20 gt 10));
+  # CHECK: 1
+  print(boolToUInt64(10 gt 20));
+  # CHECK: 0
+  print(boolToUInt64(10 gt 10));
+  # CHECK: 0
+
+  print(boolToUInt64(20 ge 10));
+  # CHECK: 1
+  print(boolToUInt64(10 ge 20));
+  # CHECK: 0
+  print(boolToUInt64(10 ge 10));
+  # CHECK: 1
+
+  print(boolToUInt64(20 eq 10));
+  # CHECK: 0
+  print(boolToUInt64(10 ge 20));
+  # CHECK: 0
+  print(boolToUInt64(10 eq 10));
+  # CHECK: 1
+
+  print(boolToUInt64(20 neq 10));
+  # CHECK: 1
+  print(boolToUInt64(10 neq 20));
+  # CHECK: 1
+  print(boolToUInt64(10 neq 10));
+  # CHECK: 0
+
+  print(boolToUInt64(true eq true));
+  # CHECK: 1
+  print(boolToUInt64(true eq false));
+  # CHECK: 0
+
+  print(boolToUInt64(true neq true));
+  # CHECK: 0
+  print(boolToUInt64(true neq false));
+  # CHECK: 1
+
+  print(boolToUInt64(false and false));
+  # CHECK: 0
+  print(boolToUInt64(false and true));
+  # CHECK: 0
+  print(boolToUInt64(true and false));
+  # CHECK: 0
+  print(boolToUInt64(true and true));
+  # CHECK: 1
+
+  print(boolToUInt64(false or false));
+  # CHECK: 0
+  print(boolToUInt64(false or true));
+  # CHECK: 1
+  print(boolToUInt64(true or false));
+  # CHECK: 1
+  print(boolToUInt64(true or true));
+  # CHECK: 1
+
+  0
+}

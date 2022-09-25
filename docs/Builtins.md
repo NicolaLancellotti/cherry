@@ -27,5 +27,3 @@
 - Bool neq Bool : Bool
 - Bool and Bool : Bool
 - Bool or Bool : Bool  
-
-

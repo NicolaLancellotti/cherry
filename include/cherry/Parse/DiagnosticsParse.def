@@ -1,0 +1,25 @@
+//===--- DiagnosticsParse.def - Diagnostics Text ----------------*- C++ -*-===//
+//
+// This source file is part of the Cherry open source project
+// See LICENSE.txt for license information
+//
+//===----------------------------------------------------------------------===//
+
+ERROR(expected_semi, "expected `;`")
+ERROR(expected_colon, "expected `:`")
+ERROR(expected_assign, "expected `=`")
+ERROR(expected_l_paren, "expected `(`")
+ERROR(expected_r_paren, "expected `)`")
+ERROR(expected_l_brace, "expected `{`")
+ERROR(expected_r_brace, "expected `}`")
+ERROR(expected_comma_or_r_brace, "expected `,` or `}`")
+ERROR(expected_comma_or_r_paren, "expected `,` or `)`")
+ERROR(expected_else, "expected `else`")
+ERROR(expected_fun_struct, "expected `fun` or `struct`")
+ERROR(expected_type, "expected type")
+ERROR(expected_id, "expected identifier")
+ERROR(expected_expr, "expected expression")
+ERROR(integer_literal_overflows, "integer literal overflows")
+
+// ___________________________________________________________________________
+#undef ERROR

@@ -16,8 +16,8 @@ target_link_libraries(cherry-translate
   MLIRIR
   MLIRParser
   MLIRPass
-  MLIRSPIRV
-  MLIRTranslation
+  MLIRSPIRVDialect
+  MLIRTranslateLib
   MLIRSupport
   )
 

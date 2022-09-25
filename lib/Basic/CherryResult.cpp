@@ -1,7 +1,7 @@
 //===--- CherryResult.h - Cherry subclass of LogicalResult ----------------===//
 //
 // This source file is part of the Cherry open source project
-// See TODO for license information
+// See LICENSE.txt for license information
 //
 //===----------------------------------------------------------------------===//
 

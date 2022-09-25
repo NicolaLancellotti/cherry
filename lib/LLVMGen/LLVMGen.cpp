@@ -1,7 +1,7 @@
 //===--- LLVMGen.cpp - LLVM Generator -------------------------------------===//
 //
 // This source file is part of the Cherry open source project
-// See TODO for license information
+// See LICENSE.txt for license information
 //
 //===----------------------------------------------------------------------===//
 
@@ -40,14 +40,15 @@ class LLVMGenImpl {
 public:
   LLVMGenImpl(const llvm::SourceMgr &sourceManager, llvm::LLVMContext &context,
               bool enableOpt)
-      : _sourceManager{sourceManager}, _context{context}, _builder{context},
-        _enableOpt{enableOpt} {
+      : _enableOpt{enableOpt},
+        _sourceManager{sourceManager}, _context{context}, _builder{context} {
     _debugInfo = !enableOpt;
   }
 
   auto gen(const Module &node) -> CherryResult;
 
   std::unique_ptr<llvm::Module> module;
+
 private:
   bool _debugInfo;
   bool _enableOpt;
@@ -55,8 +56,8 @@ private:
   llvm::LLVMContext &_context;
   llvm::IRBuilder<> _builder;
   std::unique_ptr<llvm::legacy::FunctionPassManager> _pass;
-  std::map<llvm::StringRef, llvm::AllocaInst*> _variableSymbols;
-  std::map<llvm::StringRef, llvm::Type*> _typeSymbols;
+  std::map<llvm::StringRef, llvm::AllocaInst *> _variableSymbols;
+  std::map<llvm::StringRef, llvm::Type *> _typeSymbols;
 
   llvm::Value *structAddress = nullptr;
   const std::string tmpExpression = "0tmp";
@@ -65,30 +66,30 @@ private:
   std::unique_ptr<llvm::DIBuilder> _dBuilder;
   llvm::DICompileUnit *_dcu;
   std::vector<llvm::DIScope *> _dlexicalBlocks;
-  std::map<llvm::StringRef, llvm::DIType*> _dTypeSymbols;
+  std::map<llvm::StringRef, llvm::DIType *> _dTypeSymbols;
 
   // Declarations
   auto gen(const Decl *node) -> void;
-  auto gen(const Prototype *node) -> llvm::Function*;
+  auto gen(const Prototype *node) -> llvm::Function *;
   auto gen(const FunctionDecl *node) -> void;
   auto gen(const StructDecl *node) -> void;
 
   // Expressions
-  auto gen(const Expr *node) -> llvm::Value*;
-  auto gen(const UnitExpr *node) -> llvm::Value*;
-  auto gen(const BlockExpr *node) -> llvm::Value*;
-  auto gen(const CallExpr *node) -> llvm::Value*;
-  auto genStructConstructor(const CallExpr *node) -> llvm::Value*;
-  auto gen(const VariableExpr *node) -> llvm::Value*;
-  auto gen(const DecimalLiteralExpr *node) -> llvm::Value*;
-  auto gen(const BoolLiteralExpr *node) -> llvm::Value*;
-  auto gen(const BinaryExpr *node) -> llvm::Value*;
-  auto genAssignOp(const BinaryExpr *node) -> llvm::Value*;
-  auto genArithmeticOp(const BinaryExpr *node) -> llvm::Value*;
-  auto genStructAccessOp(const BinaryExpr *node) -> llvm::Value*;
-  auto genStructAddress(const BinaryExpr *node) -> llvm::Value*;
-  auto gen(const IfExpr *node) -> llvm::Value*;
-  auto gen(const WhileExpr *node) -> llvm::Value*;
+  auto gen(const Expr *node) -> llvm::Value *;
+  auto gen(const UnitExpr *node) -> llvm::Value *;
+  auto gen(const BlockExpr *node) -> llvm::Value *;
+  auto gen(const CallExpr *node) -> llvm::Value *;
+  auto genStructConstructor(const CallExpr *node) -> llvm::Value *;
+  auto gen(const VariableExpr *node) -> llvm::Value *;
+  auto gen(const DecimalLiteralExpr *node) -> llvm::Value *;
+  auto gen(const BoolLiteralExpr *node) -> llvm::Value *;
+  auto gen(const BinaryExpr *node) -> llvm::Value *;
+  auto genAssignOp(const BinaryExpr *node) -> llvm::Value *;
+  auto genStructAccessOp(const BinaryExpr *node) -> llvm::Value *;
+  auto genStructAddress(const BinaryExpr *node)
+      -> std::pair<llvm::Value *, llvm::Type *>;
+  auto gen(const IfExpr *node) -> llvm::Value *;
+  auto gen(const WhileExpr *node) -> llvm::Value *;
 
   // Statements
   auto gen(const Stat *node) -> void;
@@ -96,15 +97,15 @@ private:
   auto gen(const ExprStat *node) -> void;
 
   // Utility
-  auto getConstantInt(int bits, int value) -> llvm::ConstantInt* {
+  auto getConstantInt(int bits, int value) -> llvm::ConstantInt * {
     return llvm::ConstantInt::get(_context, llvm::APInt(bits, value, true));
   }
 
-  auto getUnit() -> llvm::Value* {
+  auto getUnit() -> llvm::Value * {
     return llvm::UndefValue::get(getType(builtins::UnitType));
   }
 
-  auto getType(llvm::StringRef name) -> llvm::Type* {
+  auto getType(llvm::StringRef name) -> llvm::Type * {
     if (name == builtins::UnitType) {
       return llvm::Type::getVoidTy(_context);
     } else if (name == builtins::UInt64Type) {
@@ -118,13 +119,13 @@ private:
 
   auto addType(const StructDecl *node) {
     auto name = node->id()->name();
-    llvm::SmallVector<llvm::Type*, 3> types;
+    llvm::SmallVector<llvm::Type *, 3> types;
     for (auto &field : *node)
       types.push_back(getType(field->varType()->name()));
     _typeSymbols[name] = llvm::StructType::create(_context, types, name);
   }
 
-  auto getDebugType(llvm::StringRef name) -> llvm::DIType* {
+  auto getDebugType(llvm::StringRef name) -> llvm::DIType * {
     return _dTypeSymbols[name];
   }
 
@@ -150,35 +151,38 @@ private:
     {
       // printf
       auto funcType = llvm::FunctionType::get(llvmI32Ty, {llvmI8PtrTy}, true);
-      printfFunc = llvm::Function::Create(funcType,llvm::Function::ExternalLinkage,
-                                          "printf",module.get());
+      printfFunc = llvm::Function::Create(
+          funcType, llvm::Function::ExternalLinkage, "printf", module.get());
     }
 
     {
       auto funcType = llvm::FunctionType::get(llvmI64Ty, {llvmI64Ty}, false);
-      auto printFunc = llvm::Function::Create(funcType,llvm::Function::ExternalLinkage,
-                                              builtins::print,module.get());
+      auto printFunc =
+          llvm::Function::Create(funcType, llvm::Function::ExternalLinkage,
+                                 builtins::print, module.get());
 
       auto *bb = llvm::BasicBlock::Create(_context, "entry", printFunc);
       _builder.SetInsertPoint(bb);
 
       auto formatSpecifier = _builder.CreateGlobalString("%llu\n");
       auto index0 = getConstantInt(64, 0);
-      auto formatSpecifierPtr = _builder.CreateGEP(formatSpecifier, {index0, index0});
+      auto formatSpecifierPtr =
+          _builder.CreateGEP(llvmI8PtrTy, formatSpecifier, {index0});
 
       auto *arg = printFunc->args().begin();
-      auto result32 = _builder.CreateCall(printfFunc, {formatSpecifierPtr, arg}, "printf");
+      auto result32 =
+          _builder.CreateCall(printfFunc, {formatSpecifierPtr, arg}, "printf");
       auto result64 = _builder.CreateIntCast(result32, llvmI64Ty, false);
       _builder.CreateRet(result64);
     }
   }
 
-  auto createEntryBlockAlloca(llvm::Function *func,
-                              llvm::StringRef varName,
-                              llvm::Type *type) -> llvm::AllocaInst* {
+  auto createEntryBlockAlloca(llvm::Function *func, llvm::StringRef varName,
+                              llvm::Type *type) -> llvm::AllocaInst * {
     if (type == getType(builtins::UnitType))
       return nullptr;
-    llvm::IRBuilder<> TmpB(&func->getEntryBlock(), func->getEntryBlock().begin());
+    llvm::IRBuilder<> TmpB(&func->getEntryBlock(),
+                           func->getEntryBlock().begin());
     return TmpB.CreateAlloca(type, nullptr, varName);
   }
 
@@ -188,10 +192,10 @@ private:
         return _builder.SetCurrentDebugLocation(llvm::DebugLoc());
       auto scope = _dlexicalBlocks.empty() ? _dcu : _dlexicalBlocks.back();
       auto [line, col] = _sourceManager.getLineAndColumn(node->location());
-      _builder.SetCurrentDebugLocation(llvm::DebugLoc::get(line, col, scope));
+      _builder.SetCurrentDebugLocation(
+          llvm::DILocation::get(scope->getContext(), line, col, scope));
     }
   }
-
 };
 
 } // end namespace
@@ -247,16 +251,14 @@ auto LLVMGenImpl::gen(const Decl *node) -> void {
     return gen(cast<FunctionDecl>(node));
   case Decl::Decl_Struct:
     return gen(cast<StructDecl>(node));
-  default:
-    llvm_unreachable("Unexpected declaration");
   }
 }
 
-auto LLVMGenImpl::gen(const Prototype *node) -> llvm::Function* {
+auto LLVMGenImpl::gen(const Prototype *node) -> llvm::Function * {
 
   auto name = node->id()->name();
   auto resultType = node->type()->name();
-  llvm::SmallVector<llvm::Type*, 3> argTypes;
+  llvm::SmallVector<llvm::Type *, 3> argTypes;
   argTypes.reserve(node->parameters().size());
 
   llvm::SmallVector<llvm::Metadata *, 8> debugTypes;
@@ -274,10 +276,8 @@ auto LLVMGenImpl::gen(const Prototype *node) -> llvm::Function* {
 
   auto llvmResultType = getType(resultType);
   auto funcType = llvm::FunctionType::get(llvmResultType, argTypes, false);
-  auto func = llvm::Function::Create(funcType,
-                                     llvm::Function::ExternalLinkage,
-                                     name,
-                                     module.get());
+  auto func = llvm::Function::Create(funcType, llvm::Function::ExternalLinkage,
+                                     name, module.get());
 
   auto *bb = llvm::BasicBlock::Create(_context, "entry", func);
   _builder.SetInsertPoint(bb);
@@ -286,8 +286,7 @@ auto LLVMGenImpl::gen(const Prototype *node) -> llvm::Function* {
   llvm::DIFile *unit;
   llvm::DISubprogram *sp;
   if (_debugInfo) {
-    unit =
-        _dBuilder->createFile(_dcu->getFilename(), _dcu->getDirectory());
+    unit = _dBuilder->createFile(_dcu->getFilename(), _dcu->getDirectory());
     auto subroutineType = _dBuilder->createSubroutineType(
         _dBuilder->getOrCreateTypeArray(debugTypes));
     sp = _dBuilder->createFunction(
@@ -310,12 +309,11 @@ auto LLVMGenImpl::gen(const Prototype *node) -> llvm::Function* {
       auto dparm = _dBuilder->createParameterVariable(
           sp, name, ++index, unit, line, getDebugType(param->varType()->name()),
           true);
-
-      _dBuilder->insertDeclare(alloca, dparm, _dBuilder->createExpression(),
-                               llvm::DebugLoc::get(line, 0, sp),
-                               _builder.GetInsertBlock());
+      _dBuilder->insertDeclare(
+          alloca, dparm, _dBuilder->createExpression(),
+          llvm::DILocation::get(sp->getContext(), line, 0, sp),
+          _builder.GetInsertBlock());
     }
-
     _builder.CreateStore(&arg, alloca);
     _variableSymbols[name] = alloca;
   }
@@ -332,11 +330,11 @@ auto LLVMGenImpl::gen(const FunctionDecl *node) -> void {
   } else {
     if (!value) {
       auto llvmType = getType(node->proto()->type()->name());
-      auto *structType = static_cast<llvm::StructType*>(llvmType);
+      auto *structType = static_cast<llvm::StructType *>(llvmType);
       auto index0 = getConstantInt(32, 0);
       auto alloca = _variableSymbols[tmpExpression];
-      auto address = _builder.CreateGEP(structType, alloca, {index0});
-      value = _builder.CreateLoad(address, "tmp");
+      auto address = _builder.CreateGEP(structType, alloca, index0);
+      value = _builder.CreateLoad(structType, address, "tmp");
     }
     _builder.CreateRet(value);
   }
@@ -347,11 +345,9 @@ auto LLVMGenImpl::gen(const FunctionDecl *node) -> void {
     _dlexicalBlocks.pop_back();
 }
 
-auto LLVMGenImpl::gen(const StructDecl *node) -> void {
-  addType(node);
-}
+auto LLVMGenImpl::gen(const StructDecl *node) -> void { addType(node); }
 
-auto LLVMGenImpl::gen(const Expr *node) -> llvm::Value* {
+auto LLVMGenImpl::gen(const Expr *node) -> llvm::Value * {
   switch (node->getKind()) {
   case Expr::Expr_Unit:
     return gen(cast<UnitExpr>(node));
@@ -374,23 +370,23 @@ auto LLVMGenImpl::gen(const Expr *node) -> llvm::Value* {
   }
 }
 
-auto LLVMGenImpl::gen(const UnitExpr *node) -> llvm::Value* {
+auto LLVMGenImpl::gen(const UnitExpr *node) -> llvm::Value * {
   emitLocation(node);
   return getUnit();
 }
 
-auto LLVMGenImpl::gen(const BlockExpr *node) -> llvm::Value* {
+auto LLVMGenImpl::gen(const BlockExpr *node) -> llvm::Value * {
   for (auto &expr : *node)
     gen(expr.get());
   return gen(node->expression().get());
 }
 
-auto LLVMGenImpl::gen(const CallExpr *node) -> llvm::Value* {
+auto LLVMGenImpl::gen(const CallExpr *node) -> llvm::Value * {
   if (getType(node->name()))
     return genStructConstructor(node);
 
   emitLocation(node);
-  llvm::SmallVector<llvm::Value*, 4> operands;
+  llvm::SmallVector<llvm::Value *, 4> operands;
   for (auto &expr : *node) {
     auto *value = gen(expr.get());
     operands.push_back(value);
@@ -405,10 +401,10 @@ auto LLVMGenImpl::gen(const CallExpr *node) -> llvm::Value* {
   }
 }
 
-auto LLVMGenImpl::genStructConstructor(const CallExpr *node) -> llvm::Value* {
+auto LLVMGenImpl::genStructConstructor(const CallExpr *node) -> llvm::Value * {
   emitLocation(node);
   auto llvmType = getType(node->name());
-  auto *structType = static_cast<llvm::StructType*>(llvmType);
+  auto *structType = static_cast<llvm::StructType *>(llvmType);
   auto index0 = getConstantInt(32, 0);
 
   if (!structAddress) {
@@ -422,7 +418,8 @@ auto LLVMGenImpl::genStructConstructor(const CallExpr *node) -> llvm::Value* {
   auto index = 0;
   for (auto &expr : *node) {
     auto fieldIndex = getConstantInt(32, index++);
-    auto fieldAddress = _builder.CreateGEP(structType, address, {index0, fieldIndex});
+    auto fieldAddress =
+        _builder.CreateGEP(structType, address, {index0, fieldIndex});
     structAddress = fieldAddress;
     if (llvm::Value *value = gen(expr.get()))
       _builder.CreateStore(value, fieldAddress);
@@ -431,26 +428,26 @@ auto LLVMGenImpl::genStructConstructor(const CallExpr *node) -> llvm::Value* {
   return nullptr;
 }
 
-auto LLVMGenImpl::gen(const VariableExpr *node) -> llvm::Value* {
+auto LLVMGenImpl::gen(const VariableExpr *node) -> llvm::Value * {
   emitLocation(node);
   auto name = node->name();
   if (auto alloca = _variableSymbols[name])
-    return _builder.CreateLoad(alloca, name);
+    return _builder.CreateLoad(alloca->getAllocatedType(), alloca, name);
   else
     return getUnit();
 }
 
-auto LLVMGenImpl::gen(const DecimalLiteralExpr *node) -> llvm::Value* {
+auto LLVMGenImpl::gen(const DecimalLiteralExpr *node) -> llvm::Value * {
   emitLocation(node);
   return llvm::ConstantInt::get(getType(builtins::UInt64Type), node->value());
 }
 
-auto LLVMGenImpl::gen(const BoolLiteralExpr *node) -> llvm::Value* {
+auto LLVMGenImpl::gen(const BoolLiteralExpr *node) -> llvm::Value * {
   emitLocation(node);
   return llvm::ConstantInt::get(getType(builtins::BoolType), node->value());
 }
 
-auto LLVMGenImpl::gen(const BinaryExpr *node) -> llvm::Value* {
+auto LLVMGenImpl::gen(const BinaryExpr *node) -> llvm::Value * {
   using Operator = BinaryExpr::Operator;
   auto op = node->opEnum();
   switch (op) {
@@ -458,6 +455,8 @@ auto LLVMGenImpl::gen(const BinaryExpr *node) -> llvm::Value* {
     return genAssignOp(node);
   case Operator::StructAccess:
     return genStructAccessOp(node);
+  default:
+    break;
   }
 
   auto lhs = gen(node->lhs().get());
@@ -489,22 +488,23 @@ auto LLVMGenImpl::gen(const BinaryExpr *node) -> llvm::Value* {
     return _builder.CreateICmpEQ(lhs, rhs);
   case Operator::NEQ:
     return _builder.CreateICmpNE(lhs, rhs);
+  default:
+    llvm_unreachable("Unexpected expression");
   }
 }
 
-auto LLVMGenImpl::genAssignOp(const BinaryExpr *node) -> llvm::Value* {
+auto LLVMGenImpl::genAssignOp(const BinaryExpr *node) -> llvm::Value * {
   emitLocation(node);
   llvm::Value *address;
   llvm::TypeSwitch<const Expr *>(node->lhs().get())
       .Case<VariableExpr>([&](const auto *node) {
-        address = structAddress =_variableSymbols[node->name()];
+        address = structAddress = _variableSymbols[node->name()];
       })
       .Case<BinaryExpr>([&](const auto *node) {
-        address = structAddress = genStructAddress(node);
+        address = structAddress = genStructAddress(node).first;
       })
-      .Default([&](const Expr *) {
-        llvm_unreachable("Unexpected expression");
-      });
+      .Default(
+          [&](const Expr *) { llvm_unreachable("Unexpected expression"); });
 
   auto value = gen(node->rhs().get());
   if (value && node->lhs()->type() != builtins::UnitType)
@@ -513,33 +513,34 @@ auto LLVMGenImpl::genAssignOp(const BinaryExpr *node) -> llvm::Value* {
   return getUnit();
 }
 
-auto LLVMGenImpl::genStructAccessOp(const BinaryExpr *node) -> llvm::Value* {
+auto LLVMGenImpl::genStructAccessOp(const BinaryExpr *node) -> llvm::Value * {
   emitLocation(node);
-  auto *address = genStructAddress(node);
-  return _builder.CreateLoad(address);
+  auto [address, type] = genStructAddress(node);
+  return _builder.CreateLoad(type, address);
 }
 
-auto LLVMGenImpl::genStructAddress(const BinaryExpr *node) -> llvm::Value * {
+auto LLVMGenImpl::genStructAddress(const BinaryExpr *node)
+    -> std::pair<llvm::Value *, llvm::Type *> {
   emitLocation(node);
   auto lhs = node->lhs().get();
-  auto *structType = static_cast<llvm::StructType*>(getType(lhs->type()));
+  auto *structType = static_cast<llvm::StructType *>(getType(lhs->type()));
   auto index0 = getConstantInt(32, 0);
   auto fieldIndex = getConstantInt(32, node->index());
   llvm::Value *address;
   llvm::TypeSwitch<const Expr *>(lhs)
-      .Case<VariableExpr>([&](auto *node) {
-        address = _variableSymbols[node->name()];
-      })
-      .Case<BinaryExpr>([&](const auto *node) {
-        address = genStructAddress(node);
-      })
-      .Default([&](const Expr *) {
-        llvm_unreachable("Unexpected expression");
-      });
-  return _builder.CreateGEP(structType, address, {index0, fieldIndex});
+      .Case<VariableExpr>(
+          [&](auto *node) { address = _variableSymbols[node->name()]; })
+      .Case<BinaryExpr>(
+          [&](const auto *node) { address = genStructAddress(node).first; })
+      .Default(
+          [&](const Expr *) { llvm_unreachable("Unexpected expression"); });
+
+  auto type = structType->getTypeAtIndex(node->index());
+  return std::make_pair(
+      _builder.CreateGEP(structType, address, {index0, fieldIndex}), type);
 }
 
-auto LLVMGenImpl::gen(const IfExpr *node) -> llvm::Value* {
+auto LLVMGenImpl::gen(const IfExpr *node) -> llvm::Value * {
   emitLocation(node);
   auto *func = _builder.GetInsertBlock()->getParent();
 
@@ -575,7 +576,7 @@ auto LLVMGenImpl::gen(const IfExpr *node) -> llvm::Value* {
   return pn;
 }
 
-auto LLVMGenImpl::gen(const WhileExpr *node) -> llvm::Value* {
+auto LLVMGenImpl::gen(const WhileExpr *node) -> llvm::Value * {
   emitLocation(node);
   auto *func = _builder.GetInsertBlock()->getParent();
   auto *initial = _builder.GetInsertBlock();
@@ -595,7 +596,7 @@ auto LLVMGenImpl::gen(const WhileExpr *node) -> llvm::Value* {
   // Emit body block
   func->getBasicBlockList().push_back(loopBB);
   _builder.SetInsertPoint(loopBB);
-  llvm::Value *bodyValue = gen(node->bodyBlock().get());
+  gen(node->bodyBlock().get());
   _builder.CreateBr(conditionBB);
 
   // Emit after loop block
@@ -611,8 +612,6 @@ auto LLVMGenImpl::gen(const Stat *node) -> void {
     return gen(cast<VariableStat>(node));
   case Stat::Stat_Expression:
     return gen(cast<ExprStat>(node));
-  default:
-    llvm_unreachable("Unexpected statement");
   }
 }
 
@@ -640,13 +639,12 @@ auto LLVMGenImpl::gen(const ExprStat *node) -> void {
 
 namespace cherry {
 
-auto llvmGen(const llvm::SourceMgr &sourceManager,
-             llvm::LLVMContext &context,
-             const Module &moduleAST,
-             std::unique_ptr<llvm::Module> &module,
+auto llvmGen(const llvm::SourceMgr &sourceManager, llvm::LLVMContext &context,
+             const Module &moduleAST, std::unique_ptr<llvm::Module> &module,
              bool enableOpt) -> CherryResult {
-  auto generator = std::make_unique<LLVMGenImpl>(sourceManager, context, enableOpt);
-  auto result =  generator->gen(moduleAST);
+  auto generator =
+      std::make_unique<LLVMGenImpl>(sourceManager, context, enableOpt);
+  auto result = generator->gen(moduleAST);
   module = std::move(generator->module);
   return result;
 }

@@ -5,12 +5,15 @@
 
 using namespace cherry;
 
+namespace {
+
 TEST(LexerTest, firstTest) {
-  auto input =  R"(fn ; , { } ( ) & 01 a0 a0a)";
+  auto input = R"(fn ; , { } ( ) & 01 a0 a0a)";
   auto inputBuffer = llvm::MemoryBuffer::getMemBuffer(input, "main.cherry");
 
   llvm::SourceMgr sourceManager;
-  sourceManager.AddNewSourceBuffer(std::move(inputBuffer), /*IncludeLoc*/llvm::SMLoc());
+  sourceManager.AddNewSourceBuffer(std::move(inputBuffer),
+                                   /*IncludeLoc*/ llvm::SMLoc());
 
   auto lexer = std::make_unique<Lexer>(sourceManager);
   ASSERT_TRUE(lexer->lexToken().is(Token::kw_fn));
@@ -41,3 +44,5 @@ TEST(LexerTest, firstTest) {
   }
   ASSERT_TRUE(lexer->lexToken().is(Token::eof));
 }
+
+} // end namespace

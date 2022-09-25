@@ -1,0 +1,11 @@
+# RUN: cherry-driver -dump=mlir %s 2>&1 | FileCheck %s
+
+# CHECK-LABEL: func @main()
+# CHECK-NEXT: cherry.constant
+# CHECK-NEXT: cherry.constant
+# CHECK-NEXT: cherry.print
+fn main(): UInt64 {
+	1;
+	print(2);
+	0
+}

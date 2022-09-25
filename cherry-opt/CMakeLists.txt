@@ -10,3 +10,5 @@ add_llvm_executable(cherry-opt cherry-opt.cpp)
 
 llvm_update_compile_flags(cherry-opt)
 target_link_libraries(cherry-opt PRIVATE ${LIBS})
+
+mlir_check_all_link_libraries(cherry-opt)

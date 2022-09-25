@@ -1,14 +1,14 @@
 //===--- Sema.cpp - Cherry Semantic Analysis ------------------------------===//
 //
 // This source file is part of the Cherry open source project
-// See TODO for license information
+// See LICENSE.txt for license information
 //
 //===----------------------------------------------------------------------===//
 
 #include "Sema.h"
-#include "Symbols.h"
-#include "DiagnosticsSema.h"
 #include "cherry/AST/AST.h"
+#include "DiagnosticsSema.h"
+#include "Symbols.h"
 #include "llvm/ADT/SmallSet.h"
 
 namespace {
@@ -29,8 +29,8 @@ public:
 
     llvm::ArrayRef<llvm::StringRef> types;
     llvm::StringRef returnType;
-    if (_symbols.getFunction("main", types, returnType) ||
-        types.size() != 0 || returnType != builtins::UInt64Type)
+    if (_symbols.getFunction("main", types, returnType) || types.size() != 0 ||
+        returnType != builtins::UInt64Type)
       return emitError(llvm::SMLoc{}, diag::undefined_main);
     return success();
   }
@@ -57,7 +57,8 @@ private:
   auto sema(DecimalLiteralExpr *node) -> CherryResult;
   auto sema(BoolLiteralExpr *node) -> CherryResult;
   auto sema(BinaryExpr *node) -> CherryResult;
-  auto semaRhsLhsSameType(BinaryExpr *node, llvm::StringRef &type) -> CherryResult;
+  auto semaRhsLhsSameType(BinaryExpr *node, llvm::StringRef &type)
+      -> CherryResult;
   auto semaStructAccessOp(BinaryExpr *node) -> CherryResult;
   auto sema(IfExpr *node) -> CherryResult;
   auto sema(WhileExpr *node) -> CherryResult;
@@ -70,18 +71,14 @@ private:
   // Errors
   auto emitError(Node *node, const llvm::Twine &msg) -> CherryResult {
     _sourceManager.PrintMessage(node->location(),
-                                llvm::SourceMgr::DiagKind::DK_Error,
-                                msg);
+                                llvm::SourceMgr::DiagKind::DK_Error, msg);
     return failure();
   }
 
   auto emitError(llvm::SMLoc loc, const llvm::Twine &msg) -> CherryResult {
-    _sourceManager.PrintMessage(loc,
-                                llvm::SourceMgr::DiagKind::DK_Error,
-                                msg);
+    _sourceManager.PrintMessage(loc, llvm::SourceMgr::DiagKind::DK_Error, msg);
     return failure();
   }
-
 };
 
 } // end namespace
@@ -92,8 +89,6 @@ auto SemaImpl::sema(Decl *node) -> CherryResult {
     return sema(cast<FunctionDecl>(node));
   case Decl::Decl_Struct:
     return sema(cast<StructDecl>(node));
-  default:
-    llvm_unreachable("Unexpected declaration");
   }
 }
 
@@ -205,7 +200,7 @@ auto SemaImpl::sema(CallExpr *node) -> CherryResult {
   llvm::StringRef returnType;
   if (_symbols.getFunction(name, parametersTypes, returnType)) {
     const char *diagnostic = diag::undefined_func;
-    char buffer [50];
+    char buffer[50];
     sprintf(buffer, diagnostic, name.str().c_str());
     return emitError(node, buffer);
   }
@@ -213,7 +208,7 @@ auto SemaImpl::sema(CallExpr *node) -> CherryResult {
   auto &expressions = node->expressions();
   if (expressions.size() != parametersTypes.size()) {
     const char *diagnostic = diag::func_param;
-    char buffer [50];
+    char buffer[50];
     sprintf(buffer, diagnostic, name.str().c_str(), parametersTypes.size());
     return emitError(node, buffer);
   }
@@ -285,6 +280,8 @@ auto SemaImpl::sema(BinaryExpr *node) -> CherryResult {
   }
   case Operator::StructAccess:
     return semaStructAccessOp(node);
+  default:
+    break;
   }
 
   llvm::StringRef type;
@@ -310,7 +307,7 @@ auto SemaImpl::sema(BinaryExpr *node) -> CherryResult {
     return success();
   }
   case Operator::EQ:
-  case Operator::NEQ:{
+  case Operator::NEQ: {
     if (type != builtins::UInt64Type && type != builtins::BoolType)
       return emitError(node->lhs().get(), diag::mismatch_type);
     node->setType(builtins::BoolType);
@@ -319,7 +316,7 @@ auto SemaImpl::sema(BinaryExpr *node) -> CherryResult {
   case Operator::LT:
   case Operator::LE:
   case Operator::GT:
-  case Operator::GE:{
+  case Operator::GE: {
     if (type != builtins::UInt64Type)
       return emitError(node->lhs().get(), diag::mismatch_type);
     node->setType(builtins::BoolType);
@@ -330,7 +327,8 @@ auto SemaImpl::sema(BinaryExpr *node) -> CherryResult {
   }
 }
 
-auto SemaImpl::semaRhsLhsSameType(BinaryExpr *node, llvm::StringRef &type) -> CherryResult {
+auto SemaImpl::semaRhsLhsSameType(BinaryExpr *node, llvm::StringRef &type)
+    -> CherryResult {
   if (sema(node->lhs().get()) || sema(node->rhs().get()))
     return failure();
   auto lhsType = node->lhs()->type();
@@ -417,8 +415,6 @@ auto SemaImpl::sema(Stat *node) -> CherryResult {
     return sema(cast<VariableStat>(node));
   case Stat::Stat_Expression:
     return sema(cast<ExprStat>(node));
-  default:
-    llvm_unreachable("Unexpected statement");
   }
 }
 
@@ -439,14 +435,14 @@ auto SemaImpl::sema(VariableStat *node) -> CherryResult {
   return success();
 }
 
-auto SemaImpl::sema(ExprStat *node)  -> CherryResult {
+auto SemaImpl::sema(ExprStat *node) -> CherryResult {
   return sema(node->expression().get());
 }
 
 namespace cherry {
 
-auto sema(const llvm::SourceMgr &sourceManager,
-          Module &moduleAST) -> CherryResult {
+auto sema(const llvm::SourceMgr &sourceManager, Module &moduleAST)
+    -> CherryResult {
   return SemaImpl(sourceManager).sema(moduleAST);
 }
 

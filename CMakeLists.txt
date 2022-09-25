@@ -1,21 +1,9 @@
-cmake_minimum_required(VERSION 3.10)
-
-if(POLICY CMP0068)
-  cmake_policy(SET CMP0068 NEW)
-  set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
-endif()
-
-if(POLICY CMP0075)
-  cmake_policy(SET CMP0075 NEW)
-endif()
-
-if(POLICY CMP0077)
-  cmake_policy(SET CMP0077 NEW)
-endif()
-
+cmake_minimum_required(VERSION 3.13.4)
 project(cherry LANGUAGES CXX C)
 
-set(CMAKE_CXX_STANDARD 14 CACHE STRING "C++ standard to conform to")
+set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
+
+set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ standard to conform to")
 
 find_package(MLIR REQUIRED CONFIG)
 
@@ -40,6 +28,7 @@ include_directories(${PROJECT_BINARY_DIR}/include)
 link_directories(${LLVM_BUILD_LIBRARY_DIR})
 add_definitions(${LLVM_DEFINITIONS})
 
+set(LLVM_PROJECT ${cherry_SOURCE_DIR}/llvm-project)
 set(CHERRY_HEADERS ${cherry_SOURCE_DIR}/include/)
 message(STATUS "CHERRY_HEADERS: ${CHERRY_HEADERS}")
 
