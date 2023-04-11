@@ -19,7 +19,7 @@ def ConvertCherryToSCF : Pass<"convert-cherry-to-scf"> {
 def ConvertCherryToArithCfFunc : Pass<"convert-cherry-to-arith-cf-func"> {
   let summary = "Convert some Cherry ops to arith, cf and func ops";
   let constructor = "mlir::cherry::createConvertCherryToArithCfFunc()";
-  let dependentDialects = ["arith::ArithmeticDialect", "cf::ControlFlowDialect"];
+  let dependentDialects = ["arith::ArithDialect", "cf::ControlFlowDialect"];
 }
 
 def ConvertCherryToLLVM : Pass<"convert-cherry-to-llvm"> {

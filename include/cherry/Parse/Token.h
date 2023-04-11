@@ -33,7 +33,7 @@ public:
   auto getKind() const -> Kind { return _kind; }
   auto is(Kind K) const -> bool { return _kind == K; }
 
-  auto getUInt64IntegerValue() const -> llvm::Optional<uint64_t>;
+  auto getUInt64IntegerValue() const -> std::optional<uint64_t>;
 
   llvm::SMLoc getLoc() const;
   llvm::SMLoc getEndLoc() const;

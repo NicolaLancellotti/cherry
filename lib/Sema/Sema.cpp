@@ -114,7 +114,7 @@ auto SemaImpl::sema(Prototype *node) -> CherryResult {
   if (_symbols.declareFunction(name, std::move(types), returnType)) {
     const char *diagnostic = diag::redefinition_func;
     char buffer[50];
-    sprintf(buffer, diagnostic, name.str().c_str());
+    snprintf(buffer, 50,diagnostic, name.str().c_str());
     return emitError(node->id().get(), buffer);
   }
   return success();
@@ -201,7 +201,7 @@ auto SemaImpl::sema(CallExpr *node) -> CherryResult {
   if (_symbols.getFunction(name, parametersTypes, returnType)) {
     const char *diagnostic = diag::undefined_func;
     char buffer[50];
-    sprintf(buffer, diagnostic, name.str().c_str());
+    snprintf(buffer, 50, diagnostic, name.str().c_str());
     return emitError(node, buffer);
   }
 
@@ -209,7 +209,7 @@ auto SemaImpl::sema(CallExpr *node) -> CherryResult {
   if (expressions.size() != parametersTypes.size()) {
     const char *diagnostic = diag::func_param;
     char buffer[50];
-    sprintf(buffer, diagnostic, name.str().c_str(), parametersTypes.size());
+    snprintf(buffer, 50, diagnostic, name.str().c_str(), parametersTypes.size());
     return emitError(node, buffer);
   }
 

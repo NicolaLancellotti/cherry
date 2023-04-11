@@ -29,8 +29,8 @@ TEST(LexerTest, firstTest) {
     ASSERT_TRUE(token.is(Token::decimal));
     ASSERT_EQ(token.getSpelling(), "01");
     auto uint64 = token.getUInt64IntegerValue();
-    ASSERT_TRUE(uint64.hasValue());
-    ASSERT_EQ(uint64.getValue(), 1);
+    ASSERT_TRUE(uint64.has_value());
+    ASSERT_EQ(uint64.value(), 1);
   }
   {
     auto token = lexer->lexToken();

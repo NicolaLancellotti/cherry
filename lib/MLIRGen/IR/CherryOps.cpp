@@ -22,7 +22,7 @@ auto ConstantOp::build(mlir::OpBuilder &builder, mlir::OperationState &state,
 auto ConstantOp::build(mlir::OpBuilder &builder, mlir::OperationState &state,
                        bool value) -> void {
   auto dataAttribute = builder.getBoolAttr(value);
-  ConstantOp::build(builder, state, dataAttribute.getType(), dataAttribute);
+  ConstantOp::build(builder, state, builder.getI1Type(), dataAttribute);
 }
 
 auto CallOp::build(mlir::OpBuilder &builder, mlir::OperationState &state,
@@ -57,8 +57,8 @@ auto WhileOp::build(
     mlir::OpBuilder &builder, mlir::OperationState &state,
     function_ref<void(mlir::OpBuilder &, mlir::Location)> conditionBuilder,
     function_ref<void(mlir::OpBuilder &, mlir::Location)> bodyBuilder) -> void {
-  state.addTypes(llvm::None);
-  state.addOperands(llvm::None);
+  state.addTypes({});
+  state.addOperands({});
 
   OpBuilder::InsertionGuard guard(builder);
 

@@ -12,10 +12,10 @@ using namespace cherry;
 using llvm::SMLoc;
 using llvm::SMRange;
 
-auto Token::getUInt64IntegerValue() const -> llvm::Optional<uint64_t> {
+auto Token::getUInt64IntegerValue() const -> std::optional<uint64_t> {
   uint64_t result = 0;
   if (_spelling.getAsInteger(10, result))
-    return llvm::None;
+    return std::nullopt;
   return result;
 }
 SMLoc Token::getLoc() const { return SMLoc::getFromPointer(_spelling.data()); }

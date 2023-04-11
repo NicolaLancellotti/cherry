@@ -16,7 +16,7 @@
 #include "cherry/Parse/Lexer.h"
 #include "cherry/Parse/Parser.h"
 #include "cherry/Sema/Sema.h"
-#include "mlir/Dialect/Arithmetic/IR/Arithmetic.h"
+#include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/ControlFlow/IR/ControlFlowOps.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
@@ -54,7 +54,7 @@ auto Compilation::make(llvm::StringRef filename, bool enableOpt,
 
   auto compilation = std::make_unique<Compilation>();
   compilation->_mlirContext.getOrLoadDialect<mlir::cherry::CherryDialect>();
-  compilation->_mlirContext.getOrLoadDialect<mlir::arith::ArithmeticDialect>();
+  compilation->_mlirContext.getOrLoadDialect<mlir::arith::ArithDialect>();
   compilation->_mlirContext.getOrLoadDialect<mlir::cf::ControlFlowDialect>();
   compilation->_mlirContext.getOrLoadDialect<mlir::func::FuncDialect>();
   compilation->_mlirContext.getOrLoadDialect<mlir::LLVM::LLVMDialect>();

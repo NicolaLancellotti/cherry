@@ -9,7 +9,7 @@
 #include "../IR/StructType.h"
 #include "cherry/MLIRGen/IR/CherryOps.h"
 #include "PassDetail.h"
-#include "mlir/Conversion/ArithmeticToLLVM/ArithmeticToLLVM.h"
+#include "mlir/Conversion/ArithToLLVM/ArithToLLVM.h"
 #include "mlir/Conversion/ControlFlowToLLVM/ControlFlowToLLVM.h"
 #include "mlir/Conversion/FuncToLLVM/ConvertFuncToLLVM.h"
 #include "mlir/Conversion/LLVMCommon/ConversionTarget.h"
@@ -156,7 +156,7 @@ struct ConvertCherryToLLVMPass
     populateFuncToLLVMConversionPatterns(typeConverter, patterns);
     populateSCFToControlFlowConversionPatterns(patterns);
     cf::populateControlFlowToLLVMConversionPatterns(typeConverter, patterns);
-    mlir::arith::populateArithmeticToLLVMConversionPatterns(typeConverter,
+    mlir::arith::populateArithToLLVMConversionPatterns(typeConverter,
                                                             patterns);
     patterns.add<PrintOpLowering, CastOpLowering>(&getContext());
 

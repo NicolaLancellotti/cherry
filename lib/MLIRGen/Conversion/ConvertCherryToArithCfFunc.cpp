@@ -9,7 +9,7 @@
 #include "cherry/MLIRGen/IR/CherryDialect.h"
 #include "cherry/MLIRGen/IR/CherryOps.h"
 #include "PassDetail.h"
-#include "mlir/Dialect/Arithmetic/IR/Arithmetic.h"
+#include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/ControlFlow/IR/ControlFlowOps.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
@@ -119,7 +119,7 @@ struct WhileOpLowering : public ConversionPattern {
     Operation *bodyTerminator = bodyRegion.back().getTerminator();
     rewriter.eraseOp(bodyTerminator);
     rewriter.setInsertionPointToEnd(&bodyRegion.back());
-    rewriter.create<mlir::cf::BranchOp>(loc, conditionBlock, llvm::None);
+    rewriter.create<mlir::cf::BranchOp>(loc, conditionBlock, std::nullopt);
     rewriter.inlineRegionBefore(bodyRegion, afterLoopBlock);
 
     // Emit branch to condition block
@@ -162,7 +162,7 @@ struct ReturnOpLowering : public ConversionPattern {
                        ConversionPatternRewriter &rewriter) const
       -> LogicalResult final {
     if (operands.size() == 0) {
-      rewriter.replaceOpWithNewOp<func::ReturnOp>(op, llvm::None);
+      rewriter.replaceOpWithNewOp<func::ReturnOp>(op, std::nullopt);
     } else {
       Value operand = operands.front();
       rewriter.replaceOpWithNewOp<func::ReturnOp>(op, llvm::ArrayRef<Type>(),
@@ -183,7 +183,7 @@ struct ConvertCherryToArithCfFunc
 
   auto runOnOperation() -> void final {
     ConversionTarget target(getContext());
-    target.addLegalDialect<arith::ArithmeticDialect, cf::ControlFlowDialect,
+    target.addLegalDialect<arith::ArithDialect, cf::ControlFlowDialect,
                            func::FuncDialect, scf::SCFDialect>();
     target.addIllegalDialect<cherry::CherryDialect>();
     target.addLegalOp<cherry::CastOp>();

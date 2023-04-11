@@ -14,7 +14,7 @@ include "mlir/Interfaces/SideEffectInterfaces.td"
 
 def Cherry_Type : AnyTypeOf<[I64, I1]>;
 
-def ConstantOp : Cherry_Op<"constant", [NoSideEffect]> {
+def ConstantOp : Cherry_Op<"constant", [Pure]> {
   let summary = "constant operation";
   let description = [{
     Constant operation turns a literal into an SSA value. The data is attached
@@ -33,7 +33,7 @@ def ConstantOp : Cherry_Op<"constant", [NoSideEffect]> {
   ];
 }
 
-def ReturnOp : Cherry_Op<"return", [NoSideEffect, Terminator]> {
+def ReturnOp : Cherry_Op<"return", [Pure, Terminator]> {
   let summary = "return operation";
   let description = [{
     The "return" operation represents a return operation within a function.
@@ -106,7 +106,7 @@ def IfOp : Cherry_Op<"if"> {
   ];
 }
 
-def YieldIfOp : Cherry_Op<"yield_if", [NoSideEffect, Terminator]> {
+def YieldIfOp : Cherry_Op<"yield_if", [Pure, Terminator]> {
   let summary = "loop yield and termination operation";
 
   let arguments = (ins Variadic<Cherry_Type>:$result);
@@ -127,7 +127,7 @@ def WhileOp : Cherry_Op<"while"> {
   ];
 }
 
-def YieldWhileOp : Cherry_Op<"yield_while", [NoSideEffect, Terminator]> {
+def YieldWhileOp : Cherry_Op<"yield_while", [Pure, Terminator]> {
   let summary = "loop yield and termination operation";
 
   let arguments = (ins Variadic<Cherry_Type>:$result);
@@ -137,7 +137,7 @@ def YieldWhileOp : Cherry_Op<"yield_while", [NoSideEffect, Terminator]> {
   ];
 }
 
-def ArithmeticLogicOp : Cherry_Op<"arithmetic-logic", [NoSideEffect]> {
+def ArithmeticLogicOp : Cherry_Op<"arithmetic-logic", [Pure]> {
 
   let arguments = (ins Cherry_Type:$lhs, Cherry_Type:$rhs, StrAttr:$op);
   let results = (outs Cherry_Type);

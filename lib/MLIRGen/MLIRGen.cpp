@@ -175,7 +175,7 @@ auto MLIRGenImpl::gen(const FunctionDecl *node) -> mlir::func::FuncOp {
   if (value)
     _builder.create<ReturnOp>(location, value);
   else
-    _builder.create<ReturnOp>(location, llvm::None);
+    _builder.create<ReturnOp>(location, std::nullopt);
 
   return func;
 }
@@ -257,7 +257,7 @@ auto MLIRGenImpl::gen(const WhileExpr *node) -> mlir::Value {
   auto bodyExprBuilder = [&](mlir::OpBuilder &builder, mlir::Location) {
     gen(bodyBlock);
     builder.create<YieldWhileOp>(loc(bodyBlock->expression().get()),
-                                 llvm::None);
+                                 std::nullopt);
   };
 
   _builder.create<WhileOp>(loc(node), conditionExprBuilder, bodyExprBuilder);

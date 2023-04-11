@@ -553,21 +553,21 @@ auto LLVMGenImpl::gen(const IfExpr *node) -> llvm::Value * {
   _builder.CreateCondBr(conditionValue, thenBB, elseBB);
 
   // Emit then block
-  func->getBasicBlockList().push_back(thenBB);
+  func->insert(func->end(), thenBB);
   _builder.SetInsertPoint(thenBB);
   auto *thenValue = gen(node->thenBlock().get());
   _builder.CreateBr(mergeBB);
   thenBB = _builder.GetInsertBlock();
 
   // Emit else block
-  func->getBasicBlockList().push_back(elseBB);
+  func->insert(func->end(), elseBB);
   _builder.SetInsertPoint(elseBB);
   auto *elseValue = gen(node->elseBlock().get());
   _builder.CreateBr(mergeBB);
   elseBB = _builder.GetInsertBlock();
 
   // Emit merge block
-  func->getBasicBlockList().push_back(mergeBB);
+  func->insert(func->end(), mergeBB);
   _builder.SetInsertPoint(mergeBB);
 
   auto *pn = _builder.CreatePHI(getType(node->type()), 2, "iftmp");
@@ -588,19 +588,19 @@ auto LLVMGenImpl::gen(const WhileExpr *node) -> llvm::Value * {
   _builder.CreateBr(conditionBB);
 
   // Emit condition
-  func->getBasicBlockList().push_back(conditionBB);
+  func->insert(func->end(), conditionBB);
   _builder.SetInsertPoint(conditionBB);
   llvm::Value *conditionValue = gen(node->conditionExpr().get());
   _builder.CreateCondBr(conditionValue, loopBB, afterLoopBB);
 
   // Emit body block
-  func->getBasicBlockList().push_back(loopBB);
+  func->insert(func->end(), loopBB);
   _builder.SetInsertPoint(loopBB);
   gen(node->bodyBlock().get());
   _builder.CreateBr(conditionBB);
 
   // Emit after loop block
-  func->getBasicBlockList().push_back(afterLoopBB);
+  func->insert(func->end(), afterLoopBB);
   _builder.SetInsertPoint(afterLoopBB);
 
   return nullptr;
