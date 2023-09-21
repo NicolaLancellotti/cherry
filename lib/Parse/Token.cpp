@@ -5,7 +5,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "Token.h"
+#include "cherry/Parse/Token.h"
 #include "llvm/ADT/StringSwitch.h"
 
 using namespace cherry;

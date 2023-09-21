@@ -6,7 +6,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "AST.h"
+#include "cherry/AST/AST.h"
 #include "llvm/ADT/TypeSwitch.h"
 #include "llvm/Support/raw_ostream.h"
 

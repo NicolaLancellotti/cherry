@@ -8,7 +8,7 @@
 #ifndef CHERRY_EXPR_H
 #define CHERRY_EXPR_H
 
-#include "Node.h"
+#include "cherry/AST/Node.h"
 #include "llvm/ADT/StringRef.h"
 
 namespace cherry {
@@ -158,7 +158,7 @@ class BinaryExpr final : public Expr {
 public:
   enum class Operator {
     Assign,
-    StructAccess,
+    StructRead,
     Add,
     Mul,
     Diff,
@@ -191,7 +191,7 @@ public:
     switch (_op) {
     case Operator::Assign:
       return "=";
-    case Operator::StructAccess:
+    case Operator::StructRead:
       return ".";
     case Operator::Add:
       return "+";
@@ -224,7 +224,7 @@ public:
 
   auto opEnum() const -> Operator { return _op; }
 
-  auto isLvalue() -> bool override { return _op == Operator::StructAccess; }
+  auto isLvalue() -> bool override { return _op == Operator::StructRead; }
 
   auto index() const -> int { return _index; }
 

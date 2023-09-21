@@ -8,7 +8,7 @@
 #ifndef CHERRY_DECL_H
 #define CHERRY_DECL_H
 
-#include "Node.h"
+#include "cherry/AST/Node.h"
 #include "llvm/ADT/StringRef.h"
 
 namespace cherry {

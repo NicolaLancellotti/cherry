@@ -1,8 +1,7 @@
 //===- cherry-translate.cpp ---------------------------------*- C++ -*-===//
 //
-// This file is licensed under the Apache License v2.0 with LLVM Exceptions.
-// See https://llvm.org/LICENSE.txt for license information.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// This source file is part of the Cherry open source project
+// See LICENSE.txt for license information
 //
 //===----------------------------------------------------------------------===//
 //
@@ -11,11 +10,10 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "cherry/MLIRGen/IR/CherryDialect.h"
 #include "mlir/InitAllTranslations.h"
 #include "mlir/Support/LogicalResult.h"
 #include "mlir/Tools/mlir-translate/MlirTranslateMain.h"
-
-#include "cherry/MLIRGen/IR/CherryDialect.h"
 
 int main(int argc, char **argv) {
   mlir::registerAllTranslations();

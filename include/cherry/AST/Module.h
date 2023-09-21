@@ -8,7 +8,7 @@
 #ifndef CHERRY_MODULE_H
 #define CHERRY_MODULE_H
 
-#include "Node.h"
+#include "cherry/AST/Node.h"
 
 namespace cherry {
 class Decl;

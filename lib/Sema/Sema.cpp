@@ -5,10 +5,10 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "Sema.h"
-#include "cherry/AST/AST.h"
-#include "DiagnosticsSema.h"
+#include "cherry/Sema/Sema.h"
 #include "Symbols.h"
+#include "cherry/AST/AST.h"
+#include "cherry/Sema/DiagnosticsSema.h"
 #include "llvm/ADT/SmallSet.h"
 
 namespace {
@@ -52,14 +52,14 @@ private:
   auto sema(UnitExpr *node) -> CherryResult;
   auto sema(BlockExpr *node) -> CherryResult;
   auto sema(CallExpr *node) -> CherryResult;
-  auto semaStructConstructor(CallExpr *node) -> CherryResult;
+  auto semaStructInitializer(CallExpr *node) -> CherryResult;
   auto sema(VariableExpr *node) -> CherryResult;
   auto sema(DecimalLiteralExpr *node) -> CherryResult;
   auto sema(BoolLiteralExpr *node) -> CherryResult;
   auto sema(BinaryExpr *node) -> CherryResult;
   auto semaRhsLhsSameType(BinaryExpr *node, llvm::StringRef &type)
       -> CherryResult;
-  auto semaStructAccessOp(BinaryExpr *node) -> CherryResult;
+  auto semaStructReadOp(BinaryExpr *node) -> CherryResult;
   auto sema(IfExpr *node) -> CherryResult;
   auto sema(WhileExpr *node) -> CherryResult;
 
@@ -114,7 +114,7 @@ auto SemaImpl::sema(Prototype *node) -> CherryResult {
   if (_symbols.declareFunction(name, std::move(types), returnType)) {
     const char *diagnostic = diag::redefinition_func;
     char buffer[50];
-    snprintf(buffer, 50,diagnostic, name.str().c_str());
+    snprintf(buffer, 50, diagnostic, name.str().c_str());
     return emitError(node->id().get(), buffer);
   }
   return success();
@@ -194,7 +194,7 @@ auto SemaImpl::sema(CallExpr *node) -> CherryResult {
   auto name = node->name();
 
   if (mlir::succeeded(_symbols.checkType(name)))
-    return semaStructConstructor(node);
+    return semaStructInitializer(node);
 
   llvm::ArrayRef<llvm::StringRef> parametersTypes;
   llvm::StringRef returnType;
@@ -209,7 +209,8 @@ auto SemaImpl::sema(CallExpr *node) -> CherryResult {
   if (expressions.size() != parametersTypes.size()) {
     const char *diagnostic = diag::func_param;
     char buffer[50];
-    snprintf(buffer, 50, diagnostic, name.str().c_str(), parametersTypes.size());
+    snprintf(buffer, 50, diagnostic, name.str().c_str(),
+             parametersTypes.size());
     return emitError(node, buffer);
   }
 
@@ -226,7 +227,7 @@ auto SemaImpl::sema(CallExpr *node) -> CherryResult {
   return success();
 }
 
-auto SemaImpl::semaStructConstructor(CallExpr *node) -> CherryResult {
+auto SemaImpl::semaStructInitializer(CallExpr *node) -> CherryResult {
   auto type = node->name();
   const VectorUniquePtr<VariableStat> *fieldsTypes;
   if (_symbols.getType(type, fieldsTypes))
@@ -278,8 +279,8 @@ auto SemaImpl::sema(BinaryExpr *node) -> CherryResult {
     node->setType(builtins::UnitType);
     return success();
   }
-  case Operator::StructAccess:
-    return semaStructAccessOp(node);
+  case Operator::StructRead:
+    return semaStructReadOp(node);
   default:
     break;
   }
@@ -339,7 +340,7 @@ auto SemaImpl::semaRhsLhsSameType(BinaryExpr *node, llvm::StringRef &type)
   return success();
 }
 
-auto SemaImpl::semaStructAccessOp(BinaryExpr *node) -> CherryResult {
+auto SemaImpl::semaStructReadOp(BinaryExpr *node) -> CherryResult {
   if (sema(node->lhs().get()))
     return failure();
 

@@ -37,6 +37,6 @@ fn main(): UInt64 {
   0
 }
 
-# CHECK: 0
+# Return value CHECK: 0
 # CHECK: 1
 # CHECK: 0

@@ -80,5 +80,22 @@ auto ArithmeticLogicOp::build(mlir::OpBuilder &builder,
   state.addAttribute("op", builder.getStringAttr(op));
 }
 
+auto StructReadOp::build(mlir::OpBuilder &builder, mlir::OperationState &state,
+                         mlir::Value structValue, int64_t index) -> void {
+  CherryStructType structTy =
+      llvm::cast<CherryStructType>(structValue.getType());
+  mlir::Type resultType = structTy.getTypes()[index];
+  IntegerAttr indexAttr = builder.getI64IntegerAttr(index);
+  build(builder, state, resultType, structValue, indexAttr);
+}
+
+auto StructWriteOp::build(mlir::OpBuilder &builder, mlir::OperationState &state,
+                          mlir::Value structValue, ArrayRef<int64_t> indexes,
+                          mlir::Value valueToStore) -> void {
+  auto attrs = builder.getDenseI64ArrayAttr(indexes);
+  build(builder, state, structValue.getType(), structValue, attrs,
+        valueToStore);
+}
+
 #define GET_OP_CLASSES
 #include "cherry/MLIRGen/IR/CherryOps.cpp.inc"

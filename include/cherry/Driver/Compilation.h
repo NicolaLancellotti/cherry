@@ -30,6 +30,8 @@ class Compilation {
 public:
   enum Lowering { None, SCF, ArithCfFunc, LLVM };
 
+  Compilation();
+
   static auto make(llvm::StringRef filename, bool enableOpt, bool backendLLVM)
       -> std::unique_ptr<Compilation>;
 

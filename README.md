@@ -1,10 +1,4 @@
 # 🍒 Cherry Programming Language 🍒
-
-## Get Source
-To download the source code run:
-```sh
-git clone --recursive https://github.com/NicolaLancellotti/cherry
-```
 ## Dependencies
 Install the following dependencies:
 - CMake
@@ -13,11 +7,16 @@ Install the following dependencies:
 - Clang
 
 ## Build Cherry
-To build Cherry run:
+To build the LLVM project and Cherry run:
 ```sh
 make all
 ```
 
+If you have already built LLVM in `$LLVM_BUILD_DIR` and the LLVM source code is in `$LLVM_SRC_DIR`,
+you can just build Cherry with:
+```sh
+make cherry LLVM_SRC_DIR=$LLVM_SRC_DIR LLVM_BUILD_DIR=$LLVM_BUILD_DIR
+```
 ## Grammar & Builtins
 [Cherry grammar](/docs/Grammar.md)
 
@@ -87,6 +86,3 @@ fn main(): UInt64 {
   0
 }
 ```
-## Unimplemented features
-- Structs are implemented only in LLVMGen (-b=llvm), 
-in MLIRGen (-b=mlir) they are not implemented yet.

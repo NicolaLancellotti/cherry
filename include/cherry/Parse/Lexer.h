@@ -8,7 +8,7 @@
 #ifndef CHERRY_LEXER_H
 #define CHERRY_LEXER_H
 
-#include "Token.h"
+#include "cherry/Parse/Token.h"
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/raw_ostream.h"
 

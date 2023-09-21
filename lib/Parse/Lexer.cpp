@@ -5,8 +5,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "Lexer.h"
-#include "mlir/IR/Diagnostics.h"
+#include "cherry/Parse/Lexer.h"
 #include "llvm/ADT/StringSwitch.h"
 
 using namespace cherry;

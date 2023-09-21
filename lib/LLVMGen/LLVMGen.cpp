@@ -5,7 +5,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "LLVMGen.h"
+#include "cherry/LLVMGen/LLVMGen.h"
 #include "cherry/AST/AST.h"
 #include "cherry/Basic/Builtins.h"
 #include "cherry/Basic/CherryResult.h"
@@ -79,13 +79,13 @@ private:
   auto gen(const UnitExpr *node) -> llvm::Value *;
   auto gen(const BlockExpr *node) -> llvm::Value *;
   auto gen(const CallExpr *node) -> llvm::Value *;
-  auto genStructConstructor(const CallExpr *node) -> llvm::Value *;
+  auto genStructInitializer(const CallExpr *node) -> llvm::Value *;
   auto gen(const VariableExpr *node) -> llvm::Value *;
   auto gen(const DecimalLiteralExpr *node) -> llvm::Value *;
   auto gen(const BoolLiteralExpr *node) -> llvm::Value *;
   auto gen(const BinaryExpr *node) -> llvm::Value *;
   auto genAssignOp(const BinaryExpr *node) -> llvm::Value *;
-  auto genStructAccessOp(const BinaryExpr *node) -> llvm::Value *;
+  auto genStructReadOp(const BinaryExpr *node) -> llvm::Value *;
   auto genStructAddress(const BinaryExpr *node)
       -> std::pair<llvm::Value *, llvm::Type *>;
   auto gen(const IfExpr *node) -> llvm::Value *;
@@ -383,7 +383,7 @@ auto LLVMGenImpl::gen(const BlockExpr *node) -> llvm::Value * {
 
 auto LLVMGenImpl::gen(const CallExpr *node) -> llvm::Value * {
   if (getType(node->name()))
-    return genStructConstructor(node);
+    return genStructInitializer(node);
 
   emitLocation(node);
   llvm::SmallVector<llvm::Value *, 4> operands;
@@ -401,7 +401,7 @@ auto LLVMGenImpl::gen(const CallExpr *node) -> llvm::Value * {
   }
 }
 
-auto LLVMGenImpl::genStructConstructor(const CallExpr *node) -> llvm::Value * {
+auto LLVMGenImpl::genStructInitializer(const CallExpr *node) -> llvm::Value * {
   emitLocation(node);
   auto llvmType = getType(node->name());
   auto *structType = static_cast<llvm::StructType *>(llvmType);
@@ -453,8 +453,8 @@ auto LLVMGenImpl::gen(const BinaryExpr *node) -> llvm::Value * {
   switch (op) {
   case Operator::Assign:
     return genAssignOp(node);
-  case Operator::StructAccess:
-    return genStructAccessOp(node);
+  case Operator::StructRead:
+    return genStructReadOp(node);
   default:
     break;
   }
@@ -513,7 +513,7 @@ auto LLVMGenImpl::genAssignOp(const BinaryExpr *node) -> llvm::Value * {
   return getUnit();
 }
 
-auto LLVMGenImpl::genStructAccessOp(const BinaryExpr *node) -> llvm::Value * {
+auto LLVMGenImpl::genStructReadOp(const BinaryExpr *node) -> llvm::Value * {
   emitLocation(node);
   auto [address, type] = genStructAddress(node);
   return _builder.CreateLoad(type, address);

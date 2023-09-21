@@ -1,4 +1,4 @@
-set(LIB_HEADERS ${CHERRY_HEADERS}/cherry/Sema)
+set(LIB_HEADERS ${CHERRY_SOURCE_DIR}/include/cherry/Sema)
 
 add_library(cherrySema STATIC
         ${LIB_HEADERS}/Sema.h

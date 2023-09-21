@@ -1,5 +1,5 @@
-set(LLVM_TARGET_DEFINITIONS Passes.td)
-mlir_tablegen(Passes.h.inc -gen-pass-decls -name CherryConversion)
+set(LLVM_TARGET_DEFINITIONS CherryPasses.td)
+mlir_tablegen(CherryPasses.h.inc -gen-pass-decls -name CherryConversion)
 add_public_tablegen_target(MLIRCherryConversionPassIncGen)
 
-add_mlir_doc(Passes CherryConversionPasses ./cherry/ -gen-pass-doc)
+add_mlir_doc(CherryPasses CherryConversionPasses ./cherry/ -gen-pass-doc)

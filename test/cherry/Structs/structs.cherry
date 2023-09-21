@@ -1,0 +1,36 @@
+# _______________________________________________________
+# LLVM - JIT
+# RUN: cherry-driver %s --b=llvm 2>&1 | FileCheck %s
+# _______________________________________________________
+# MLIR - JIT
+# RUN: cherry-driver %s --b=mlir 2>&1 | FileCheck %s
+# _______________________________________________________
+
+struct A { }
+
+struct B {
+  a: A,
+  y: UInt64
+}
+
+struct C {
+  b: B,
+  x: UInt64
+}
+
+fn main(): UInt64 {
+  var c: C = C(B(A(), 2), 1);
+  print(c.x);
+  c.x = 11;
+  print(c.x);
+
+  print(c.b.y);
+  c.b.y = 22;
+  print(c.b.y);
+  0
+}
+
+# CHECK: 1
+# CHECK: 11
+# CHECK: 2
+# CHECK: 22

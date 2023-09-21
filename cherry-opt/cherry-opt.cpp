@@ -5,6 +5,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "cherry/MLIRGen/Conversion/CherryPasses.h"
+#include "cherry/MLIRGen/IR/CherryDialect.h"
 #include "mlir/IR/Dialect.h"
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/InitAllDialects.h"
@@ -18,12 +20,9 @@
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/ToolOutputFile.h"
 
-#include "cherry/MLIRGen/Conversion/Passes.h"
-#include "cherry/MLIRGen/IR/CherryDialect.h"
-
 int main(int argc, char **argv) {
   mlir::registerAllPasses();
-  mlir::registerCherryConversionPasses();
+  mlir::cherry::registerCherryConversionPasses();
 
   mlir::DialectRegistry registry;
   registry.insert<mlir::cherry::CherryDialect, mlir::func::FuncDialect>();

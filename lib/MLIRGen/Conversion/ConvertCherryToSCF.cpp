@@ -5,15 +5,15 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "cherry/MLIRGen/Conversion/ConvertCherryToSCF.h"
-#include "cherry/MLIRGen/IR/CherryDialect.h"
-#include "cherry/MLIRGen/IR/CherryOps.h"
-#include "PassDetail.h"
+#include "cherry/MLIRGen/Conversion/CherryPasses.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Transforms/DialectConversion.h"
 
-using namespace mlir;
+namespace mlir::cherry {
+
+#define GEN_PASS_DEF_CONVERTCHERRYTOSCF
+#include "cherry/MLIRGen/Conversion/CherryPasses.h.inc"
 
 namespace {
 
@@ -56,9 +56,11 @@ struct YieldIfOpLowering : public ConversionPattern {
   }
 };
 
-struct ConvertCherryToSCFPass
-    : public ConvertCherryToSCFBase<ConvertCherryToSCFPass> {
-  ConvertCherryToSCFPass() = default;
+struct ConvertCherryToSCF
+    : public impl::ConvertCherryToSCFBase<ConvertCherryToSCF> {
+
+  using impl::ConvertCherryToSCFBase<
+      ConvertCherryToSCF>::ConvertCherryToSCFBase;
 
   auto runOnOperation() -> void final {
     ConversionTarget target(getContext());
@@ -70,16 +72,11 @@ struct ConvertCherryToSCFPass
     patterns.add<IfOpLowering, YieldIfOpLowering>(&getContext());
 
     auto f = getOperation();
-    if (failed(applyPartialConversion(f, target, std::move(patterns))))
+    FrozenRewritePatternSet patternSet(std::move(patterns));
+    if (failed(applyPartialConversion(f, target, patternSet)))
       signalPassFailure();
   }
 };
 
 } // end namespace
-
-namespace mlir {
-auto mlir::cherry::createConvertCherryToSCFPass()
-    -> std::unique_ptr<mlir::Pass> {
-  return std::make_unique<ConvertCherryToSCFPass>();
-}
-} // namespace mlir
+} // namespace mlir::cherry

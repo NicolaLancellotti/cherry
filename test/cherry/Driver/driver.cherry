@@ -1,9 +1,17 @@
 # _______________________________________________________
-# JIT
+# LLVM - JIT
 # RUN: cherry-driver %s --b=llvm 2>&1 | FileCheck %s
 # _______________________________________________________
-# Generate object file
+# LLVM - Generate object file
 # RUN: cherry-driver %s --b=llvm -c=%t.o 
+# RUN: clang %t.o -o %t.out
+# RUN: %t.out 2>&1 | FileCheck %s
+# _______________________________________________________
+# MLIR - JIT
+# RUN: cherry-driver %s --b=mlir 2>&1 | FileCheck %s
+# _______________________________________________________
+# MLIR - Generate object file
+# RUN: cherry-driver %s --b=mlir -c=%t.o 
 # RUN: clang %t.o -o %t.out
 # RUN: %t.out 2>&1 | FileCheck %s
 # _______________________________________________________

@@ -10,7 +10,7 @@
 #include "cherry/Basic/Builtins.h"
 #include "cherry/Basic/CherryResult.h"
 #include "cherry/MLIRGen/IR/CherryOps.h"
-#include "IR/StructType.h"
+#include "cherry/MLIRGen/IR/CherryTypes.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/IR/Builders.h"
@@ -18,6 +18,7 @@
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/IR/Verifier.h"
+#include "llvm/ADT/TypeSwitch.h"
 #include <map>
 
 namespace {
@@ -182,11 +183,6 @@ auto MLIRGenImpl::gen(const FunctionDecl *node) -> mlir::func::FuncOp {
 
 auto MLIRGenImpl::gen(const StructDecl *node) -> void {
   auto &variables = node->variables();
-  if (variables.size() == 0) {
-    _typeSymbols[node->id()->name()] = _builder.getNoneType();
-    return;
-  }
-
   llvm::SmallVector<mlir::Type, 2> elementTypes;
   elementTypes.reserve(variables.size());
   for (auto &variable : variables) {
@@ -194,7 +190,8 @@ auto MLIRGenImpl::gen(const StructDecl *node) -> void {
     elementTypes.push_back(type);
   }
 
-  _typeSymbols[node->id()->name()] = StructType::get(elementTypes);
+  _typeSymbols[node->id()->name()] =
+      mlir::cherry::CherryStructType::get(_builder.getContext(), elementTypes);
 }
 
 auto MLIRGenImpl::gen(const Expr *node) -> mlir::Value {
@@ -266,7 +263,7 @@ auto MLIRGenImpl::gen(const WhileExpr *node) -> mlir::Value {
 
 auto MLIRGenImpl::gen(const CallExpr *node) -> mlir::Value {
   auto functionName = node->name();
-  if (node->name() == builtins::print)
+  if (functionName == builtins::print)
     return genPrint(node);
 
   llvm::SmallVector<mlir::Value, 4> operands;
@@ -274,17 +271,20 @@ auto MLIRGenImpl::gen(const CallExpr *node) -> mlir::Value {
     auto value = gen(expr.get());
     operands.push_back(value);
   }
-  if (functionName == builtins::boolToUInt64) {
+
+  if (auto type = getType(functionName))
+    return _builder.create<StructInitOp>(
+        loc(node), llvm::cast<CherryStructType>(type), operands);
+
+  if (functionName == builtins::boolToUInt64)
     return _builder.create<CastOp>(loc(node), operands.front());
-  } else {
-    auto result = _functionSymbols[functionName];
-    llvm::SmallVector<mlir::Type, 4> results;
-    if (result != _builder.getNoneType())
-      results.push_back(result);
-    auto op =
-        _builder.create<CallOp>(loc(node), node->name(), operands, results);
-    return node->type() == builtins::UnitType ? nullptr : op.getResult(0);
-  }
+
+  auto result = _functionSymbols[functionName];
+  llvm::SmallVector<mlir::Type, 4> results;
+  if (result != _builder.getNoneType())
+    results.push_back(result);
+  auto op = _builder.create<CallOp>(loc(node), node->name(), operands, results);
+  return node->type() == builtins::UnitType ? nullptr : op.getResult(0);
 }
 
 auto MLIRGenImpl::genPrint(const CallExpr *node) -> mlir::Value {
@@ -312,8 +312,11 @@ auto MLIRGenImpl::gen(const BinaryExpr *node) -> mlir::Value {
   switch (op) {
   case Operator::Assign:
     return genAssignOp(node);
-  case Operator::StructAccess:
-    llvm_unreachable("Unimplemented");
+  case Operator::StructRead: {
+    auto structValue = gen(node->lhs().get());
+    auto index = node->index();
+    return _builder.create<StructReadOp>(loc(node), structValue, index);
+  }
   default:
     break;
   }
@@ -343,16 +346,35 @@ auto MLIRGenImpl::gen(const BinaryExpr *node) -> mlir::Value {
 }
 
 auto MLIRGenImpl::genAssignOp(const BinaryExpr *node) -> mlir::Value {
-  auto rhsValue = gen(node->rhs().get());
+  auto rhs = gen(node->rhs().get());
 
-  // TODO: handle struct access
-  auto lhs = static_cast<VariableExpr *>(node->lhs().get());
-  auto name = lhs->name();
+  llvm::TypeSwitch<const Expr *>(node->lhs().get())
+      .Case<VariableExpr>([&](const auto *var) {
+        auto name = var->name();
+        auto address = _variableSymbols[name];
+        if (node->lhs()->type() != builtins::UnitType)
+          _builder.create<mlir::memref::StoreOp>(loc(node), rhs, address);
+      })
+      .Case<BinaryExpr>([&](const auto *structRead) {
+        llvm::SmallVector<int64_t, 3> indexes = {};
+        auto variable = structRead->lhs().get();
+        indexes.push_back(structRead->index());
+        while ((structRead = llvm::dyn_cast<BinaryExpr>(variable))) {
+          variable = structRead->lhs().get();
+          indexes.push_back(structRead->index());
+        }
+        std::reverse(indexes.begin(), indexes.end());
 
-  auto address = _variableSymbols[name];
-  if (node->lhs()->type() != builtins::UnitType)
-    _builder.create<mlir::memref::StoreOp>(loc(node), rhsValue, address);
-
+        auto memref =
+            _variableSymbols[static_cast<VariableExpr *>(variable)->name()];
+        auto structValue =
+            _builder.create<mlir::memref::LoadOp>(loc(node), memref);
+        auto valueToStore = _builder.create<StructWriteOp>(
+            loc(node), structValue, indexes, rhs);
+        _builder.create<mlir::memref::StoreOp>(loc(node), valueToStore, memref);
+      })
+      .Default(
+          [&](const Expr *) { llvm_unreachable("Unexpected expression"); });
   return nullptr;
 }
 

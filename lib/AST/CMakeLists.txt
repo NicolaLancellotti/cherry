@@ -1,4 +1,4 @@
-set(LIB_HEADERS ${CHERRY_HEADERS}/cherry/AST)
+set(LIB_HEADERS ${CHERRY_SOURCE_DIR}/include/cherry/AST)
 
 add_library(cherryAST STATIC
         ${LIB_HEADERS}/AST.h

@@ -1,4 +1,4 @@
-set(LIB_HEADERS ${CHERRY_HEADERS}/cherry/Parse)
+set(LIB_HEADERS ${CHERRY_SOURCE_DIR}/include/cherry/Parse)
 
 add_library(cherryParse STATIC
         ${LIB_HEADERS}/TokenKinds.def

@@ -16,13 +16,12 @@ include "mlir/IR/OpBase.td"
 
 def Cherry_Dialect : Dialect {
   let name = "cherry";
+  let summary = "Cherry MLIR dialect.";
   let cppNamespace = "::mlir::cherry";
-  let useFoldAPI = kEmitFoldAdaptorFolder;
 
+  let useDefaultTypePrinterParser = 1;
   let extraClassDeclaration = [{
-    auto parseType(mlir::DialectAsmParser &parser) const -> mlir::Type override;
-    auto printType(mlir::Type type,
-                   mlir::DialectAsmPrinter &printer) const -> void override;
+    void registerTypes();
   }];
 }
 

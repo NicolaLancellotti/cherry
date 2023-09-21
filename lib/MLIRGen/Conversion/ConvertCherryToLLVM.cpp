@@ -5,14 +5,13 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "cherry/MLIRGen/Conversion/ConvertCherryToLLVM.h"
-#include "../IR/StructType.h"
-#include "cherry/MLIRGen/IR/CherryOps.h"
-#include "PassDetail.h"
+#include "cherry/MLIRGen/Conversion/CherryPasses.h"
+#include "cherry/MLIRGen/IR/CherryTypes.h"
 #include "mlir/Conversion/ArithToLLVM/ArithToLLVM.h"
 #include "mlir/Conversion/ControlFlowToLLVM/ControlFlowToLLVM.h"
 #include "mlir/Conversion/FuncToLLVM/ConvertFuncToLLVM.h"
 #include "mlir/Conversion/LLVMCommon/ConversionTarget.h"
+#include "mlir/Conversion/LLVMCommon/Pattern.h"
 #include "mlir/Conversion/LLVMCommon/TypeConverter.h"
 #include "mlir/Conversion/MemRefToLLVM/MemRefToLLVM.h"
 #include "mlir/Conversion/SCFToControlFlow/SCFToControlFlow.h"
@@ -22,9 +21,13 @@
 #include "mlir/Pass/Pass.h"
 #include "mlir/Transforms/DialectConversion.h"
 
-using namespace mlir;
+namespace mlir::cherry {
+
+#define GEN_PASS_DEF_CONVERTCHERRYTOLLVM
+#include "cherry/MLIRGen/Conversion/CherryPasses.h.inc"
 
 namespace {
+
 class CastOpLowering : public ConversionPattern {
 public:
   explicit CastOpLowering(MLIRContext *context)
@@ -36,7 +39,7 @@ public:
     auto loc = op->getLoc();
     auto castOp = cast<cherry::CastOp>(op);
     auto operand = castOp.getInput();
-    Value newOperand = operand.getType().isa<MemRefType>()
+    Value newOperand = llvm::isa<MemRefType>(operand.getType())
                            ? rewriter.create<memref::LoadOp>(loc, operand)
                            : operand;
 
@@ -65,7 +68,7 @@ public:
 
     auto printOp = cast<cherry::PrintOp>(op);
     auto operand = printOp.getInput();
-    Value newOperand = operand.getType().isa<MemRefType>()
+    Value newOperand = llvm::isa<MemRefType>(operand.getType())
                            ? rewriter.create<memref::LoadOp>(loc, operand)
                            : operand;
 
@@ -125,9 +128,65 @@ private:
   }
 };
 
-struct ConvertCherryToLLVMPass
-    : public ConvertCherryToLLVMBase<ConvertCherryToLLVMPass> {
-  ConvertCherryToLLVMPass() = default;
+struct StructInitOpLowering : public ConvertOpToLLVMPattern<StructInitOp> {
+  explicit StructInitOpLowering(LLVMTypeConverter &typeConverter,
+                                PatternBenefit benefit = 1)
+      : ConvertOpToLLVMPattern(typeConverter, benefit) {}
+
+  auto matchAndRewrite(StructInitOp op, StructInitOp::Adaptor adaptor,
+                       ConversionPatternRewriter &rewriter) const
+      -> LogicalResult override final {
+    auto loc = op->getLoc();
+
+    SmallVector<Type> results;
+    if (failed(typeConverter->convertTypes(op.getResult().getType(), results)))
+      return failure();
+
+    Value container = rewriter.create<mlir::LLVM::UndefOp>(loc, results);
+    for (size_t i = 0; i < adaptor.getOperands().size(); ++i)
+      container = rewriter.create<mlir::LLVM::InsertValueOp>(
+          loc, container, adaptor.getOperands()[i], i);
+
+    rewriter.replaceOp(op, container);
+    return success();
+  }
+};
+
+struct StructReadOpLowering : public ConvertOpToLLVMPattern<StructReadOp> {
+  explicit StructReadOpLowering(LLVMTypeConverter &typeConverter,
+                                PatternBenefit benefit = 1)
+      : ConvertOpToLLVMPattern(typeConverter, benefit) {}
+
+  auto matchAndRewrite(StructReadOp op, StructReadOp::Adaptor adaptor,
+                       ConversionPatternRewriter &rewriter) const
+      -> LogicalResult override final {
+    SmallVector<int64_t> position = {static_cast<int64_t>(adaptor.getIndex())};
+    rewriter.replaceOpWithNewOp<mlir::LLVM::ExtractValueOp>(
+        op, adaptor.getStructValue(), position);
+    return success();
+  }
+};
+
+struct StructWriteOpLowering : public ConvertOpToLLVMPattern<StructWriteOp> {
+  explicit StructWriteOpLowering(LLVMTypeConverter &typeConverter,
+                                 PatternBenefit benefit = 1)
+      : ConvertOpToLLVMPattern(typeConverter, benefit) {}
+
+  auto matchAndRewrite(StructWriteOp op, StructWriteOp::Adaptor adaptor,
+                       ConversionPatternRewriter &rewriter) const
+      -> LogicalResult override final {
+    rewriter.replaceOpWithNewOp<mlir::LLVM::InsertValueOp>(
+        op, adaptor.getStructValue(), adaptor.getValueToStore(),
+        adaptor.getIndexesAttr());
+    return success();
+  }
+};
+
+struct ConvertCherryToLLVM
+    : public impl::ConvertCherryToLLVMBase<ConvertCherryToLLVM> {
+
+  using impl::ConvertCherryToLLVMBase<
+      ConvertCherryToLLVM>::ConvertCherryToLLVMBase;
 
   auto runOnOperation() -> void final {
     // Target
@@ -136,12 +195,12 @@ struct ConvertCherryToLLVMPass
 
     // Types conversions
     LLVMTypeConverter typeConverter(&getContext());
-    typeConverter.addConversion([&](mlir::cherry::StructType type) {
+
+    typeConverter.addConversion([&](mlir::cherry::CherryStructType type) {
       SmallVector<Type, 2> types;
-      for (auto t : type.getElementTypes()) {
-        if (t.isa<mlir::NoneType>()) {
-          types.push_back(IntegerType::get(&getContext(), 1));
-        } else if (auto structType = t.dyn_cast<mlir::cherry::StructType>()) {
+      for (auto t : type.getTypes()) {
+        if (auto structType =
+                llvm::dyn_cast<mlir::cherry::CherryStructType>(t)) {
           types.push_back(typeConverter.convertType(structType));
         } else {
           types.push_back(typeConverter.convertType(t));
@@ -152,26 +211,23 @@ struct ConvertCherryToLLVMPass
 
     // Patterns
     RewritePatternSet patterns(&getContext());
-    populateMemRefToLLVMConversionPatterns(typeConverter, patterns);
+    populateFinalizeMemRefToLLVMConversionPatterns(typeConverter, patterns);
     populateFuncToLLVMConversionPatterns(typeConverter, patterns);
     populateSCFToControlFlowConversionPatterns(patterns);
     cf::populateControlFlowToLLVMConversionPatterns(typeConverter, patterns);
-    mlir::arith::populateArithToLLVMConversionPatterns(typeConverter,
-                                                            patterns);
-    patterns.add<PrintOpLowering, CastOpLowering>(&getContext());
+    mlir::arith::populateArithToLLVMConversionPatterns(typeConverter, patterns);
+    patterns.add<CastOpLowering, PrintOpLowering>(&getContext());
+    patterns
+        .add<StructInitOpLowering, StructReadOpLowering, StructWriteOpLowering>(
+            typeConverter);
 
     // Conversion
     auto module = getOperation();
-    if (failed(applyPartialConversion(module, target, std::move(patterns))))
+    FrozenRewritePatternSet patternSet(std::move(patterns));
+    if (failed(applyFullConversion(module, target, patternSet)))
       signalPassFailure();
   }
 };
 
 } // end namespace
-
-namespace mlir {
-auto mlir::cherry::createConvertCherryToLLVMPass()
-    -> std::unique_ptr<mlir::Pass> {
-  return std::make_unique<ConvertCherryToLLVMPass>();
-}
-} // namespace mlir
+} // namespace mlir::cherry

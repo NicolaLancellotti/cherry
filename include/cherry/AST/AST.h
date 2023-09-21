@@ -8,11 +8,11 @@
 #ifndef CHERRY_AST_H
 #define CHERRY_AST_H
 
-#include "Decl.h"
-#include "Expr.h"
-#include "Identifier.h"
-#include "Module.h"
-#include "Stat.h"
+#include "cherry/AST/Decl.h"
+#include "cherry/AST/Expr.h"
+#include "cherry/AST/Identifier.h"
+#include "cherry/AST/Module.h"
+#include "cherry/AST/Stat.h"
 #include "llvm/Support/SourceMgr.h"
 
 namespace cherry {

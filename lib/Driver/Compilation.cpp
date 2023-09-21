@@ -8,9 +8,7 @@
 #include "cherry/Driver/Compilation.h"
 #include "KaleidoscopeJIT.h"
 #include "cherry/LLVMGen/LLVMGen.h"
-#include "cherry/MLIRGen/Conversion/ConvertCherryToArithCfFunc.h"
-#include "cherry/MLIRGen/Conversion/ConvertCherryToLLVM.h"
-#include "cherry/MLIRGen/Conversion/ConvertCherryToSCF.h"
+#include "cherry/MLIRGen/Conversion/CherryPasses.h"
 #include "cherry/MLIRGen/IR/CherryDialect.h"
 #include "cherry/MLIRGen/MLIRGen.h"
 #include "cherry/Parse/Lexer.h"
@@ -18,27 +16,36 @@
 #include "cherry/Sema/Sema.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/ControlFlow/IR/ControlFlowOps.h"
+#include "mlir/Dialect/Func/Extensions/AllExtensions.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
+#include "mlir/Dialect/LLVMIR/Transforms/Passes.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/ExecutionEngine/ExecutionEngine.h"
 #include "mlir/ExecutionEngine/OptUtils.h"
-#include "mlir/IR/Dialect.h"
-#include "mlir/Pass/Pass.h"
 #include "mlir/Pass/PassManager.h"
+#include "mlir/Target/LLVMIR/Dialect/Builtin/BuiltinToLLVMIRTranslation.h"
 #include "mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h"
 #include "mlir/Target/LLVMIR/Export.h"
 #include "mlir/Transforms/Passes.h"
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/Module.h"
 #include "llvm/MC/TargetRegistry.h"
-#include "llvm/Support/Host.h"
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/TargetParser/Host.h"
 
 using namespace cherry;
+
+static auto makeContext() -> mlir::MLIRContext {
+  mlir::DialectRegistry registry;
+  mlir::func::registerAllExtensions(registry);
+  return mlir::MLIRContext(registry);
+}
+
+Compilation::Compilation() : _mlirContext{makeContext()} {}
 
 auto Compilation::make(llvm::StringRef filename, bool enableOpt,
                        bool backendLLVM) -> std::unique_ptr<Compilation> {
@@ -60,6 +67,7 @@ auto Compilation::make(llvm::StringRef filename, bool enableOpt,
   compilation->_mlirContext.getOrLoadDialect<mlir::LLVM::LLVMDialect>();
   compilation->_mlirContext.getOrLoadDialect<mlir::memref::MemRefDialect>();
   compilation->_mlirContext.getOrLoadDialect<mlir::scf::SCFDialect>();
+  mlir::registerBuiltinDialectTranslation(compilation->_mlirContext);
   mlir::registerLLVMDialectTranslation(compilation->_mlirContext);
   compilation->_llvmContext = std::make_unique<llvm::LLVMContext>();
   compilation->sourceManager().AddNewSourceBuffer(std::move(fileOrErr.get()),
@@ -85,20 +93,22 @@ auto Compilation::genMLIR(mlir::OwningOpRef<mlir::ModuleOp> &module,
       mlirGen(_sourceManager, _mlirContext, *moduleAST, module))
     return failure();
 
-  mlir::PassManager pm(&_mlirContext);
+  mlir::PassManager pm(module.get()->getName());
   mlir::OpPassManager &optPM = pm.nest<mlir::func::FuncOp>();
   if (_enableOpt)
     optPM.addPass(mlir::createCanonicalizerPass());
 
   if (lowering >= Lowering::SCF)
-    optPM.addPass(mlir::cherry::createConvertCherryToSCFPass());
+    optPM.addPass(mlir::cherry::createConvertCherryToSCF());
 
   if (lowering >= Lowering::ArithCfFunc)
     optPM.addPass(mlir::cherry::createConvertCherryToArithCfFunc());
 
-  if (lowering >= Lowering::LLVM)
-    pm.addPass(mlir::cherry::createConvertCherryToLLVMPass());
-
+  if (lowering >= Lowering::LLVM) {
+    pm.addPass(mlir::cherry::createConvertCherryToLLVM());
+    pm.addNestedPass<mlir::LLVM::LLVMFuncOp>(
+        mlir::LLVM::createDIScopeForLLVMFuncOpPass());
+  }
   return pm.run(*module);
 }
 
@@ -118,7 +128,19 @@ auto Compilation::genLLVM(std::unique_ptr<llvm::Module> &llvmModule)
     if (!llvmModule)
       return failure();
 
-    mlir::ExecutionEngine::setupTargetTriple(llvmModule.get());
+    auto tmBuilderOrError = llvm::orc::JITTargetMachineBuilder::detectHost();
+    if (!tmBuilderOrError) {
+      llvm::errs() << "Could not create JITTargetMachineBuilder\n";
+      return failure();
+    }
+
+    auto tmOrError = tmBuilderOrError->createTargetMachine();
+    if (!tmOrError) {
+      llvm::errs() << "Could not create TargetMachine\n";
+      return failure();
+    }
+    mlir::ExecutionEngine::setupTargetTripleAndDataLayout(
+        llvmModule.get(), tmOrError.get().get());
 
     auto optPipeline =
         mlir::makeOptimizingTransformer(_enableOpt ? 3 : 0,
@@ -157,7 +179,7 @@ auto Compilation::jit() -> int {
         std::move(llvmModule), std::move(_llvmContext))));
 
     auto symbol = exitOnErr(jit->lookup("main"));
-    uint64_t (*fp)() = (uint64_t(*)())(intptr_t)symbol.getAddress();
+    uint64_t (*fp)() = symbol.getAddress().toPtr<uint64_t (*)()>();
     fp();
     return EXIT_SUCCESS;
   } else {
@@ -202,7 +224,7 @@ auto Compilation::genObjectFile(const char *outputFileName) -> int {
   auto cpu = "generic";
   auto features = "";
   llvm::TargetOptions opt;
-  auto rm = llvm::Optional<llvm::Reloc::Model>();
+  auto rm = std::optional<llvm::Reloc::Model>();
   auto targetMachine =
       target->createTargetMachine(targetTriple, cpu, features, opt, rm);
 

@@ -48,8 +48,9 @@ static cl::opt<enum Action> dumpAction(
     cl::values(clEnumValN(Dump_MLIR, "mlir", "output the MLIR dump (cherry)")),
     cl::values(clEnumValN(Dump_MLIR_SCF, "mlir1",
                           "output the MLIR dump (cherry + scf)")),
-    cl::values(clEnumValN(Dump_MLIR_ARITH_CF_FUNC, "mlir2",
-                          "output the MLIR dump (cherry + scf + arith + cf + func)")),
+    cl::values(
+        clEnumValN(Dump_MLIR_ARITH_CF_FUNC, "mlir2",
+                   "output the MLIR dump (cherry + scf + arith + cf + func)")),
     cl::values(clEnumValN(Dump_MLIR_LLVM, "mlir-llvm",
                           "output the MLIR dump (llvm)")),
     cl::values(clEnumValN(Dump_LLVM, "llvm", "output the LLVM dump")));

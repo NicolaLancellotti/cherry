@@ -1,4 +1,4 @@
-set(LIB_HEADERS ${CHERRY_HEADERS}/cherry/LLVMGen)
+set(LIB_HEADERS ${CHERRY_SOURCE_DIR}/include/cherry/LLVMGen)
 
 add_library(cherryLLVMGen STATIC
         ${LIB_HEADERS}/LLVMGen.h

@@ -5,12 +5,10 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "Parser.h"
+#include "cherry/Parse/Parser.h"
 
 using namespace cherry;
-using std::make_pair;
 using std::make_unique;
-using std::move;
 using std::unique_ptr;
 
 auto Parser::parseModule(unique_ptr<Module> &module) -> CherryResult {
@@ -20,10 +18,10 @@ auto Parser::parseModule(unique_ptr<Module> &module) -> CherryResult {
     unique_ptr<Decl> decl;
     if (parseDeclaration(decl))
       return failure();
-    declarations.push_back(move(decl));
+    declarations.push_back(std::move(decl));
   } while (!tokenIs(Token::eof));
 
-  module = make_unique<Module>(loc, move(declarations));
+  module = make_unique<Module>(loc, std::move(declarations));
   return success();
 }
 
@@ -37,7 +35,7 @@ auto Parser::parseList(Token::Kind separator, Token::Kind end,
     unique_ptr<T> exp;
     if (parseElement(exp))
       return failure();
-    elements.push_back(move(exp));
+    elements.push_back(std::move(exp));
 
     if (tokenIs(end))
       break;
@@ -105,7 +103,7 @@ auto Parser::parseFunctionDecl_c(unique_ptr<Decl> &decl) -> CherryResult {
       parseBlockExpr(body))
     return failure();
 
-  decl = make_unique<FunctionDecl>(loc, move(proto), move(body));
+  decl = make_unique<FunctionDecl>(loc, std::move(proto), std::move(body));
   return success();
 }
 
@@ -127,8 +125,8 @@ auto Parser::parsePrototype_c(unique_ptr<Prototype> &proto) -> CherryResult {
     if (parseVariableExpr(param) ||
         parseToken(Token::colon, diag::expected_colon) || parseType(type))
       return failure();
-    elem = make_unique<VariableStat>(param->location(), move(param), move(type),
-                                     nullptr);
+    elem = make_unique<VariableStat>(param->location(), std::move(param),
+                                     std::move(type), nullptr);
     return success();
   };
 
@@ -141,8 +139,8 @@ auto Parser::parsePrototype_c(unique_ptr<Prototype> &proto) -> CherryResult {
     return failure();
 
   // Make Proto
-  proto = make_unique<Prototype>(location, move(name), move(parameters),
-                                 move(type));
+  proto = make_unique<Prototype>(location, std::move(name),
+                                 std::move(parameters), std::move(type));
   return success();
 }
 
@@ -158,12 +156,12 @@ auto Parser::parseBlockExpr(unique_ptr<BlockExpr> &block) -> CherryResult {
     if (isStatement) {
       if (parseToken(Token::semi, diag::expected_semi))
         return failure();
-      statements.push_back(move(stat));
+      statements.push_back(std::move(stat));
       continue;
     }
 
     if (consumeIf(Token::semi)) {
-      statements.push_back(move(stat));
+      statements.push_back(std::move(stat));
       continue;
     }
 
@@ -194,8 +192,8 @@ auto Parser::parseStructDecl_c(unique_ptr<Decl> &decl) -> CherryResult {
     if (parseVariableExpr(var) ||
         parseToken(Token::colon, diag::expected_colon) || parseType(type))
       return failure();
-    elem = make_unique<VariableStat>(var->location(), move(var), move(type),
-                                     nullptr);
+    elem = make_unique<VariableStat>(var->location(), std::move(var),
+                                     std::move(type), nullptr);
     return success();
   };
 
@@ -206,7 +204,7 @@ auto Parser::parseStructDecl_c(unique_ptr<Decl> &decl) -> CherryResult {
     return failure();
 
   // Make StructDecl
-  decl = make_unique<StructDecl>(loc, move(type), move(fields));
+  decl = make_unique<StructDecl>(loc, std::move(type), std::move(fields));
   return success();
 }
 
@@ -291,7 +289,7 @@ auto Parser::parseIfExpr_c(std::unique_ptr<Expr> &expr) -> CherryResult {
       parseBlockExpr(elseBlock))
     return failure();
 
-  expr = make_unique<IfExpr>(loc, move(condition), move(thenBlock),
+  expr = make_unique<IfExpr>(loc, std::move(condition), std::move(thenBlock),
                              std::move(elseBlock));
   return success();
 }
@@ -305,7 +303,8 @@ auto Parser::parseWhileExpr_c(std::unique_ptr<Expr> &expr) -> CherryResult {
       parseToken(Token::l_brace, diag::expected_l_brace) ||
       parseBlockExpr(bodyBlock))
     return failure();
-  expr = make_unique<WhileExpr>(loc, move(condition), move(bodyBlock));
+  expr =
+      make_unique<WhileExpr>(loc, std::move(condition), std::move(bodyBlock));
   return success();
 }
 
@@ -313,7 +312,7 @@ auto Parser::parseDecimal_c(unique_ptr<Expr> &expr) -> CherryResult {
   auto loc = tokenLoc();
   if (auto value = token().getUInt64IntegerValue()) {
     consume(Token::decimal);
-    expr = make_unique<DecimalLiteralExpr>(loc, move(*value));
+    expr = make_unique<DecimalLiteralExpr>(loc, std::move(*value));
     return success();
   }
   return emitError(diag::integer_literal_overflows);
@@ -339,7 +338,7 @@ auto Parser::parseFunctionCall_c(llvm::SMLoc location, llvm::StringRef name,
   if (parseExpressions(expressions, Token::comma, Token::r_paren,
                        diag::expected_comma_or_r_paren, diag::expected_r_paren))
     return failure();
-  expr = make_unique<CallExpr>(location, name, move(expressions));
+  expr = make_unique<CallExpr>(location, name, std::move(expressions));
   return success();
 }
 
@@ -415,7 +414,7 @@ auto Parser::tokenToOperator(Token token) -> BinaryExpr::Operator {
   case Token::assign:
     return BinaryExpr::Operator::Assign;
   case Token::dot:
-    return BinaryExpr::Operator::StructAccess;
+    return BinaryExpr::Operator::StructRead;
   case Token::add:
     return BinaryExpr::Operator::Add;
   case Token::diff:
@@ -475,6 +474,7 @@ auto Parser::parseVarDecl_c(unique_ptr<Stat> &stat) -> CherryResult {
       parseToken(Token::colon, diag::expected_colon) || parseType(type) ||
       parseToken(Token::assign, diag::expected_assign) || parseExpression(e))
     return failure();
-  stat = make_unique<VariableStat>(loc, move(var), move(type), std::move(e));
+  stat = make_unique<VariableStat>(loc, std::move(var), std::move(type),
+                                   std::move(e));
   return success();
 }

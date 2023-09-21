@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.13.4)
+cmake_minimum_required(VERSION 3.20.0)
 project(cherry LANGUAGES CXX C)
 
 set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
@@ -16,29 +16,37 @@ set(MLIR_BINARY_DIR ${CMAKE_BINARY_DIR})
 
 list(APPEND CMAKE_MODULE_PATH "${MLIR_CMAKE_DIR}")
 list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
+
 include(TableGen)
 include(AddLLVM)
 include(AddMLIR)
 include(HandleLLVMOptions)
 
+if(MLIR_ENABLE_BINDINGS_PYTHON)
+    include(MLIRDetectPythonEnv)
+    mlir_configure_python_dev_packages()
+endif()
+
+set(CHERRY_SOURCE_DIR ${PROJECT_SOURCE_DIR})
+set(CHERRY_BINARY_DIR ${PROJECT_BINARY_DIR})
 include_directories(${LLVM_INCLUDE_DIRS})
 include_directories(${MLIR_INCLUDE_DIRS})
-include_directories(${PROJECT_SOURCE_DIR}/include)
-include_directories(${PROJECT_BINARY_DIR}/include)
+include_directories(${CHERRY_SOURCE_DIR}/include)
+include_directories(${CHERRY_BINARY_DIR}/include)
 link_directories(${LLVM_BUILD_LIBRARY_DIR})
 add_definitions(${LLVM_DEFINITIONS})
 
-set(LLVM_PROJECT ${cherry_SOURCE_DIR}/llvm-project)
-set(CHERRY_HEADERS ${cherry_SOURCE_DIR}/include/)
-message(STATUS "CHERRY_HEADERS: ${CHERRY_HEADERS}")
+set(LLVM_SRC_DIR ${CHERRY_SOURCE_DIR}/llvm-project CACHE STRING "The LLVM src directory")
 
 add_subdirectory(include)
 add_subdirectory(lib)
+if(MLIR_ENABLE_BINDINGS_PYTHON)
+    message(STATUS "Enabling Python API")
+    add_subdirectory(python)
+endif()
 add_subdirectory(test)
 add_subdirectory(cherry-opt)
+add_subdirectory(cherry-plugin)
 add_subdirectory(cherry-translate)
 add_subdirectory(tools)
 add_subdirectory(unittests)
-
-
-

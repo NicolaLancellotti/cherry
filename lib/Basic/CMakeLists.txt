@@ -1,4 +1,4 @@
-set(LIB_HEADERS ${CHERRY_HEADERS}/cherry/Basic)
+set(LIB_HEADERS ${CHERRY_SOURCE_DIR}/include/cherry/Basic)
 
 add_library(cherryBasic STATIC
         ${LIB_HEADERS}/Builtins.h

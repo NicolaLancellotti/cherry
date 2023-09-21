@@ -1,14 +1,11 @@
-//===--- ConvertCherryToArithCfFunc.cpp .cpp - Lowering to the standard dialect -------===//
+//===--- ConvertCherryToArithCfFunc.cpp -----------------------------------===//
 //
 // This source file is part of the Cherry open source project
 // See LICENSE.txt for license information
 //
 //===----------------------------------------------------------------------===//
 
-#include "cherry/MLIRGen/Conversion/ConvertCherryToArithCfFunc.h"
-#include "cherry/MLIRGen/IR/CherryDialect.h"
-#include "cherry/MLIRGen/IR/CherryOps.h"
-#include "PassDetail.h"
+#include "cherry/MLIRGen/Conversion/CherryPasses.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/ControlFlow/IR/ControlFlowOps.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
@@ -16,10 +13,12 @@
 #include "mlir/Pass/Pass.h"
 #include "mlir/Transforms/DialectConversion.h"
 
-using namespace mlir;
+namespace mlir::cherry {
+
+#define GEN_PASS_DEF_CONVERTCHERRYTOARITHCFFUNC
+#include "cherry/MLIRGen/Conversion/CherryPasses.h.inc"
 
 namespace {
-
 //===----------------------------------------------------------------------===//
 // Arith
 //===----------------------------------------------------------------------===//
@@ -177,9 +176,10 @@ struct ReturnOpLowering : public ConversionPattern {
 //===----------------------------------------------------------------------===//
 
 struct ConvertCherryToArithCfFunc
-    : public ConvertCherryToArithCfFuncBase<
-          ConvertCherryToArithCfFunc> {
-  ConvertCherryToArithCfFunc() = default;
+    : public impl::ConvertCherryToArithCfFuncBase<ConvertCherryToArithCfFunc> {
+
+  using impl::ConvertCherryToArithCfFuncBase<
+      ConvertCherryToArithCfFunc>::ConvertCherryToArithCfFuncBase;
 
   auto runOnOperation() -> void final {
     ConversionTarget target(getContext());
@@ -190,23 +190,21 @@ struct ConvertCherryToArithCfFunc
     target.addLegalOp<cherry::IfOp>();
     target.addLegalOp<cherry::PrintOp>();
     target.addLegalOp<cherry::YieldIfOp>();
+    target.addLegalOp<cherry::StructInitOp>();
+    target.addLegalOp<cherry::StructReadOp>();
+    target.addLegalOp<cherry::StructWriteOp>();
 
     RewritePatternSet patterns(&getContext());
     patterns.add<ConstantOpLowering, ArithmeticLogicOpLowering, WhileOpLowering,
                  CallOpLowering, ReturnOpLowering>(&getContext());
 
     auto f = getOperation();
-    if (failed(applyPartialConversion(f, target, std::move(patterns)))) {
+    FrozenRewritePatternSet patternSet(std::move(patterns));
+    if (failed(applyPartialConversion(f, target, patternSet))) {
       signalPassFailure();
     }
   }
 };
 
 } // end namespace
-
-namespace mlir {
-auto mlir::cherry::createConvertCherryToArithCfFunc()
-    -> std::unique_ptr<mlir::Pass> {
-  return std::make_unique<ConvertCherryToArithCfFunc>();
-}
-} // namespace mlir
+} // namespace mlir::cherry
