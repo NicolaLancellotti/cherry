@@ -7,7 +7,6 @@
 
 #include "cherry/MLIRGen/Conversion/CherryPasses.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
-#include "mlir/Pass/Pass.h"
 #include "mlir/Transforms/DialectConversion.h"
 
 namespace mlir::cherry {

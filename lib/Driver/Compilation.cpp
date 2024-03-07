@@ -106,8 +106,7 @@ auto Compilation::genMLIR(mlir::OwningOpRef<mlir::ModuleOp> &module,
 
   if (lowering >= Lowering::LLVM) {
     pm.addPass(mlir::cherry::createConvertCherryToLLVM());
-    pm.addNestedPass<mlir::LLVM::LLVMFuncOp>(
-        mlir::LLVM::createDIScopeForLLVMFuncOpPass());
+    pm.addPass(mlir::LLVM::createDIScopeForLLVMFuncOpPass());
   }
   return pm.run(*module);
 }
@@ -239,7 +238,7 @@ auto Compilation::genObjectFile(const char *outputFileName) -> int {
   }
 
   llvm::legacy::PassManager pass;
-  auto fileType = llvm::CGFT_ObjectFile;
+  auto fileType = llvm::CodeGenFileType::ObjectFile;
   if (targetMachine->addPassesToEmitFile(pass, dest, nullptr, fileType))
     return EXIT_FAILURE;
 

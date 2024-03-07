@@ -11,12 +11,6 @@ To build the LLVM project and Cherry run:
 ```sh
 make all
 ```
-
-If you have already built LLVM in `$LLVM_BUILD_DIR` and the LLVM source code is in `$LLVM_SRC_DIR`,
-you can just build Cherry with:
-```sh
-make cherry LLVM_SRC_DIR=$LLVM_SRC_DIR LLVM_BUILD_DIR=$LLVM_BUILD_DIR
-```
 ## Grammar & Builtins
 [Cherry grammar](/docs/Grammar.md)
 

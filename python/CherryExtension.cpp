@@ -8,7 +8,6 @@
 #include "cherry/MLIRGen/Cherry-c/Dialects.h"
 #include "mlir/Bindings/Python/PybindAdaptors.h"
 
-namespace py = pybind11;
 using namespace mlir::python::adaptors;
 
 PYBIND11_MODULE(_cherryDialects, m) {

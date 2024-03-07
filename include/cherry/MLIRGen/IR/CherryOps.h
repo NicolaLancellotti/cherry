@@ -9,6 +9,7 @@
 #define CHERRY_CHERRYOPS_H
 
 #include "cherry/MLIRGen/IR/CherryTypes.h"
+#include "mlir/Bytecode/BytecodeOpInterface.h"
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/Dialect.h"
 #include "mlir/IR/OpDefinition.h"

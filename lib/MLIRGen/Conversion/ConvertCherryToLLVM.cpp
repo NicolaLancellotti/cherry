@@ -18,7 +18,6 @@
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
-#include "mlir/Pass/Pass.h"
 #include "mlir/Transforms/DialectConversion.h"
 
 namespace mlir::cherry {
@@ -72,30 +71,32 @@ public:
                            ? rewriter.create<memref::LoadOp>(loc, operand)
                            : operand;
 
-    rewriter.replaceOpWithNewOp<func::CallOp>(
-        op, printfRef, rewriter.getI64Type(),
+    rewriter.replaceOpWithNewOp<LLVM::CallOp>(
+        op, getPrintfType(rewriter.getContext()), printfRef,
         ArrayRef<Value>({formatSpecifierCst, newOperand}));
     return success();
   }
 
 private:
+  static LLVM::LLVMFunctionType getPrintfType(MLIRContext *context) {
+    auto llvmI32Ty = IntegerType::get(context, 32);
+    auto llvmPtrTy = LLVM::LLVMPointerType::get(context);
+    auto llvmFnType = LLVM::LLVMFunctionType::get(llvmI32Ty, llvmPtrTy,
+                                                  /*isVarArg=*/true);
+    return llvmFnType;
+  }
+
   static FlatSymbolRefAttr getOrInsertPrintf(PatternRewriter &rewriter,
                                              ModuleOp module) {
     auto *context = module.getContext();
     if (module.lookupSymbol<LLVM::LLVMFuncOp>("printf"))
       return SymbolRefAttr::get(context, "printf");
 
-    // Create a function declaration for printf, the signature is:
-    //   * `i32 (i8*, ...)`
-    auto i32Ty = IntegerType::get(context, 64); // TODO: cast
-    auto i8PtrTy = LLVM::LLVMPointerType::get(IntegerType::get(context, 8));
-    auto fnType = LLVM::LLVMFunctionType::get(i32Ty, i8PtrTy,
-                                              /*isVarArg=*/true);
-
     // Insert the printf function into the body of the parent module.
     PatternRewriter::InsertionGuard insertGuard(rewriter);
     rewriter.setInsertionPointToStart(module.getBody());
-    rewriter.create<LLVM::LLVMFuncOp>(module.getLoc(), "printf", fnType);
+    rewriter.create<LLVM::LLVMFuncOp>(module.getLoc(), "printf",
+                                      getPrintfType(context));
     return SymbolRefAttr::get(context, "printf");
   }
 
@@ -122,8 +123,7 @@ private:
         loc, IntegerType::get(builder.getContext(), 64),
         builder.getIntegerAttr(builder.getIndexType(), 0));
     return builder.create<LLVM::GEPOp>(
-        loc,
-        LLVM::LLVMPointerType::get(IntegerType::get(builder.getContext(), 8)),
+        loc, LLVM::LLVMPointerType::get(builder.getContext()), global.getType(),
         globalPtr, ArrayRef<Value>({cst0, cst0}));
   }
 };

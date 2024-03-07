@@ -1,3 +1,5 @@
+CMakeUserPresets.json
 build
+.cache
 llvm-project/
 .idea
