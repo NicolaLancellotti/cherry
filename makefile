@@ -3,7 +3,7 @@
 
 CHERRY_PRESET=debug
 
-LLVM_COMMIT=llvmorg-18.1.0
+LLVM_COMMIT=llvmorg-19.1.0
 LLVM_PRESET=release
 LLVM_SRC_DIR=${PROJECT_DIR}/llvm-project
 LLVM_BUILD_DIR=${LLVM_SRC_DIR}/build/${LLVM_PRESET}
@@ -18,68 +18,72 @@ CHERRY_BUILD_DIR=./build
 # _____________________________________________________________________________
 # Targets
 
-.PHONY: all
+.SILENT:
+.NOTPARALLEL:
+
+.PHONY: help - Lists targets.
+help:
+	echo "Targets:"
+	sed -nr 's/^.PHONY: (.*) - (.*)/\1|\2/p' ${MAKEFILE_LIST} | \
+		awk -F '|' '{printf "* %-30s %s\n", $$1, $$2}' | sort
+
+.PHONY: all - Execute all LLVM and Cherry targets.
 all:	llvm-all \
 		cherry-all
 
-.PHONY: help
-help:
-	@echo "Targets:"
-	@sed -nr 's/^.PHONY:(.*)/\1/p' ${MAKEFILE_LIST}
-
 define format
-	@find ${1} -name "*.cpp" -or -name "*.h" | xargs clang-format -i
+	find ${1} -name "*.cpp" -or -name "*.h" | xargs clang-format -i
 endef
 
-.PHONY: format
+.PHONY: format - Format source files.
 format:
-	@echo "Format"
-	@$(call format, cherry-opt)
-	@$(call format, cherry-plugin)
-	@$(call format, cherry-translate)
-	@$(call format, include)
-	@$(call format, lib)
-	@$(call format, test)
-	@$(call format, tools)
-	@$(call format, unittests)
+	echo "Format"
+	$(call format, cherry-opt)
+	$(call format, cherry-plugin)
+	$(call format, cherry-translate)
+	$(call format, include)
+	$(call format, lib)
+	$(call format, test)
+	$(call format, tools)
+	$(call format, unittests)
 
 # _____________________________________________________________________________
 # Targets - LLVM
 
-.PHONY: llvm-all
+.PHONY: llvm-all - Execute all LLVM targets.
 llvm-all: 	llvm-clone \
 			llvm-checkout \
 			llvm-generate-python-env \
 			llvm-generate-project \
 			llvm-build
 
-.PHONY: llvm-clean
+.PHONY: llvm-clean - Clean LLVM Build.
 llvm-clean:
-	@echo "LLVM - Clean"
-	@rm -rdf ${LLVM_BUILD_DIR}
+	echo "LLVM - Clean"
+	rm -rdf ${LLVM_BUILD_DIR}
 
-.PHONY: llvm-clone
+.PHONY: llvm-clone - Clone LLVM.
 llvm-clone:
-	@echo "LLVM - Clone"
+	echo "LLVM - Clone"
 	-git clone https://github.com/llvm/llvm-project.git
 
-.PHONY: llvm-checkout
+.PHONY: llvm-checkout - Checkout LLVM.
 llvm-checkout:
-	@echo "LLVM - Checkout"
-	@cd ${LLVM_SRC_DIR} && git fetch && git checkout ${LLVM_COMMIT}
+	echo "LLVM - Checkout"
+	cd ${LLVM_SRC_DIR} && git fetch && git checkout ${LLVM_COMMIT}
 
-.PHONY: llvm-generate-python-env
+.PHONY: llvm-generate-python-env - Generate LLVM Python Virtual Environment.
 llvm-generate-python-env:
-	@echo "LLVM - Generate Python Environment"
-	@/usr/bin/python3 -m venv ${LLVM_PYTHON_ENV} && \
+	echo "LLVM - Generate Python Environment"
+	/usr/bin/python3 -m venv ${LLVM_PYTHON_ENV} && \
 		source ${LLVM_PYTHON_ENV}/bin/activate && \
 		python -m pip install --upgrade pip && \
 		python -m pip install -r ${LLVM_SRC_DIR}/mlir/python/requirements.txt
 
-.PHONY: llvm-generate-project
+.PHONY: llvm-generate-project - Generate LLVM Project.
 llvm-generate-project:
-	@echo "LLVM - Generate Project"
-	@cmake -G Ninja -S ${LLVM_SRC_DIR}/llvm -B ${LLVM_BUILD_DIR} \
+	echo "LLVM - Generate Project"
+	cmake -G Ninja -S ${LLVM_SRC_DIR}/llvm -B ${LLVM_BUILD_DIR} \
 		-DLLVM_ENABLE_PROJECTS=mlir \
 		-DLLVM_TARGETS_TO_BUILD=host \
 		-DCMAKE_BUILD_TYPE=${LLVM_PRESET} \
@@ -90,44 +94,44 @@ llvm-generate-project:
 		-DCMAKE_C_COMPILER=clang \
 		-DCMAKE_CXX_COMPILER=clang++
 
-.PHONY: llvm-build
+.PHONY: llvm-build - Build LLVM.
 llvm-build:
-	@echo "LLVM - Build"
-	@cmake --build ${LLVM_BUILD_DIR}
+	echo "LLVM - Build"
+	cmake --build ${LLVM_BUILD_DIR}
 
 # _____________________________________________________________________________
 # Targets - Cherry
 
-.PHONY: cherry-all
+.PHONY: cherry-all - Execute all Cherry targets.
 cherry-all: cherry-generate-presets \
 			cherry-generate-project \
 			cherry-copy-compile-commands \
 			cherry-build
 
-.PHONY: cherry-clean
+.PHONY: cherry-clean - Clean Cherry Build.
 cherry-clean:
-	@echo "Cherry - Clean"
-	@rm -rdf ${CHERRY_BUILD_DIR}
+	echo "Cherry - Clean"
+	rm -rdf ${CHERRY_BUILD_DIR}
 
-.PHONY: cherry-generate-presets
+.PHONY: cherry-generate-presets - Generate Cherry CMake Presets.
 cherry-generate-presets:
-	@echo "Cherry - Generate Presets"
-	@echo $$CMAKE_PRESETS_TEMPLATE > ./CMakeUserPresets.json
+	echo "Cherry - Generate Presets"
+	echo $$CMAKE_PRESETS_TEMPLATE > ./CMakeUserPresets.json
 
-.PHONY: cherry-generate-project
+.PHONY: cherry-generate-project - Generate Cherry Project.
 cherry-generate-project:
-	@echo "Cherry - Generate Project"
-	@cmake -S ${PROJECT_DIR} --preset ${CHERRY_PRESET}
+	echo "Cherry - Generate Project"
+	cmake -S ${PROJECT_DIR} --preset ${CHERRY_PRESET}
 
-.PHONY: cherry-copy-compile-commands
+.PHONY: cherry-copy-compile-commands - Copy Cherry `compile_commands.json`.
 cherry-copy-compile-commands:
-	@echo "Cherry - Copy compile_commands.json"
-	@cp ${PROJECT_DIR}/build/${CHERRY_PRESET}/compile_commands.json  ${PROJECT_DIR}/build
+	echo "Cherry - Copy compile_commands.json"
+	cp ${PROJECT_DIR}/build/${CHERRY_PRESET}/compile_commands.json  ${PROJECT_DIR}/build
 
-.PHONY: cherry-build
+.PHONY: cherry-build - Build Cherry.
 cherry-build:
-	@echo "Cherry - Build"
-	@cmake --build ${PROJECT_DIR}/build/${CHERRY_PRESET} --target check-cherry mlir-doc
+	echo "Cherry - Build"
+	cmake --build ${PROJECT_DIR}/build/${CHERRY_PRESET} --target check-cherry mlir-doc
 
 # _____________________________________________________________________________
 # Presets

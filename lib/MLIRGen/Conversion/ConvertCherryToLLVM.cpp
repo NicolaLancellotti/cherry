@@ -45,7 +45,7 @@ public:
     auto cast =
         rewriter.create<LLVM::ZExtOp>(loc, rewriter.getI64Type(), newOperand);
     rewriter.replaceOp(op, cast.getRes());
-    return mlir::success();
+    return llvm::success();
   }
 };
 

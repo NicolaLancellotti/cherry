@@ -15,8 +15,8 @@
 #include <map>
 
 namespace cherry {
-using mlir::failure;
-using mlir::success;
+using llvm::failure;
+using llvm::success;
 
 class Symbols {
 public:

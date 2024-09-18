@@ -10,16 +10,16 @@
 #ifndef CHERRY_CHERRYRESULT_H
 #define CHERRY_CHERRYRESULT_H
 
-#include "mlir/Support/LogicalResult.h"
+#include "llvm/Support/LogicalResult.h"
 
 namespace cherry {
 
-class CherryResult : public mlir::LogicalResult {
+class CherryResult : public llvm::LogicalResult {
 public:
-  CherryResult(LogicalResult result = mlir::success())
-      : mlir::LogicalResult(result) {}
+  CherryResult(LogicalResult result = llvm::success())
+      : llvm::LogicalResult(result) {}
 
-  explicit operator bool() const { return mlir::failed(*this); }
+  explicit operator bool() const { return llvm::failed(*this); }
 };
 
 } // end namespace cherry

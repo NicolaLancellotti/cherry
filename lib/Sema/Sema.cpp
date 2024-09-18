@@ -193,7 +193,7 @@ auto SemaImpl::sema(BlockExpr *node) -> CherryResult {
 auto SemaImpl::sema(CallExpr *node) -> CherryResult {
   auto name = node->name();
 
-  if (mlir::succeeded(_symbols.checkType(name)))
+  if (llvm::succeeded(_symbols.checkType(name)))
     return semaStructInitializer(node);
 
   llvm::ArrayRef<llvm::StringRef> parametersTypes;
@@ -273,7 +273,7 @@ auto SemaImpl::sema(BinaryExpr *node) -> CherryResult {
   case Operator::Assign: {
     llvm::StringRef type;
     if (semaRhsLhsSameType(node, type))
-      return mlir::failure();
+      return llvm::failure();
     if (!node->lhs()->isLvalue())
       return emitError(node->lhs().get(), diag::expected_lvalue);
     node->setType(builtins::UnitType);
@@ -287,7 +287,7 @@ auto SemaImpl::sema(BinaryExpr *node) -> CherryResult {
 
   llvm::StringRef type;
   if (semaRhsLhsSameType(node, type))
-    return mlir::failure();
+    return llvm::failure();
 
   switch (node->opEnum()) {
   case Operator::Add:

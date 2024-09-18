@@ -25,8 +25,8 @@ namespace {
 using namespace mlir::cherry;
 using namespace cherry;
 using llvm::cast;
-using mlir::failure;
-using mlir::success;
+using llvm::failure;
+using llvm::success;
 
 class MLIRGenImpl {
 public:
